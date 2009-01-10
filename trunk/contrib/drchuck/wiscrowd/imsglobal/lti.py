@@ -11,6 +11,18 @@ from google.appengine.ext.webapp import template
 from  datetime import datetime, timedelta
 
 from google.appengine.ext import webapp
+
+def modeltype(obj, key):
+      try:
+         attr = str(type(getattr(obj.__class__, key)))
+      except :
+         return None
+
+      if attr.find("ext.db.StringProperty") : return "string"
+      if attr.find("ext.db.ReferenceProperty") : return "reference"
+      if attr.find("ext.db.DateTimeProperty") : return "datetime"
+      if attr.find("ext.db.IntegerProperty") : return "int"
+
 # A Model for a User
 class LTI_Org(db.Model):
      owner_id = db.ReferenceProperty()
@@ -102,7 +114,11 @@ class LTI():
      logging.info("Construct me! " + web.request.path)
      self.web = web
      self.user = LTI_User(displayid="Chuck")
+     setattr(self.user,"email", "csev@umich.edu")
      self.handlelaunch(web,options)
+     value = getattr(LTI_User, "email")
+     web.response.out.write("type "+str(type(LTI_User.email))+"\n")
+     web.response.out.write("xtype "+str(value)+"\n")
 
   def handlelaunch(self, web, options):
     action = web.request.get('action')
@@ -117,17 +133,12 @@ class LTI():
     self.debug("Launch post action=" + action)
 
     # Echo the required parameters
-    self.debug("user_id=" + web.request.get("user_id"))
-    self.debug("user_role=" + web.request.get("user_role"))
-    self.debug("course_id=" + web.request.get("course_id"))
-    self.debug("course_code=" + web.request.get("course_code"))
-    self.debug("org_id=" + web.request.get("org_id"))
-    self.debug("org_title=" + web.request.get("org_title"))
-    self.debug("org_name=" + web.request.get("org_name"))
-    self.debug("launch_resource_id=" + web.request.get("launch_resource_id"))
-    self.debug("launch_resource_url=" + web.request.get("launch_resource_url") + " (optional)")
-    self.debug("launch_width=" + web.request.get("launch_width"))
-    self.debug("launch_height=" + web.request.get("launch_height"))
+    for key in web.request.params.keys(): 
+      value = web.request.get(key) 
+      if len(value) < 100: 
+         self.debug(key+':'+value)
+      else: 
+         self.debug(key+':'+str(len(value))+' (bytes long)')
 
     doHtml = action.lower() == "launchhtml"
     doDirect = action.lower() == "direct"
@@ -155,6 +166,12 @@ class LTI():
     width = web.request.get('launch_width')
     height = web.request.get('launch_height')
 
+    self.org = LTI_Org()
+
+    self.ormload(self.org, web.request, "org_")
+
+    self.debug("org.name="+str(self.org.name))
+
     if doDirect:
 	web.redirect("http://www.youtube.com/v/f90ysF9BenI")
 	return
@@ -176,8 +193,8 @@ class LTI():
         respString = cgi.escape(respString) 
 
     if doDirect:
-        web.response.out.write("Direct launch - data dump\n");
-        web.response.out.write("<a href=http://www.youtube.com/v/f90ysF9BenI>Content</a>");
+        web.response.out.write("Direct launch - data dump\n")
+        web.response.out.write("<a href=http://www.youtube.com/v/f90ysF9BenI>Content</a>")
     else:
         web.response.out.write(respString)
 
@@ -246,7 +263,7 @@ class LTI():
 '''
     path = self.request.application_url + "/launch?i=25"
     retval = retval.replace("LAUNCHURL",path)
-    return retval;
+    return retval
 
   def widgetResponse(self, width, height):
     retval = '''<launchResponse>
@@ -271,3 +288,18 @@ class LTI():
 </launchResponse>
 '''
 
+  # Loop through the request keys and see if they can be put 
+  # into the model
+  def ormload(self, org, req, prefix = None):
+    self.debug("ORM LOAD")
+    for key in req.params.keys(): 
+      value = self.web.request.get(key) 
+      thetype = modeltype(org, key)
+      if ( thetype == None and prefix != None ) :
+         if ( not key.startswith(prefix) ) : continue
+         key = key[len(prefix):]
+         thetype = modeltype(org, key)
+
+      if ( thetype == None ) : continue
+      self.debug(key+" ("+thetype+") = "+value)
+      setattr(org,key,value)
