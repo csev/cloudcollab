@@ -23,8 +23,25 @@ def modeltype(obj, key):
       if attr.find("ext.db.DateTimeProperty") : return "datetime"
       if attr.find("ext.db.IntegerProperty") : return "int"
 
+def modelread(theclass, keyvalue) :
+    if ( len(keyvalue) > 0 ) :
+      que = db.Query(LTI_Org)
+      que = que.filter(theclass.logicalkey+" =",keyvalue)
+
+      results = que.fetch(limit=1)
+
+      if len(results) > 0 :
+        org = results[0]
+      else :
+        org = theclass()
+        setattr(org, theclass.logicalkey, keyvalue)
+      return org
+    else : 
+      return None 
+
 # A Model for a User
 class LTI_Org(db.Model):
+     logicalkey = "org_id"
      owner_id = db.ReferenceProperty()
      org_id = db.StringProperty()
      secret = db.StringProperty()
@@ -36,6 +53,7 @@ class LTI_Org(db.Model):
 
 
 class LTI_User(db.Model):
+     logicalkey = "user_id"
      user_id = db.StringProperty()
      eid = db.StringProperty()
      displayid = db.StringProperty()
@@ -49,12 +67,14 @@ class LTI_User(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Session(db.Model):
+     logicalkey = None
      user_id = db.ReferenceProperty
      course_id = db.ReferenceProperty
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Course(db.Model):
+     logicalkey = "course_id"
      course_id = db.StringProperty()
      code = db.StringProperty()
      name = db.StringProperty()
@@ -71,9 +91,10 @@ class LTI_Membership(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Tool(db.Model):
+     logicalkey = "tool_id"
+     tool_id = db.StringProperty
      tool_name = db.StringProperty
      tool_title = db.StringProperty
-     tool_id = db.StringProperty
      targets = db.StringProperty
      resource_id = db.StringProperty
      resource_url = db.StringProperty
@@ -83,13 +104,13 @@ class LTI_Tool(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Digest(db.Model):
+     logicalkey = "digest"
      digest = db.StringProperty
      request = db.StringProperty
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Launch(db.Model):
-     password = db.StringProperty
      user_id = db.ReferenceProperty
      course_id = db.ReferenceProperty
      org_id = db.ReferenceProperty
@@ -166,11 +187,29 @@ class LTI():
     width = web.request.get('launch_width')
     height = web.request.get('launch_height')
 
-    self.org = LTI_Org()
+    org_id = web.request.get("org_id")
+    if ( len(org_id) > 0 ) :
+      """
+      que = db.Query(LTI_Org)
+      que = que.filter("org_id =",org_id)
 
-    self.ormload(self.org, web.request, "org_")
+      results = que.fetch(limit=1)
 
-    self.debug("org.name="+str(self.org.name))
+      if len(results) > 0 :
+        org = results[0]
+      else :
+        org = LTI_Org()
+      """
+      org = modelread(LTI_Org, org_id)
+      self.debug("org.org_id="+str(org.org_id))
+
+      self.ormload(org, web.request, "org_")
+      self.debug("org.name="+str(org.name))
+
+      org.put()
+      self.debug("key = "+str(org.key()))
+      self.org = org
+
 
     if doDirect:
 	web.redirect("http://www.youtube.com/v/f90ysF9BenI")
