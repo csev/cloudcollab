@@ -1,0 +1,40 @@
+{% extends "_base.html" %}
+{% block bodycontent %}
+<h1>Test Page for Simple Tool Interoperability</h1>
+<p>There are two similar tests here.  You can either submit the test data 
+to this server or submit the test data to your own server.  
+Since Simple LTI is using form POST data, the test in both cases
+is just a form where you fill in values.</p>
+<p>
+<form action="/dotest?url=%2Flaunch" method="get">
+  <fieldset>
+    <legend>Test This Server</legend>
+    <div><input type="submit" value="Start Loopback Test"></div>
+  </fieldset>
+</form>
+</p>
+<p>
+<form action="/dotest" method="post">
+  <fieldset>
+    <legend>Test Your Server</legend>
+    <div class="req">Server Url<input type="text" size="40" name="url" 
+        value="/launch"/></div>
+    <div><input type="submit" value="Start Test"></div>
+  </fieldset>
+</form>
+</p>
+<p>
+Note - if you want to test your External tool running behind 
+a firewall or running on <b>localhost</b>,
+all you need to do is to put in the address of your launch point above in 
+<b>Server URL</b> and press Submit.   You can use something like:
+</p>
+<p>
+http://localhost:8080/sakai-axis2/services/LTILaunch/testlaunch?toolID=foo
+</p>
+<p>
+You could even save the HMTL of the next screen to your local hard drive
+so that you can do testing even without an Internet connection.  For this 
+test your browser is doing the POST - not this server.
+</p>
+{% endblock %}
