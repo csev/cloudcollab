@@ -24,6 +24,8 @@ class MainHandler(webapp.RequestHandler):
     u = l.user.displayid;
     logging.info("Put " + u)
     app = self.request.application_url
+    u = l.user.email;
+    logging.info("Put " + u)
     path = self.request.path
     try:
         temp = os.path.join(os.path.dirname(__file__), 'templates' + path)
