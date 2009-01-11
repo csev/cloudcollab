@@ -8,36 +8,42 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 # import django.template
 
-import launch
 import dotest
 from imsglobal.lti import LTI
 
 class MainHandler(webapp.RequestHandler):
 
+  def prt(self,outstr):
+    self.response.out.write(outstr)
+
+  def prtln(self,outstr):
+    self.response.out.write(outstr+"\n")
+
   def post(self):
     self.get()
 
   def get(self):
-    logging.info("Hello index get")
-    logging.info(self.request.path)
     l = LTI(self);
-    u = l.user.displayid;
-    logging.info("Put " + u)
+    if ( l.complete ) : return
+    self.prtln("<pre>")
+      
+    if ( not l.launch ) :
+      self.prtln("LTI Runtime failed to start")
+      self.prtln("</pre>")
+      return
+
+    self.prtln("LTI Runtime started")
+    u = l.launch.resource_id;
+    logging.info("MAIN " + u)
     app = self.request.application_url
     u = l.user.email;
-    logging.info("Put " + u)
-    path = self.request.path
-    try:
-        temp = os.path.join(os.path.dirname(__file__), 'templates' + path)
-        self.response.out.write(template.render(temp, {'url': app, 'path':path }))
-    except:
-        temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-        self.response.out.write(template.render(temp, {'url': app, 'path':path }))
+    logging.info("MAIN " + u)
+    self.prtln(l.dump())
+    self.prtln("</pre>")
 
 def main():
   application = webapp.WSGIApplication([
      ('/dotest', dotest.DoTest),
-     ('/launch.*', launch.LaunchHandler),
      ('/.*', MainHandler)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
