@@ -390,6 +390,24 @@ class LTI():
     else : 
       return False
 
+  def getUserName(self):
+     if ( not ( self.launch and self.user ) ) : return "Anonymous"
+     if ( self.user.displayid ) : return self.user.displayid
+     retval = ""
+     if ( self.user.firstname and self.user.lastname ) : 
+        return self.user.firstname + " " + self.user.lastname
+     elif ( self.user.firstname ) : return self.user.firstname
+     elif ( self.user.lastname ) : return self.user.lastname
+     if ( self.user.email ) : return self.user.email
+     return ""
+
+  def getCourseName(self):
+     if ( not ( self.launch and self.course ) ) : return "None"
+     if ( self.course.name ) : return self.course.name
+     if ( self.course.title ) : return self.course.title
+     if ( self.course.code ) : return self.course.code
+     return ""
+
   # Loop through the request keys and see if they can be put 
   # into the model
   def ormload(self, org, req, prefix = None):
