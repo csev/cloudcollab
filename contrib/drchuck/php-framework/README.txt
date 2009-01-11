@@ -79,5 +79,17 @@ the next thing yu see is the tool.
 The file index.php is the prototype tool.  Take out the debug
 and "do your thing".
 
+One thing that might freak you out is that I use a simple Object-
+Relational-Mapper of my own making.  At some level it is not essential
+for you to use this - the tables are really simple. Butmy ORM handles
+the undane bits of writing simple SQL.  Here is the web site for 
+my little ORM:
+
+   http://www.omg-software.com/
+
+Again, don't worry too much about this - it just amkes my life a lot
+easier.  I really hate making SQL strings when there are 15 
+string fields.  You can do your own thing.
+
 -- Charles Severance
 
