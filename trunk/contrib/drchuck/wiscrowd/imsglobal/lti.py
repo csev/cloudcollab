@@ -152,8 +152,8 @@ class LTI():
     if ( len(key) < 0 ) : key = None
     if ( key and not password ) : key = None
     if ( password and not key ) : password = None
+    # self.debug("Password = "+str(password)+" Key="+(key))
 
-    self.debug("Password = "+str(password)+" Key="+(key))
     # get the values from the session
     sesskey = None
     sesspassword = None
@@ -167,8 +167,7 @@ class LTI():
       if ( sesspassword and not sesskey) :
         del(session['lti_launch_password'])
         sesspassword = None
-
-    self.debug("Session Password = "+str(sesspassword)+" Key="+str(sesskey))
+    # self.debug("Session Password = "+str(sesspassword)+" Key="+str(sesskey))
 
     # If we have a key and password in session and they match
     # it is OK - if there is a mismatch - ignore the session
