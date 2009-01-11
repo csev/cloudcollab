@@ -1,7 +1,5 @@
 <?php
 
-$DEBUG_LOG_FILE = "/kunden/homepages/17/d88943663/htdocs/cloudlog.txt";
-
 $DEBUG_LOG_DATA = "";
 
 function DBG_VERBOSE() {
@@ -52,12 +50,14 @@ function getDebugLogXML() {
 }
 
 function dumpDebugLog() {
+/*
     global $DEBUG_LOG_DATA;
     $handle = fopen("cloudlog.txt", 'a');
     if ( $handle ) {
         fwrite($handle, date('r')."-------------\n".$DEBUG_LOG_DATA);
         fclose($handle);
     }
+*/
 }
 
 ?>
