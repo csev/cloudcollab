@@ -112,7 +112,18 @@ class LTI():
     return dStr
 
   def dump(self):
-    return "YO"
+    ret = "Dump of LTI Object\n";
+    if ( not self.launch ):
+      ret = ret + "No launch data\n"
+      return ret
+    ret = ret + "Complete = "+str(self.complete) + "\n";
+    ret = ret + self.modeldump(self.user)
+    ret = ret + self.modeldump(self.course)
+    ret = ret + self.modeldump(self.memb)
+    ret = ret + self.modeldump(self.org)
+    ret = ret + self.modeldump(self.launch)
+
+    return ret
 
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
@@ -372,6 +383,13 @@ class LTI():
 </launchResponse>
 '''
 
+  # Some utility mehtods
+  def isInstructor(self) :
+    if self.launch and self.memb :
+      return (self.memb.role == 2)
+    else : 
+      return False
+
   # Loop through the request keys and see if they can be put 
   # into the model
   def ormload(self, org, req, prefix = None):
@@ -390,14 +408,15 @@ class LTI():
 
   def modeltype(self, obj, key):
     try:
-       attr = str(type(getattr(obj.__class__, key)))
+      attr = str(type(getattr(obj.__class__, key)))
     except :
-       return None
+      return "none"
 
-    if attr.find("ext.db.StringProperty") : return "string"
-    if attr.find("ext.db.ReferenceProperty") : return "reference"
-    if attr.find("ext.db.DateTimeProperty") : return "datetime"
-    if attr.find("ext.db.IntegerProperty") : return "int"
+    if attr.find("ext.db.StringProperty") > 0 : return "string"
+    if attr.find("ext.db.ReferenceProperty") > 0 : return "reference"
+    if attr.find("ext.db.DateTimeProperty")  > 0: return "datetime"
+    if attr.find("ext.db.IntegerProperty")  > 0: return "int"
+    return "none"
 
   def modelread(self, theclass, keyvalue) :
     if ( len(keyvalue) > 0 ) :
@@ -414,3 +433,23 @@ class LTI():
       return org
     else : 
       return None 
+
+  def modeldump(self, obj):
+    if ( not obj ) : 
+       return ""
+       ret = ret + " Not populated\n"
+       return ret
+
+    ret = "Dumping " + obj.__class__.__name__  + "\n"
+
+    for key in dir(obj.__class__) : 
+      # print "Key " + key + "\n"
+      typ = self.modeltype(obj, key)
+      # print "Typ " + typ + "\n"
+      if ( typ == "string" or typ == "int" ) :
+        val = getattr(obj,key)
+	if ( not val ) : val = "None"
+        ret = ret + "  " + key + "=" + str(val) + "\n";
+
+    return ret
+    
