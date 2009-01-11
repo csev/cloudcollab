@@ -23,22 +23,27 @@ class MainHandler(webapp.RequestHandler):
     self.get()
 
   def get(self):
-    l = LTI(self);
-    if ( l.complete ) : return
+    lti = LTI(self);
+    if ( lti.complete ) : return
     self.prtln("<pre>")
       
-    if ( not l.launch ) :
+    if ( not lti.launch ) :
       self.prtln("LTI Runtime failed to start")
       self.prtln("</pre>")
       return
 
     self.prtln("LTI Runtime started")
-    u = l.launch.resource_id;
+    if ( lti.isInstructor() ) :
+      self.prtln("Running as Instructor")
+    else:
+      self.prtln("Running as Sudent")
+
+    u = lti.launch.resource_id;
     logging.info("MAIN " + u)
     app = self.request.application_url
-    u = l.user.email;
+    u = lti.user.email;
     logging.info("MAIN " + u)
-    self.prtln(l.dump())
+    self.prtln(lti.dump())
     self.prtln("</pre>")
 
 def main():
