@@ -1,6 +1,5 @@
 import logging
 import cgi
-import os
 import wsgiref.handlers
 import logging
 import hashlib
@@ -12,32 +11,6 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
-def modeltype(obj, key):
-      try:
-         attr = str(type(getattr(obj.__class__, key)))
-      except :
-         return None
-
-      if attr.find("ext.db.StringProperty") : return "string"
-      if attr.find("ext.db.ReferenceProperty") : return "reference"
-      if attr.find("ext.db.DateTimeProperty") : return "datetime"
-      if attr.find("ext.db.IntegerProperty") : return "int"
-
-def modelread(theclass, keyvalue) :
-    if ( len(keyvalue) > 0 ) :
-      que = db.Query(theclass)
-      que = que.filter(theclass.logicalkey+" =",keyvalue)
-
-      results = que.fetch(limit=1)
-
-      if len(results) > 0 :
-        org = results[0]
-      else :
-        org = theclass()
-        setattr(org, theclass.logicalkey, keyvalue)
-      return org
-    else : 
-      return None 
 
 # A Model for a User
 class LTI_Org(db.Model):
@@ -112,6 +85,7 @@ class LTI_Launch(db.Model):
      user = db.ReferenceProperty(LTI_User)
      course = db.ReferenceProperty(LTI_Course)
      org = db.ReferenceProperty(LTI_Org)
+     memb = db.ReferenceProperty(LTI_Membership)
      resource_id = db.StringProperty()
      targets = db.StringProperty()
      resource_url = db.StringProperty()
@@ -123,22 +97,29 @@ class LTI_Launch(db.Model):
 
 class LTI():
   dStr = ""
+  complete = False
+  launch = None
+  user = None
+  course = None
+  memb = None
+  org = None
 
   def debug(self, str):
     logging.info(str)
     self.dStr = self.dStr + str + "\n"
 
+  def getDebug(self):
+    return dStr
+
+  def dump(self):
+    return "YO"
+
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
-     self.complete = False
      self.web = web
-     self.user = LTI_User(displayid="Chuck")
-     setattr(self.user,"email", "csev@umich.edu")
      self.handlelaunch(web, session, options)
-     value = getattr(LTI_User, "email")
      if ( self.complete ) : return
      self.handlesetup(web, session, options)
-     value = getattr(LTI_User, "email")
 
   def handlesetup(self, web, session, ptions):
     password = web.request.get('lti_launch_password')
@@ -154,9 +135,22 @@ class LTI():
     If we have non-empty session, and it does not match the 
     request parameters, clear the session
     '''
-    self.launch = None
-    launch = LTI_Launch.get(db.Key(key))
+    # Need try/except in case Key() is unhappy with the string
+    try:
+      launch = LTI_Launch.get(db.Key(key))
+    except:
+      launch = None
+
+    if ( not launch ) :
+      self.debug("Launch record not found key="+key)
+      return
+
     self.debug("Launch came back "+launch.user.email);
+    self.launch = launch
+    self.user = launch.user
+    self.course = launch.course
+    self.memb = launch.memb
+    self.org = launch.org
 
   def handlelaunch(self, web, session, options):
     action = web.request.get('action')
@@ -207,7 +201,7 @@ class LTI():
     if ( len(org_id) > 0 ) :
       # Todo figure out what to do with the org secret
       # and org policy options
-      org = modelread(LTI_Org, org_id)
+      org = self.modelread(LTI_Org, org_id)
       self.debug("org.org_id="+str(org.org_id))
 
       self.ormload(org, web.request, "org_")
@@ -217,34 +211,36 @@ class LTI():
       self.debug("key = "+str(org.key()))
       self.org = org
 
+    user = None
     user_id = web.request.get("user_id")
-    self.user = None
     if ( len(user_id) > 0 ) :
-      user = modelread(LTI_User, user_id)
+      user = self.modelread(LTI_User, user_id)
       self.ormload(user, web.request, "user_")
       self.debug("user.email="+str(user.email))
       user.put()
-      self.user = user
 
     course_id = web.request.get("course_id")
-    self.course = None
+    course = None
     if ( len(course_id) > 0 ) :
-      course = modelread(LTI_Course, course_id)
+      course = self.modelread(LTI_Course, course_id)
       self.ormload(course, web.request, "course_")
       self.debug("course.name="+str(course.name))
       course.put()
-      self.course = course
 
-    self.memb = None
+    memb = None
+    if ( not (user and course ) ) :
+       self.debug("Must have user and course for a complete launch")
+       return
+
     que = db.Query(LTI_Membership)
-    que = que.filter("course =", self.course.key())
-    que = que.filter("user = ", self.user.key())
+    que = que.filter("course =", course.key())
+    que = que.filter("user = ", user.key())
     results = que.fetch(limit=1)
     if len(results) > 0 :
       memb = results[0]
       self.debug("Existing membership record found")
     else : 
-      memb = LTI_Membership(course = self.course, user = self.user)
+      memb = LTI_Membership(course = course, user = user)
 
     role = web.request.get("user_role")
     if ( len(role) < 1 ) : role = "Student"
@@ -253,20 +249,18 @@ class LTI():
     if ( role == "instructor") : roleval = 2
     memb.role = roleval
     memb.put()
-    self.memb = memb
-
+ 
     self.debug("Here we go "+memb.user.email)
 
-    self.launch = None
     que = db.Query(LTI_Launch)
-    que = que.filter("course =", self.course.key())
-    que = que.filter("user = ", self.user.key())
+    que = que.filter("course =", course.key())
+    que = que.filter("user = ", user.key())
     results = que.fetch(limit=1)
     if len(results) > 0 :
       launch = results[0]
       self.debug("Existing launch record found")
     else : 
-      launch = LTI_Launch(course = self.course, user = self.user)
+      launch = LTI_Launch(course = course, user = user, memb = memb)
 
     self.ormload(launch, web.request, "launch_")
     launch.org = self.org
@@ -275,7 +269,7 @@ class LTI():
     self.debug("launch.key()="+str(launch.key()))
     self.launch = launch
 
-    url = "http://"+os.environ['HTTP_HOST']+web.request.path
+    url = web.request.application_url+web.request.path
 
     if ( url.find('?') >= 0 ) :
       url = url + "?"
@@ -288,6 +282,13 @@ class LTI():
  
     # We have made it to the point where we have handled this request
     self.complete = True
+    self.user = launch.user
+    self.course = launch.course
+    self.memb = launch.memb
+    self.org = launch.org
+
+    # Need to make an option to allow a 
+    # simple return instead of redirect
     if doDirect:
 	web.redirect(url)
 	return
@@ -377,12 +378,39 @@ class LTI():
     self.debug("ORM LOAD "+str(org.__class__))
     for key in req.params.keys(): 
       value = self.web.request.get(key) 
-      thetype = modeltype(org, key)
+      thetype = self.modeltype(org, key)
       if ( thetype == None and prefix != None ) :
          if ( not key.startswith(prefix) ) : continue
          key = key[len(prefix):]
-         thetype = modeltype(org, key)
+         thetype = self.modeltype(org, key)
 
       if ( thetype == None ) : continue
       self.debug(key+" ("+thetype+") = "+value)
       setattr(org,key,value)
+
+  def modeltype(self, obj, key):
+    try:
+       attr = str(type(getattr(obj.__class__, key)))
+    except :
+       return None
+
+    if attr.find("ext.db.StringProperty") : return "string"
+    if attr.find("ext.db.ReferenceProperty") : return "reference"
+    if attr.find("ext.db.DateTimeProperty") : return "datetime"
+    if attr.find("ext.db.IntegerProperty") : return "int"
+
+  def modelread(self, theclass, keyvalue) :
+    if ( len(keyvalue) > 0 ) :
+      que = db.Query(theclass)
+      que = que.filter(theclass.logicalkey+" =",keyvalue)
+
+      results = que.fetch(limit=1)
+
+      if len(results) > 0 :
+        org = results[0]
+      else :
+        org = theclass()
+        setattr(org, theclass.logicalkey, keyvalue)
+      return org
+    else : 
+      return None 
