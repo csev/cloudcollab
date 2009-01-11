@@ -6,7 +6,7 @@ up-to-date submissions from
 if you like.  You can also change any of the values below to test variations
 on a theme.  Both digests are generated with a password of secret.
 </p>
-<form action="/" method="post">
+<form action="index.php" method="post">
   <div><input type="submit" value="Submit Launch Parameters"></div>
   <fieldset>
     <legend>Action</legend>
