@@ -129,20 +129,42 @@ class LTI():
     self.dStr = self.dStr + str + "\n"
 
   # We have several scenarios to handle
-  def __init__(self, web, options = {}):
+  def __init__(self, web, session = None, options = {}):
+     self.complete = False
      self.web = web
      self.user = LTI_User(displayid="Chuck")
      setattr(self.user,"email", "csev@umich.edu")
-     self.handlelaunch(web,options)
+     self.handlelaunch(web, session, options)
+     value = getattr(LTI_User, "email")
+     if ( self.complete ) : return
+     self.handlesetup(web, session, options)
      value = getattr(LTI_User, "email")
 
-  def handlelaunch(self, web, options):
+  def handlesetup(self, web, session, ptions):
+    password = web.request.get('lti_launch_password')
+    key = web.request.get('lti_launch_key')
+    if ( len(password) < 0 or len(key) < 0 ) :
+      self.debug("Nothing for us to setup...")
+      return
+    self.debug("Password = "+password+" Key="+key)
+    '''
+    Deal with the situation where we see id/pw the first time
+    with an empty session or - we see it a second time on refresh
+    with a session id/pw on the request that matches session
+    If we have non-empty session, and it does not match the 
+    request parameters, clear the session
+    '''
+    self.launch = None
+    launch = LTI_Launch.get(db.Key(key))
+    self.debug("Launch came back "+launch.user.email);
+
+  def handlelaunch(self, web, session, options):
     action = web.request.get('action')
     if ( len(action) < 1 ) : action = web.request.get("lti_action")
     if ( len(action) < 1 ) : return
     action = action.lower()
     if ( action != 'launchresolve' and action != 'direct' and action != 'launchhtml' ) :
-      logging.info("Nothing action for us  launch...")
+      self.debug("Nothing action for us  launch...")
       return
 
     self.debug("Running on " + web.request.application_url)
@@ -160,8 +182,6 @@ class LTI():
     doDirect = action.lower() == "direct"
 
     targets = web.request.get('launch_targets')
-    doWidget = targets.lower().startswith('widget')
-    doPost = targets.lower().startswith('post')
 
     nonce = web.request.get('sec_nonce')
     secret = web.request.get('sec_secret')
@@ -255,51 +275,44 @@ class LTI():
     self.debug("launch.key()="+str(launch.key()))
     self.launch = launch
 
-    url = "http://"+os.environ['HTTP_HOST']+os.environ['PATH_INFO']
+    url = "http://"+os.environ['HTTP_HOST']+web.request.path
 
     if ( url.find('?') >= 0 ) :
       url = url + "?"
     else :
       url = url + "?"
 
-    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key()), "lti_launch_password=":launch.password})
+    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key()), "lti_launch_password" : launch.password})
 
     self.debug("url = "+url)
  
+    # We have made it to the point where we have handled this request
+    self.complete = True
     if doDirect:
 	web.redirect(url)
 	return
 
     if  success :
         self.debug("****** MATCH ******")
-        if doWidget:
-            respString = self.widgetResponse(width,height)
-        elif doPost:
-            respString = self.postResponse(url)
-        else:
-            respString = self.iframeResponse(url)
+        respString = self.iframeResponse(url)
     else:
         self.debug("!!!!!! NO MATCH !!!!!!")
         respString = self.errorResponse()
 
-    if doHtml or doDirect:
+    if doHtml:
         web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
         respString = cgi.escape(respString) 
 
-    if doDirect:
-        web.response.out.write("Direct launch - data dump\n")
-        web.response.out.write("<a href="+url+" >Content</a>")
-    else:
-        web.response.out.write(respString)
+    web.response.out.write(respString)
 
-    if doHtml or doDirect:
+    if doHtml:
         web.response.out.write("\n\nDebug Output:\n")
     else:
         web.response.out.write("\n\n<!--\nDebug Output:\n")
 
     web.response.out.write(self.dStr)
 
-    if doHtml or doDirect:
+    if doHtml:
         web.response.out.write("\n</pre>\n")
     else:
         web.response.out.write("\n-->\n")
@@ -348,31 +361,6 @@ class LTI():
 </launchResponse>
 '''
     retval = retval.replace("LAUNCHURL",url)
-    return retval
-
-  def postResponse(self, url):
-    retval =  '''<launchResponse>
-   <status>success</status>
-   <type>post</type>
-   <launchUrl>LAUNCHURL</launchUrl>
-</launchResponse>
-'''
-    retval = retval.replace("LAUNCHURL",url)
-    return retval
-
-  def widgetResponse(self, width, height):
-    retval = '''<launchResponse>
-   <status>success</status>
-   <type>widget</type>
-   <widget>
-&lt;object width="425" height="344"&gt;&lt;param name="movie" value="http://www.youtube.com/v/f90ysF9BenI&amp;hl=en"&gt;&lt;/param&gt;&lt;embed src="http://www.youtube.com/v/f90ysF9BenI&amp;hl=en" type="application/x-shockwave-flash" width="425" height="344"&gt;&lt;/embed&gt;&lt;/object&gt;
-  </widget>
-</launchResponse>
-'''
-    if width != None and len(width) > 0 :
-	retval = retval.replace("425",width)
-    if height != None and len(height) > 0 :
-	retval = retval.replace("344",height)
     return retval
 
   def errorResponse(self):
