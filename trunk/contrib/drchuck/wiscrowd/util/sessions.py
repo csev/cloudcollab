@@ -46,7 +46,7 @@ class Session(object):
     # Convienent support get() method
     def get(self, keyname, default=None):
         if keyname in self.session:
-            return self.session[key]
+            return self.session[keyname]
         return default
 
     # Delete with no error
