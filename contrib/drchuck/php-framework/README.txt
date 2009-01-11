@@ -40,6 +40,44 @@ Steps to make this run.
     index.php - voila you are in the tool.  
     It dumps out all of the LTI provisioning data.
 
+The "launchhtml" launch is for debugging.  Instead of 
+returninf the web service response ("launchresolve"),
+it dumps out the log data and gives you a link to the
+URL it would have returned in the web service.  If
+you look a this URL - it will look as follows:
+
+http://localhost/~csev/php-framework/index.php?id=1&password=571beff5e
+
+There are two steps - first the launch is resolved.  This
+checks passwords makes all kinds of data, and builds an
+LTI session.  Then the above URL is returned to the LMS
+in an XML message which puts the URL in an iFrame.
+
+By using launchhtml - you can stop the process and watch 
+in slow motion.
+
+If you use launchresolve - you will see XML when you view source:
+
+<launchResponse>
+   <status>success</status>
+   <type>iframe</type>
+   <launchUrl>?id=1&amp;password=60e74037d20a8ef583dc55538ef5e639</launchUrl>
+   <launchdebug>
+     ....  A LOT OF STUFF
+   </launchdebug>
+</launchResponse>
+
+If you use "direct" - the launch code will instantly redirect to the 
+url with id/password.  This is because some LMS's will actually generate
+code in a browser that builds the form and auto submits the launch, 
+expecting to be redirected with to the tool after launch is done.
+
+So when the framework sees "direct", after a successful launch setup 
+- it just does the redirect.  So if you select "direct" and press Submit,
+the next thing yu see is the tool.
+
+The file index.php is the prototype tool.  Take out the debug
+and "do your thing".
 
 -- Charles Severance
 
