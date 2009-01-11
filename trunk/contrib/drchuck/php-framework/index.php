@@ -6,6 +6,7 @@ print "<pre>\n";
 if ( $LTI ) {
   print "Successful startup of LTI runtime\n";
   print "\n";
+  print "User ID:".$LTI->user(email)."\n";
   print "User Data\n";
   print_r($LTI->user());
   print "Course Data\n";
