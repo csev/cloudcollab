@@ -33,16 +33,13 @@ class MainHandler(webapp.RequestHandler):
       return
 
     self.prtln("LTI Runtime started")
+    self.prtln("User:"+lti.getUserName())
+    self.prtln("Course:"+lti.getCourseName())
     if ( lti.isInstructor() ) :
-      self.prtln("Running as Instructor")
+      self.prtln("Role: Instructor")
     else:
-      self.prtln("Running as Sudent")
-
-    u = lti.launch.resource_id;
-    logging.info("MAIN " + u)
-    app = self.request.application_url
-    u = lti.user.email;
-    logging.info("MAIN " + u)
+      self.prtln("Role: Sudent")
+    self.prtln("")
     self.prtln(lti.dump())
     self.prtln("</pre>")
 
