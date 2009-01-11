@@ -6,7 +6,7 @@ import logging
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
-# import django.template
+from util.sessions import Session
 
 import dotest
 from imsglobal.lti import LTI
@@ -23,7 +23,8 @@ class MainHandler(webapp.RequestHandler):
     self.get()
 
   def get(self):
-    lti = LTI(self);
+    self.session = Session()
+    lti = LTI(self, self.session);
     if ( lti.complete ) : return
     self.prtln("<pre>")
       

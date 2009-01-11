@@ -132,36 +132,103 @@ class LTI():
      if ( self.complete ) : return
      self.handlesetup(web, session, options)
 
+  def setvars(self):
+      if self.launch : 
+        self.user = self.launch.user
+        self.course = self.launch.course
+        self.memb = self.launch.memb
+        self.org = self.launch.org
+      else:
+        self.user = None
+        self.course = None
+        self.memb = None
+        self.org = None
+
   def handlesetup(self, web, session, ptions):
+    # get values form the request
     password = web.request.get('lti_launch_password')
     key = web.request.get('lti_launch_key')
-    if ( len(password) < 0 or len(key) < 0 ) :
-      self.debug("Nothing for us to setup...")
-      return
-    self.debug("Password = "+password+" Key="+key)
-    '''
-    Deal with the situation where we see id/pw the first time
-    with an empty session or - we see it a second time on refresh
-    with a session id/pw on the request that matches session
-    If we have non-empty session, and it does not match the 
-    request parameters, clear the session
-    '''
-    # Need try/except in case Key() is unhappy with the string
-    try:
-      launch = LTI_Launch.get(db.Key(key))
-    except:
-      launch = None
+    if ( len(password) < 0 ) : password = None
+    if ( len(key) < 0 ) : key = None
+    if ( key and not password ) : key = None
+    if ( password and not key ) : password = None
 
-    if ( not launch ) :
-      self.debug("Launch record not found key="+key)
+    self.debug("Password = "+str(password)+" Key="+(key))
+    # get the values from the session
+    sesskey = None
+    sesspassword = None
+    if session :  
+      sesskey = session.get('lti_launch_key', None)
+      sesspassword = session.get('lti_launch_password', None)
+      # Deal with when only one is set
+      if ( sesskey and not sesspassword) :
+        del(session['lti_launch_key'])
+        sesskey = None
+      if ( sesspassword and not sesskey) :
+        del(session['lti_launch_password'])
+        sesspassword = None
+
+    self.debug("Session Password = "+str(sesspassword)+" Key="+str(sesskey))
+
+    # If we have a key and password in session and they match
+    # it is OK - if there is a mismatch - ignore the session
+    if ( key and sesskey ) :
+      if ( sesskey != key or sesspassword != password ) :
+        del(session['lti_launch_key'])
+        del(session['lti_launch_password'])
+        sesskey = None
+        sesspassword = None
+
+    # On a normal request there are no parammeters - we just use session
+    if ( sesskey ) :
+      # Need try/except in case Key() is unhappy with the string
+      try:
+        launch = LTI_Launch.get(db.Key(sesskey))
+      except:
+        launch = None
+
+      if not launch:
+        self.debug("Session not found in store "+sesskey)
+        if sesspassword : del(session['lti_launch_password'])
+        if sesskey : del(session['lti_launch_key'])
+
+      self.launch = launch
+      self.setvars()
       return
 
-    self.debug("Launch came back "+launch.user.email);
-    self.launch = launch
-    self.user = launch.user
-    self.course = launch.course
-    self.memb = launch.memb
-    self.org = launch.org
+    # On an initial we have parammeters and use them
+    if ( key ) :
+      # Need try/except in case Key() is unhappy with the string
+      try:
+        launch = LTI_Launch.get(db.Key(key))
+      except:
+        self.debug("Session Not Found in Store")
+        launch = None
+
+      # if the password does not match, give up
+      if launch:
+         self.debug("Database password="+str(launch.password))
+         if len(password) > 0 and password == launch.password :
+           launch.password = None
+           launch.put()
+           self.debug("Session one-time use password cleared")
+         else :
+           self.debug("Session password mis motch")
+           launch = None
+
+      if launch:
+        session['lti_launch_key'] = key
+        session['lti_launch_password'] = password
+      else:
+        if sesspassword : del(session['lti_launch_password'])
+        if sesskey : del(session['lti_launch_key'])
+
+      self.launch = launch
+      self.setvars()
+      return
+
+    self.launch = None
+    self.setvars()
 
   def handlelaunch(self, web, session, options):
     action = web.request.get('action')
