@@ -1,4 +1,3 @@
-from google.appengine.ext import db
 import logging
 import cgi
 import os
@@ -7,9 +6,10 @@ import logging
 import hashlib
 import base64
 import uuid
+import urllib
+from datetime import datetime, timedelta
 from google.appengine.ext.webapp import template
-from  datetime import datetime, timedelta
-
+from google.appengine.ext import db
 from google.appengine.ext import webapp
 
 def modeltype(obj, key):
@@ -130,14 +130,11 @@ class LTI():
 
   # We have several scenarios to handle
   def __init__(self, web, options = {}):
-     logging.info("Construct me! " + web.request.path)
      self.web = web
      self.user = LTI_User(displayid="Chuck")
      setattr(self.user,"email", "csev@umich.edu")
      self.handlelaunch(web,options)
      value = getattr(LTI_User, "email")
-     web.response.out.write("type "+str(type(LTI_User.email))+"\n")
-     web.response.out.write("xtype "+str(value)+"\n")
 
   def handlelaunch(self, web, options):
     action = web.request.get('action')
@@ -258,8 +255,19 @@ class LTI():
     self.debug("launch.key()="+str(launch.key()))
     self.launch = launch
 
+    url = "http://"+os.environ['HTTP_HOST']+os.environ['PATH_INFO']
+
+    if ( url.find('?') >= 0 ) :
+      url = url + "?"
+    else :
+      url = url + "?"
+
+    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key()), "lti_launch_password=":launch.password})
+
+    self.debug("url = "+url)
+ 
     if doDirect:
-	web.redirect("http://www.youtube.com/v/f90ysF9BenI")
+	web.redirect(url)
 	return
 
     if  success :
@@ -267,9 +275,9 @@ class LTI():
         if doWidget:
             respString = self.widgetResponse(width,height)
         elif doPost:
-            respString = self.postResponse()
+            respString = self.postResponse(url)
         else:
-            respString = self.iframeResponse()
+            respString = self.iframeResponse(url)
     else:
         self.debug("!!!!!! NO MATCH !!!!!!")
         respString = self.errorResponse()
@@ -280,7 +288,7 @@ class LTI():
 
     if doDirect:
         web.response.out.write("Direct launch - data dump\n")
-        web.response.out.write("<a href=http://www.youtube.com/v/f90ysF9BenI>Content</a>")
+        web.response.out.write("<a href="+url+" >Content</a>")
     else:
         web.response.out.write(respString)
 
@@ -332,23 +340,24 @@ class LTI():
     self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
     return success
 
-  def iframeResponse(self):
-    return '''<launchResponse>
+  def iframeResponse(self,url):
+    retval = '''<launchResponse>
    <status>success</status>
    <type>iFrame</type>
-   <launchUrl>http://www.youtube.com/v/f90ysF9BenI</launchUrl>
+   <launchUrl>LAUNCHURL</launchUrl>
 </launchResponse>
 '''
+    retval = retval.replace("LAUNCHURL",url)
+    return retval
 
-  def postResponse(self):
+  def postResponse(self, url):
     retval =  '''<launchResponse>
    <status>success</status>
    <type>post</type>
    <launchUrl>LAUNCHURL</launchUrl>
 </launchResponse>
 '''
-    path = self.request.application_url + "/launch?i=25"
-    retval = retval.replace("LAUNCHURL",path)
+    retval = retval.replace("LAUNCHURL",url)
     return retval
 
   def widgetResponse(self, width, height):
