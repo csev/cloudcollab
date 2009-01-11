@@ -1,12 +1,12 @@
 from google.appengine.ext import db
 import logging
-
 import cgi
 import os
 import wsgiref.handlers
 import logging
 import hashlib
 import base64
+import uuid
 from google.appengine.ext.webapp import template
 from  datetime import datetime, timedelta
 
@@ -25,7 +25,7 @@ def modeltype(obj, key):
 
 def modelread(theclass, keyvalue) :
     if ( len(keyvalue) > 0 ) :
-      que = db.Query(LTI_Org)
+      que = db.Query(theclass)
       que = que.filter(theclass.logicalkey+" =",keyvalue)
 
       results = que.fetch(limit=1)
@@ -42,7 +42,6 @@ def modelread(theclass, keyvalue) :
 # A Model for a User
 class LTI_Org(db.Model):
      logicalkey = "org_id"
-     owner_id = db.ReferenceProperty()
      org_id = db.StringProperty()
      secret = db.StringProperty()
      name = db.StringProperty()
@@ -50,7 +49,6 @@ class LTI_Org(db.Model):
      url = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
-
 
 class LTI_User(db.Model):
      logicalkey = "user_id"
@@ -62,14 +60,6 @@ class LTI_User(db.Model):
      lastname = db.StringProperty()
      email = db.StringProperty()
      locale = db.StringProperty()
-     org_id = db.ReferenceProperty
-     created = db.DateTimeProperty(auto_now_add=True)
-     updated = db.DateTimeProperty(auto_now=True)
-
-class LTI_Session(db.Model):
-     logicalkey = None
-     user_id = db.ReferenceProperty
-     course_id = db.ReferenceProperty
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
@@ -82,46 +72,54 @@ class LTI_Course(db.Model):
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
+class LTI_Session(db.Model):
+     logicalkey = None
+     user = db.ReferenceProperty(LTI_User)
+     course = db.ReferenceProperty(LTI_Course)
+     created = db.DateTimeProperty(auto_now_add=True)
+     updated = db.DateTimeProperty(auto_now=True)
+
 class LTI_Membership(db.Model):
-     course_id = db.ReferenceProperty
-     user_id = db.ReferenceProperty 
-     role_id = db.ReferenceProperty 
-     roster = db.StringProperty
+     course = db.ReferenceProperty(LTI_Course)
+     user = db.ReferenceProperty (LTI_User)
+     role = db.IntegerProperty()
+     roster = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Tool(db.Model):
      logicalkey = "tool_id"
-     tool_id = db.StringProperty
-     tool_name = db.StringProperty
-     tool_title = db.StringProperty
-     targets = db.StringProperty
-     resource_id = db.StringProperty
-     resource_url = db.StringProperty
-     width = db.StringProperty
-     height = db.StringProperty
+     tool_id = db.StringProperty()
+     tool_name = db.StringProperty()
+     tool_title = db.StringProperty()
+     targets = db.StringProperty()
+     resource_id = db.StringProperty()
+     resource_url = db.StringProperty()
+     width = db.StringProperty()
+     height = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Digest(db.Model):
      logicalkey = "digest"
-     digest = db.StringProperty
-     request = db.StringProperty
+     digest = db.StringProperty()
+     request = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Launch(db.Model):
-     user_id = db.ReferenceProperty
-     course_id = db.ReferenceProperty
-     org_id = db.ReferenceProperty
-     resource_id = db.StringProperty
-     targets = db.StringProperty
-     resource_url = db.StringProperty
-     tool_id = db.StringProperty
-     tool_name = db.StringProperty
-     tool_title = db.StringProperty
-     width = db.StringProperty
-     height = db.StringProperty
+     password = db.StringProperty()
+     user = db.ReferenceProperty(LTI_User)
+     course = db.ReferenceProperty(LTI_Course)
+     org = db.ReferenceProperty(LTI_Org)
+     resource_id = db.StringProperty()
+     targets = db.StringProperty()
+     resource_url = db.StringProperty()
+     tool_id = db.StringProperty()
+     tool_name = db.StringProperty()
+     tool_title = db.StringProperty()
+     width = db.StringProperty()
+     height = db.StringProperty()
 
 class LTI():
   dStr = ""
@@ -188,18 +186,10 @@ class LTI():
     height = web.request.get('launch_height')
 
     org_id = web.request.get("org_id")
+    self.org = None
     if ( len(org_id) > 0 ) :
-      """
-      que = db.Query(LTI_Org)
-      que = que.filter("org_id =",org_id)
-
-      results = que.fetch(limit=1)
-
-      if len(results) > 0 :
-        org = results[0]
-      else :
-        org = LTI_Org()
-      """
+      # Todo figure out what to do with the org secret
+      # and org policy options
       org = modelread(LTI_Org, org_id)
       self.debug("org.org_id="+str(org.org_id))
 
@@ -210,6 +200,63 @@ class LTI():
       self.debug("key = "+str(org.key()))
       self.org = org
 
+    user_id = web.request.get("user_id")
+    self.user = None
+    if ( len(user_id) > 0 ) :
+      user = modelread(LTI_User, user_id)
+      self.ormload(user, web.request, "user_")
+      self.debug("user.email="+str(user.email))
+      user.put()
+      self.user = user
+
+    course_id = web.request.get("course_id")
+    self.course = None
+    if ( len(course_id) > 0 ) :
+      course = modelread(LTI_Course, course_id)
+      self.ormload(course, web.request, "course_")
+      self.debug("course.name="+str(course.name))
+      course.put()
+      self.course = course
+
+    self.memb = None
+    que = db.Query(LTI_Membership)
+    que = que.filter("course =", self.course.key())
+    que = que.filter("user = ", self.user.key())
+    results = que.fetch(limit=1)
+    if len(results) > 0 :
+      memb = results[0]
+      self.debug("Existing membership record found")
+    else : 
+      memb = LTI_Membership(course = self.course, user = self.user)
+
+    role = web.request.get("user_role")
+    if ( len(role) < 1 ) : role = "Student"
+    role = role.lower()
+    roleval = 1;
+    if ( role == "instructor") : roleval = 2
+    memb.role = roleval
+    memb.put()
+    self.memb = memb
+
+    self.debug("Here we go "+memb.user.email)
+
+    self.launch = None
+    que = db.Query(LTI_Launch)
+    que = que.filter("course =", self.course.key())
+    que = que.filter("user = ", self.user.key())
+    results = que.fetch(limit=1)
+    if len(results) > 0 :
+      launch = results[0]
+      self.debug("Existing launch record found")
+    else : 
+      launch = LTI_Launch(course = self.course, user = self.user)
+
+    self.ormload(launch, web.request, "launch_")
+    launch.org = self.org
+    launch.password = str(uuid.uuid4())
+    launch.put()
+    self.debug("launch.key()="+str(launch.key()))
+    self.launch = launch
 
     if doDirect:
 	web.redirect("http://www.youtube.com/v/f90ysF9BenI")
@@ -330,7 +377,7 @@ class LTI():
   # Loop through the request keys and see if they can be put 
   # into the model
   def ormload(self, org, req, prefix = None):
-    self.debug("ORM LOAD")
+    self.debug("ORM LOAD "+str(org.__class__))
     for key in req.params.keys(): 
       value = self.web.request.get(key) 
       thetype = modeltype(org, key)
