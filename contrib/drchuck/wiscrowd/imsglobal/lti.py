@@ -128,21 +128,21 @@ class LTI():
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
      self.web = web
+     self.launch = None
      self.handlelaunch(web, session, options)
      if ( self.complete ) : return
      self.handlesetup(web, session, options)
 
   def setvars(self):
+      self.user = None
+      self.course = None
+      self.memb = None
+      self.org = None
       if self.launch : 
-        self.user = self.launch.user
-        self.course = self.launch.course
-        self.memb = self.launch.memb
-        self.org = self.launch.org
-      else:
-        self.user = None
-        self.course = None
-        self.memb = None
-        self.org = None
+        if self.launch.user : self.user = self.launch.user
+        if self.launch.course : self.course = self.launch.course
+        if self.launch.memb : self.memb = self.launch.memb
+        if self.launch.org : self.org = self.launch.org
 
   def handlesetup(self, web, session, ptions):
     # get values form the request
@@ -481,12 +481,12 @@ class LTI():
     for key in req.params.keys(): 
       value = self.web.request.get(key) 
       thetype = self.modeltype(org, key)
-      if ( thetype == None and prefix != None ) :
+      if ( thetype == "none" and prefix != None ) :
          if ( not key.startswith(prefix) ) : continue
          key = key[len(prefix):]
          thetype = self.modeltype(org, key)
 
-      if ( thetype == None ) : continue
+      if ( thetype == "none" ) : continue
       self.debug(key+" ("+thetype+") = "+value)
       setattr(org,key,value)
 
