@@ -281,7 +281,7 @@ class LTI():
       org = self.modelread(LTI_Org, org_id)
       self.debug("org.org_id="+str(org.org_id))
 
-      self.ormload(org, web.request, "org_")
+      self.modelload(org, web.request, "org_")
       self.debug("org.name="+str(org.name))
 
       org.put()
@@ -292,7 +292,7 @@ class LTI():
     user_id = web.request.get("user_id")
     if ( len(user_id) > 0 ) :
       user = self.modelread(LTI_User, user_id)
-      self.ormload(user, web.request, "user_")
+      self.modelload(user, web.request, "user_")
       self.debug("user.email="+str(user.email))
       user.put()
 
@@ -300,7 +300,7 @@ class LTI():
     course = None
     if ( len(course_id) > 0 ) :
       course = self.modelread(LTI_Course, course_id)
-      self.ormload(course, web.request, "course_")
+      self.modelload(course, web.request, "course_")
       self.debug("course.name="+str(course.name))
       course.put()
 
@@ -339,7 +339,7 @@ class LTI():
     else : 
       launch = LTI_Launch(course = course, user = user, memb = memb)
 
-    self.ormload(launch, web.request, "launch_")
+    self.modelload(launch, web.request, "launch_")
     launch.org = self.org
     launch.password = str(uuid.uuid4())
     launch.put()
@@ -476,8 +476,8 @@ class LTI():
 
   # Loop through the request keys and see if they can be put 
   # into the model
-  def ormload(self, org, req, prefix = None):
-    self.debug("ORM LOAD "+str(org.__class__))
+  def modelload(self, org, req, prefix = None):
+    self.debug("MODEL LOAD "+str(org.__class__))
     for key in req.params.keys(): 
       value = self.web.request.get(key) 
       thetype = self.modeltype(org, key)
