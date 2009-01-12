@@ -1,7 +1,5 @@
-{% extends "_base.html" %}
-{% block bodycontent %}
-<h1>Simple LTI Test: {{ launchurl }}</h1>
-<form action="{{ launchurl }}" method="post">
+<h1>Simple IMS Simple LTI Test Launch System</h1>
+<form action="/" method="post">
   <div><input type="submit" value="Submit Launch Parameters"></div>
   <fieldset>
     <legend>Action</legend>
@@ -101,4 +99,3 @@
   </fieldset>
   <div><input type="submit" value="Submit Launch Parameters"></div>
 </form>
-{% endblock %}

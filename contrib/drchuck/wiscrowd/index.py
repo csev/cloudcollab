@@ -30,6 +30,7 @@ class MainHandler(webapp.RequestHandler):
       
     if ( not lti.launch ) :
       self.prtln("LTI Runtime failed to start")
+      self.prtln("To simulate an LMS launch go <a href=/dotest>here</a>")
       self.prtln("</pre>")
       return
 
