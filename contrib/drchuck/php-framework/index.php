@@ -19,6 +19,8 @@ if ( $LTI ) {
   print_r($LTI->launch());
 } else {
   print "LTI Runtime failed to start\n";
+  print "\n";
+  print "<a href=lms.htm>You can simulate an LMS Launch</a>.\n";
 }
 print "\nDEBUG LOG\n";
 print getDebugLogPre();

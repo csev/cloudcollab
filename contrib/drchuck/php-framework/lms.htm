@@ -12,11 +12,14 @@ on a theme.  Both digests are generated with a password of secret.
     <legend>Action</legend>
     <div class="req">action
         <select name="action" >
-          <option selected>launchhtml</option>
-          <option>direct</option>
+          <option selected>direct</option>
+          <option>launchhtml</option>
           <option>launchresolve</option>
         </select> 
-	launchhtml is for debugging in a browser.  To get XML use lauchresolve.
+        <p>
+        "direct" provisions the launch and the redirects to the tool.  "launchhtml" provisions the launch
+        then returns a lot of debug output.  "launchresolve" gets you the REST response in XML (view source).
+       </p>
     </div>
   </fieldset>
   <fieldset>
