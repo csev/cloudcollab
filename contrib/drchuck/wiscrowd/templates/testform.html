@@ -1,4 +1,10 @@
-<h1>Simple IMS Simple LTI Test Launch System</h1>
+<h1>Simple IMS LTI Fake LMS</h1>
+<p>This simulates the REST web service which is sent to your tool
+from the LMS.  You can see detail of the protocol at
+<a href="http://simplelti.appspot.com/">http://simplelti.appspot.com/</a>
+if you like.  You can also change any of the values below to test variations
+on a theme.  Both digests are generated with a password of secret.
+</p>
 <form action="/" method="post">
   <div><input type="submit" value="Submit Launch Parameters"></div>
   <fieldset>
@@ -6,10 +12,13 @@
     <div class="req">action
         <select name="action" >
           <option selected>direct</option>
+          <option selected>launchhtml</option>
           <option>launchresolve</option>
-          <option>launchhtml</option>
         </select> 
-	launchhtml is for debugging in a browser.  To get XML use lauchresolve.
+        <p>
+        "direct" provisions the launch and the redirects to the tool.  "launchhtml" provisions the launch
+        then returns a lot of debug output.  "launchresolve" gets you the REST response in XML (view source).
+        </p>
     </div>
   </fieldset>
   <fieldset>
