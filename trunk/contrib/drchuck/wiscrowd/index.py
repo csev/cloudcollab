@@ -1,15 +1,11 @@
-#!/usr/bin/env python
-
-import os
-import cgi
 import logging
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from util.sessions import Session
+from imsglobal.lti import LTI
 
 import dotest
-from imsglobal.lti import LTI
 
 class LogoutHandler(webapp.RequestHandler):
 
@@ -27,15 +23,27 @@ class MainHandler(webapp.RequestHandler):
   def prtln(self,outstr):
     self.response.out.write(outstr+"\n")
 
-  def post(self):
-    self.get()
-
   def get(self):
+    self.post()
+
+  def post(self):
+    # LTI Can use any session that has dictionary semantics
     self.session = Session()
+
+    # Provision LTI.  This either (1) handles an incoming
+    # launch request, (2) handles the incoming GET that
+    # comes back to us after launch, or (3) if we are just
+    # cruising along we load the proper launch context using
+    # a session value.
     lti = LTI(self, self.session);
+    
+    # If the LTI code already sent a response it sets "complete"
+    # so we are done
     if ( lti.complete ) : return
+
     self.prtln("<pre>")
-      
+
+    # if we don't have a launch - we are not provisioned
     if ( not lti.launch ) :
       self.prtln("LTI Runtime not started")
       self.prtln("")
@@ -47,6 +55,7 @@ class MainHandler(webapp.RequestHandler):
       self.prtln("</pre>")
       return
 
+    # We are provisioned - lets dump some data!
     self.prtln("LTI Runtime started")
     self.prtln("<a href=/logout>Logout</a>")
     self.prtln("User:"+lti.getUserName())
@@ -66,7 +75,6 @@ def main():
      ('/.*', MainHandler)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
-
 
 if __name__ == '__main__':
   main()
