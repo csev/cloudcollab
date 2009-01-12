@@ -87,7 +87,7 @@ my little ORM:
 
    http://www.omg-software.com/
 
-Again, don't worry too much about this - it just amkes my life a lot
+Again, don't worry too much about this - it just makes my life a lot
 easier.  I really hate making SQL strings when there are 15 
 string fields.  You can do your own thing.
 
