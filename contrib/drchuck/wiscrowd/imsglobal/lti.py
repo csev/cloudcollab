@@ -324,11 +324,10 @@ class LTI():
     role = role.lower()
     roleval = 1;
     if ( role == "instructor") : roleval = 2
+    if ( role == "administrator") : roleval = 2
     memb.role = roleval
     memb.put()
  
-    self.debug("Here we go "+memb.user.email)
-
     que = db.Query(LTI_Launch)
     que = que.filter("course =", course.key())
     que = que.filter("user = ", user.key())
@@ -356,6 +355,7 @@ class LTI():
     url = url + urllib.urlencode({"lti_launch_key" : str(launch.key()), "lti_launch_password" : launch.password})
 
     self.debug("url = "+url)
+    url = url.replace("&", "&amp;")
  
     # We have made it to the point where we have handled this request
     self.complete = True
@@ -388,7 +388,7 @@ class LTI():
     else:
         web.response.out.write("\n\n<!--\nDebug Output:\n")
 
-    web.response.out.write(self.dStr)
+    # web.response.out.write(self.dStr)
 
     if doHtml:
         web.response.out.write("\n</pre>\n")

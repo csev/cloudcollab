@@ -7,6 +7,8 @@ from imsglobal.lti import LTI
 
 import dotest
 
+from  wiscrowd.wiscrowd import wiscrowd
+
 class LogoutHandler(webapp.RequestHandler):
 
   def get(self):
@@ -69,10 +71,11 @@ class MainHandler(webapp.RequestHandler):
     self.prtln("</pre>")
 
 def main():
-  application = webapp.WSGIApplication([
-     ('/lms', dotest.DoTest),
-     ('/logout', LogoutHandler),
-     ('/.*', MainHandler)],
+  application = webapp.WSGIApplication(
+     wiscrowd() + 
+     [ ('/lms', dotest.DoTest),
+       ('/logout', LogoutHandler),
+       ('/.*', MainHandler)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
