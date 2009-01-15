@@ -10,7 +10,7 @@ from imsglobal.lti import LTI
 
 class Wisdom(db.Model) :
    course = db.ReferenceProperty()
-   text = db.StringProperty()
+   text = db.TextProperty()
 
 # Return our list of routing URLs
 def wiscrowd():
@@ -76,11 +76,12 @@ class WisHandler(webapp.RequestHandler):
     elif text.find(name+"::") >=0 :
        msg = "You already have answered this"
     else:
-       if len(text) > 0 : text = text + ":::"
-       text = text + name + "::" + str(guess)
-       wisdom.text = text 
-       wisdom.put()
-       msg = "Thank you for your guess"
+       ret = db.run_in_transaction(self.appendname, wisdom.key(), name, guess)
+       if ret : 
+         text = ret
+         msg = "Thank you for your guess"
+       else:
+         msg = "Unable to store your guess please re-submit"
 
     rendervars = {'username': lti.user.email, 'course': lti.getCourseName(), 'msg' : msg }
 
@@ -107,3 +108,13 @@ class WisHandler(webapp.RequestHandler):
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
+
+  def appendname(self, key, name, guess):
+    obj = db.get(key)
+    text = obj.text
+    if text.find(name+"::" ) >= 0 : text
+    if len(text) > 0 : text = text + ":::"
+    text = text + name + "::" + str(guess)
+    obj.text = text 
+    obj.put()
+    return text
