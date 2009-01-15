@@ -1,5 +1,6 @@
 import logging
 import os
+import pickle
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
@@ -10,7 +11,7 @@ from imsglobal.lti import LTI
 
 class Wisdom(db.Model) :
    course = db.ReferenceProperty()
-   text = db.TextProperty()
+   blob = db.BlobProperty()
 
 # Return our list of routing URLs
 def wiscrowd():
@@ -50,60 +51,52 @@ class WisHandler(webapp.RequestHandler):
     if len(results) > 0 :
       wisdom = results[0]
     else:
-      wisdom = Wisdom(course=lti.course, text= "")
+      wisdom = Wisdom(course=lti.course, blob= pickle.dumps( dict() ) )
       wisdom.put();
 
-    text = wisdom.text
+    data = pickle.loads(wisdom.blob)
     name = self.request.get("name")
-    if len(name) < 1 : 
-      name = lti.user.email
+    if len(name) < 1 : name = lti.user.email
+
     guess = self.request.get("guess")
-    try:
-      guess = int(guess)
-    except:
-      guess = -1
+
+    try: guess = int(guess)
+    except: guess = -1
 
     msg = ""
     if lti.isInstructor() and name == "reset":
-       wisdom.text = ""
-       text = ""
+       data = dict()
+       wisdom.blob = pickle.dumps( data ) 
        wisdom.put()
        msg = "Data reset"
     elif guess < 1 :
        msg = "Please enter a valid, numeric guess"
     elif  len(name) < 1 : 
        msg = "No Name Found"
-    elif text.find(name+"::") >=0 :
+    elif name in data : 
        msg = "You already have answered this"
     else:
        ret = db.run_in_transaction(self.appendname, wisdom.key(), name, guess)
        if ret : 
-         text = ret
+         data = ret
          msg = "Thank you for your guess"
        else:
          msg = "Unable to store your guess please re-submit"
 
     rendervars = {'username': lti.user.email, 'course': lti.getCourseName(), 'msg' : msg }
 
-    if lti.isInstructor() and len(text) > 0 :
-       lines = text.split(":::")
-       tot = 0.0
-       count = 0
-       data = ""
-       for line in lines:
-          words = line.split("::")
-          try:
-            val = int(words[1])
-            tot = tot + val
-            count = count + 1
-            data = data + words[0] + "," + words[1] + "\n"
-          except:
-            continue
-       ave = 0.0
-       if count > 0 : ave = tot / count
+    if lti.isInstructor() and len(data) > 0 :
+       text = ""
+       total = 0
+       for (key, val) in data.items(): 
+         text = text + key + "," + str(val) + "\n"
+         total = total + val
+       count = len(data)
+       ave = 0
+       if count > 0 : ave = total / count
        rendervars["ave"] = ave
        rendervars["count"] = count
-       rendervars["data"] = data
+       rendervars["data"] = text
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
@@ -111,10 +104,9 @@ class WisHandler(webapp.RequestHandler):
 
   def appendname(self, key, name, guess):
     obj = db.get(key)
-    text = obj.text
-    if text.find(name+"::" ) >= 0 : text
-    if len(text) > 0 : text = text + ":::"
-    text = text + name + "::" + str(guess)
-    obj.text = text 
+    data = pickle.loads(obj.blob)
+    if ( len(data) > 499 ) : return data
+    data[name] = guess
+    obj.blob = pickle.dumps(data)
     obj.put()
-    return text
+    return data
