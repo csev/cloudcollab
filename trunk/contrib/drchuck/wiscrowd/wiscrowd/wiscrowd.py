@@ -19,12 +19,6 @@ def wiscrowd():
 
 class WisHandler(webapp.RequestHandler):
 
-  def prt(self,outstr):
-    self.response.out.write(outstr)
-
-  def prtln(self,outstr):
-    self.response.out.write(outstr+"\n")
-
   def get(self):
     self.post()
 
@@ -36,13 +30,9 @@ class WisHandler(webapp.RequestHandler):
 
     # if we don't have a launch - we are not provisioned
     if ( not lti.launch ) :
-      self.prtln("<pre>")
-      self.prtln("Welcome to Wisdom of Crowds")
-      self.prtln("")
-      self.prtln("This tool must be launched from a ")
-      self.prtln("Learning Management System (LMS) using the Simple LTI")
-      self.prtln("launch protocol.")
-      self.prtln("</pre>")
+      temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
+      outstr = template.render(temp, { })
+      self.response.out.write(outstr)
       return
 
     que = db.Query(Wisdom).filter("course =",lti.course)
@@ -76,14 +66,18 @@ class WisHandler(webapp.RequestHandler):
     elif name in data : 
        msg = "You already have answered this"
     else:
-       ret = db.run_in_transaction(self.appendname, wisdom.key(), name, guess)
+       ret = db.run_in_transaction(self.addname, wisdom.key(), name, guess)
        if ret : 
          data = ret
          msg = "Thank you for your guess"
        else:
          msg = "Unable to store your guess please re-submit"
 
-    rendervars = {'username': lti.user.email, 'course': lti.getCourseName(), 'msg' : msg }
+    rendervars = {'username': lti.user.email, 
+                  'course': lti.getCourseName(), 
+                  'msg' : msg, 
+                  'request': self.request}
+    if lti.isInstructor() : rendervars['instructor'] = "yes"
 
     if lti.isInstructor() and len(data) > 0 :
        text = ""
@@ -102,7 +96,7 @@ class WisHandler(webapp.RequestHandler):
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
 
-  def appendname(self, key, name, guess):
+  def addname(self, key, name, guess):
     obj = db.get(key)
     data = pickle.loads(obj.blob)
     if ( len(data) > 499 ) : return data
