@@ -1,8 +1,12 @@
-<p>Hello: {{ username }} from {{ course }}</p>
+<p>Hello: {{ username }} 
+{% ifequal instructor "yes" %}
+(Instructor)
+{% endifequal %}
+from {{ course }}</p>
 {% ifnotequal msg None %}
 <p>{{ msg }}</p>
 {% endifnotequal %}
-<form method="post">
+<form method="post" action="{{ request.path }}">
 <p>Enter Guess: <input type="text" name="guess"/></p>
 <p>Enter Name (opt): <input type="text" name="name"/></p>
 <p><input type="submit"></p>
@@ -12,7 +16,6 @@
 {% endifnotequal %}
 {% ifnotequal data None %}
 <pre>
-
 {{ data }}
 </pre>
 {% endifnotequal %}
