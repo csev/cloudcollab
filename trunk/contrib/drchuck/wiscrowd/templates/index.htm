@@ -1,5 +1,6 @@
 {% extends "_base.htm" %}
 {% block bodycontent %}
+<a href="http://www.cloudcollab.com" target=_new><img align=right width="80" src="/static/images/cloudcollab.jpg" border=0></a>
 {% ifnotequal fragment None %}
 {{ fragment }}
 {% else %}
@@ -9,11 +10,20 @@
           {% for tool in tools %}
           <li>
             <a href="/portal{{tool.path}}">{{tool.title}}</a>
-            <a href="{{tool.path}}" target=_new style="color: gray; font-size: small;">(new window)</a>
+            <a href="{{tool.path}}" target=_new style="color: gray; font-size: small;">(fragment-only)</a>
             <p>{{ tool.desc }}
           </li>
           {% endfor %}
 </ul>
+<hr/>
+<p style="color: gray; font-size: small;">
+The "fragment-only" option shows the tool without any portal navigation.  This is how it
+will look when it is embedded into another LMS.  You can embed this tool into any LMS
+which suports Simple LTI by using the fragment url with the proper password.  The fragment
+url handles both the LTI web service protocol interactions as well as 
+the actual tool fragment and interaction when the tool is running in the browser.
+</p>
+<hr/>
 <p>
 Here is the information we know about you from the launch.  
 User: {{username}} Course: {{coursename}} Role: {{role}}
@@ -21,8 +31,10 @@ User: {{username}} Course: {{coursename}} Role: {{role}}
 <p>
 The following is a dump of the output of the LTI run-time
 data structures.  It is helpful in case you want to 
-look more deeply into some of the information available
-in the run-time.  The most important bits of this are
+look are doing development and want to look 
+more deeply into some of the information available
+to your LTI tool at
+run-time.  The most important bits of this are
 available as convienence methods on the LTI object.
 <div style="color: gray; font-size: small;">
 <pre>

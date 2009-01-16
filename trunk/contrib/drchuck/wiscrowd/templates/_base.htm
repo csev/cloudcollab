@@ -8,7 +8,11 @@
 </head>
 <body>
    <div id="header">
-      <h1><a href="/index.htm" class="selected">DashBoard</a></h1>
+      {% ifequal dash None %}
+      <h1><a href="/index.htm" class="selected"><font size="-1">&lt;&lt; back to portal</font></a></h1>
+      {% else %}
+      <h1><a href="/index.htm" class="selected">My DashBoard</a></h1>
+      {% endifequal %}
        <ul class="toolbar">
        <li><a href="http://www.cloudcollab.com" target=_new>About</a></li>
       {% ifnotequal user None %}
@@ -26,6 +30,7 @@
 <p class="footer">
 <img src="http://code.google.com/appengine/images/appengine-silver-120x30.gif" 
 alt="Powered by Google App Engine" align="right" />
+<a href=http://simplelti.appspot.com/>Simple Learning Tools Interoperability</a> <br/>
 <a href=http://www.imsglobal.org/toolsinteroperability2.cfm>IMS Learning Tools Interoperability v2.0 Working Group</a> <br/>
 <a href="http:///www.dr-chucm.com/" class="footerlink">&copy; 2008 Charles Severance</a> All Rights Reserved.</p>
 </div>
