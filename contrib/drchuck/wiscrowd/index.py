@@ -26,19 +26,6 @@ class MainHandler(webapp.RequestHandler):
     self.post()
 
   def post(self):
-    # Check to see if the path is a portal path and handle
-    for tool in tools:
-      if self.request.path == "/portal" + tool.path :
-         handler = tool.handler()  # make an instance to call
-         handler.initialize(self.request, self.response)
-         fragment = handler.markup()
-         if fragment == None : return
-         rendervars = {'fragment' : fragment }
-         temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-         outstr = template.render(temp, rendervars)
-         self.response.out.write(outstr)
-         return
-
     # LTI Can use any session that has dictionary semantics
     self.session = Session()
 
@@ -65,6 +52,23 @@ class MainHandler(webapp.RequestHandler):
         rendervars['role'] = "student"
       rendervars['dump'] = lti.dump()
 
+    # Check to see if the path is a portal path and handle
+    # If so get the fragment and render
+    for tool in tools:
+      if self.request.path == "/portal" + tool.path :
+         handler = tool.handler()  # make an instance to call
+         handler.initialize(self.request, self.response)
+         fragment = handler.markup()
+         if fragment == None : return
+         rendervars = {'fragment' : fragment }
+         temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+         outstr = template.render(temp, rendervars)
+         self.response.out.write(outstr)
+         return
+
+    # If this is not one of our registered tools,
+    # send out the main page
+    rendervars['dash'] = "yes"
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
