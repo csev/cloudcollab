@@ -30,15 +30,15 @@ class WisHandler(webapp.RequestHandler):
   outStr = ""
 
   def get(self):
-    istr = self.tool()
+    istr = self.markup()
     if ( istr != None ) : self.response.out.write(istr)
 
   def post(self):
-    istr = self.tool()
+    istr = self.markup()
     if ( istr != None ) : self.response.out.write(istr)
 
   # This method returns tool output as a string
-  def tool(self):
+  def markup(self):
     self.session = Session()
     lti = LTI(self, self.session);
     

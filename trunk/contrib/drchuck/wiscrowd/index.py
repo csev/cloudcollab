@@ -22,16 +22,23 @@ class LogoutHandler(webapp.RequestHandler):
 
 class MainHandler(webapp.RequestHandler):
 
-  def prt(self,outstr):
-    self.response.out.write(outstr)
-
-  def prtln(self,outstr):
-    self.response.out.write(outstr+"\n")
-
   def get(self):
     self.post()
 
   def post(self):
+    # Check to see if the path is a portal path and handle
+    for tool in tools:
+      if self.request.path == "/portal" + tool.path :
+         handler = tool.handler()  # make an instance to call
+         handler.initialize(self.request, self.response)
+         fragment = handler.markup()
+         if fragment == None : return
+         rendervars = {'fragment' : fragment }
+         temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+         outstr = template.render(temp, rendervars)
+         self.response.out.write(outstr)
+         return
+
     # LTI Can use any session that has dictionary semantics
     self.session = Session()
 

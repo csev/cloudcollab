@@ -8,11 +8,14 @@
 <ul>
           {% for tool in tools %}
           <li>
-            <a href="{{tool.path}}" target=_new>{{tool.title}}</a>
+            <a href="/portal{{tool.path}}">{{tool.title}}</a>
+            <a href="{{tool.path}}" target=_new style="color: gray; font-size: small;">(new window)</a>
+            <p>{{ tool.desc }}
           </li>
           {% endfor %}
 </ul>
 <p>
+Here is the information we know about you from the launch.  
 User: {{username}} Course: {{coursename}} Role: {{role}}
 </p>
 <p>
