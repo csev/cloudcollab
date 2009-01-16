@@ -15,14 +15,22 @@ class Wisdom(db.Model) :
 
 # Return our list of routing URLs
 def wiscrowd():
-   return [ ('/wiz', WisHandler), ]
+   return [ ('/wiz', WisHandler, "Wisdom of Crowds"), ]
 
 class WisHandler(webapp.RequestHandler):
 
+  outStr = ""
+
   def get(self):
-    self.post()
+    istr = self.tool()
+    if ( istr != None ) : self.response.out.write(istr)
 
   def post(self):
+    istr = self.tool()
+    if ( istr != None ) : self.response.out.write(istr)
+
+  # This method returns tool output as a string
+  def tool(self):
     self.session = Session()
     lti = LTI(self, self.session);
     
@@ -32,8 +40,7 @@ class WisHandler(webapp.RequestHandler):
     if ( not lti.launch ) :
       temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
       outstr = template.render(temp, { })
-      self.response.out.write(outstr)
-      return
+      return outstr
 
     que = db.Query(Wisdom).filter("course =",lti.course)
     results = que.fetch(limit=1)
@@ -94,7 +101,7 @@ class WisHandler(webapp.RequestHandler):
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
-    self.response.out.write(outstr)
+    return outstr
 
   def addname(self, key, name, guess):
     obj = db.get(key)
