@@ -1,4 +1,5 @@
 import logging
+import os
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
@@ -8,6 +9,8 @@ from imsglobal.lti import LTI
 import dotest
 
 from  wiscrowd.wiscrowd import wiscrowd
+
+tools = list()
 
 class LogoutHandler(webapp.RequestHandler):
 
@@ -37,46 +40,40 @@ class MainHandler(webapp.RequestHandler):
     # comes back to us after launch, or (3) if we are just
     # cruising along we load the proper launch context using
     # a session value.
-    lti = LTI(self, self.session);
+    lti = LTI(self, self.session)
     
     # If the LTI code already sent a response it sets "complete"
     # so we are done
     if ( lti.complete ) : return
 
-    self.prtln("<pre>")
+    rendervars = { 'path': self.request.path }
+    if lti.launch :
+      if ( lti.user ) : rendervars['user'] = lti.user
+      rendervars['tools'] = tools
+      rendervars['username'] = lti.getUserName()
+      rendervars['course'] = lti.getCourseName()
+      if ( lti.isInstructor() ) :
+        rendervars['role'] = "instructor"
+      else:
+        rendervars['role'] = "student"
+      rendervars['dump'] = lti.dump()
 
-    # if we don't have a launch - we are not provisioned
-    if ( not lti.launch ) :
-      self.prtln("LTI Runtime not started")
-      self.prtln("")
-      self.prtln("This tool must be launched from a ")
-      self.prtln("Learning Management System (LMS) using the Simple LTI")
-      self.prtln("launch protocol.")
-      self.prtln("")
-      self.prtln("To simulate an LMS launch go <a href=/lms>here</a>")
-      self.prtln("</pre>")
-      return
-
-    # We are provisioned - lets dump some data!
-    self.prtln("LTI Runtime started")
-    self.prtln("<a href=/logout>Logout</a>")
-    self.prtln("User:"+lti.getUserName())
-    self.prtln("Course:"+lti.getCourseName())
-    if ( lti.isInstructor() ) :
-      self.prtln("Role: Instructor")
-    else:
-      self.prtln("Role: Sudent")
-    self.prtln("")
-    self.prtln(lti.dump())
-    self.prtln("</pre>")
+    temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+    outstr = template.render(temp, rendervars)
+    self.response.out.write(outstr)
 
 def main():
-  application = webapp.WSGIApplication(
-     wiscrowd() + 
-     [ ('/lms', dotest.DoTest),
-       ('/logout', LogoutHandler),
-       ('/.*', MainHandler)],
-                                       debug=True)
+  # register tools
+  global tools
+  tools = tools + wiscrowd()
+
+  # Compute the routes and add routes for the tools
+  routes = [ ('/login', dotest.DoTest),
+            ('/logout', LogoutHandler),
+            ('/.*', MainHandler)] 
+  routes = routes + [ (x[0], x[1]) for x in tools ]
+
+  application = webapp.WSGIApplication(routes, debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 if __name__ == '__main__':
