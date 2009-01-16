@@ -13,9 +13,17 @@ class Wisdom(db.Model) :
    course = db.ReferenceProperty()
    blob = db.BlobProperty()
 
-# Return our list of routing URLs
+class ToolRegistration():
+
+  def __init__(self,path,handler,title,desc):
+    self.path = path
+    self.handler = handler
+    self.title = title
+    self.desc = desc
+
+# Return out Registration
 def wiscrowd():
-   return [ ('/wiz', WisHandler, "Wisdom of Crowds"), ]
+   return ToolRegistration('/wiz', WisHandler, "Wisdom of Crowds", "This application allows you to play games")
 
 class WisHandler(webapp.RequestHandler):
 

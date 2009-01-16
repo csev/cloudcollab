@@ -10,7 +10,7 @@ import dotest
 
 from  wiscrowd.wiscrowd import wiscrowd
 
-tools = list()
+tools = [ wiscrowd() ]
 
 class LogoutHandler(webapp.RequestHandler):
 
@@ -51,7 +51,7 @@ class MainHandler(webapp.RequestHandler):
       if ( lti.user ) : rendervars['user'] = lti.user
       rendervars['tools'] = tools
       rendervars['username'] = lti.getUserName()
-      rendervars['course'] = lti.getCourseName()
+      rendervars['coursename'] = lti.getCourseName()
       if ( lti.isInstructor() ) :
         rendervars['role'] = "instructor"
       else:
@@ -63,15 +63,11 @@ class MainHandler(webapp.RequestHandler):
     self.response.out.write(outstr)
 
 def main():
-  # register tools
-  global tools
-  tools = tools + wiscrowd()
-
   # Compute the routes and add routes for the tools
   routes = [ ('/login', dotest.DoTest),
-            ('/logout', LogoutHandler),
-            ('/.*', MainHandler)] 
-  routes = routes + [ (x[0], x[1]) for x in tools ]
+            ('/logout', LogoutHandler)]
+  routes = routes + [ (x.path, x.handler) for x in tools ]
+  routes.append( ('/.*', MainHandler) )
 
   application = webapp.WSGIApplication(routes, debug=True)
   wsgiref.handlers.CGIHandler().run(application)
