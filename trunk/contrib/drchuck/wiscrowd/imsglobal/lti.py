@@ -41,11 +41,21 @@ class LTI_Course(db.Model):
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
+# Organiztions that are scoped to a course
 class LTI_CourseOrg(LTI_Org):
      course = db.ReferenceProperty(LTI_Course, collection_name='orgs')
 
+# Users that are scoped to a course
+# Should this be pointing to a CourseOrg ?
+# Or just make a nasty composite key with the org_id ?
+# Or should we use E-Mail?  No no no!
 class LTI_CourseUser(LTI_Org):
      course = db.ReferenceProperty(LTI_Course, collection_name='users')
+
+# Many to many mappings from Organizations to Courses
+class LTI_OrgCourse(db.Model):
+     org = db.ReferenceProperty(LTI_Org, collection_name='courses')
+     course = db.ReferenceProperty(LTI_Course)
 
 class LTI_Membership(db.Model):
      role = db.IntegerProperty()
