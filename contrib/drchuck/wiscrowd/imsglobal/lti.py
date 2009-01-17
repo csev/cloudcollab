@@ -284,6 +284,7 @@ class LTI():
     height = web.request.get('launch_height')
 
     org_id = web.request.get("org_id")
+    org = None
     self.org = None
     if ( len(org_id) > 0 ) :
       # Todo figure out what to do with the org secret
