@@ -233,18 +233,31 @@ class LTI():
     self.debug("sec_digest=" + digest)
     self.debug("sec_org_digest=" + org_digest)
 
-    if digest == None or len(digest) < 1 :
-       digest = org_digest
+    org_id = web.request.get("org_id")
+    course_id = web.request.get("course_id")
+
+    # Look in the URL for the course id
+    urlpath = web.request.path
+    trigger = "/lti_course_id/"
+    pos = urlpath.find(trigger)
+    if ( pos >= 0 ) :
+      path = urlpath[pos+len(trigger):]
+      if path.find("/") > 0 :
+        path = path[:path.find("/")]
+      if len(path) > 0 : 
+        course_id = path
+        urlpath = urlpath[:pos]
+        if len(urlpath) == 0 : urlpath = "/"
+        self.debug("course_id from path="+course_id+" new url="+urlpath)
 
     success = self.checknonce(nonce, timestamp, digest, "secret", 100000 ) 
 
     # Clean up the digest - Delete up to 10 2-day-old digests
     nowtime = datetime.utcnow()
-    self.debug("Current time "+nowtime.isoformat())
-    twodaysago = nowtime - timedelta(hours=23)
-    self.debug("Two days ago "+twodaysago.isoformat())
+    before = nowtime - timedelta(hours=23)
+    self.debug("Delete digests since "+before.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", twodaysago)
+    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
     results = q.fetch(10)
     db.delete(results)
 
@@ -283,7 +296,6 @@ class LTI():
     width = web.request.get('launch_width')
     height = web.request.get('launch_height')
 
-    org_id = web.request.get("org_id")
     org = None
     self.org = None
     if ( len(org_id) > 0 ) :
@@ -296,11 +308,11 @@ class LTI():
       self.org = org
 
     # We need to check before we accept a new course
-    course_id = web.request.get("course_id")
     course = None
     if ( len(course_id) > 0 ) :
       course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
       self.modelload(course, web.request, "course_")
+      course.course_id = course_id
       course.org = org      
       self.debug("course.name="+str(course.name))
       course.put()
@@ -347,7 +359,7 @@ class LTI():
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
 
-    url = web.request.application_url+web.request.path
+    url = web.request.application_url+urlpath
 
     if ( url.find('?') >= 0 ) :
       url = url + "?"
