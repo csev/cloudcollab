@@ -11,12 +11,12 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
-
 # A Model for a User
 class LTI_Org(db.Model):
-     logicalkey = "org_id"
      org_id = db.StringProperty()
      secret = db.BlobProperty()
+     # Indicates that this org is owned by a course
+     course = db.BooleanProperty(default=True)
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -24,7 +24,6 @@ class LTI_Org(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_User(db.Model):
-     logicalkey = "user_id"
      user_id = db.StringProperty()
      eid = db.StringProperty()
      displayid = db.StringProperty()
@@ -37,10 +36,11 @@ class LTI_User(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Course(db.Model):
-     logicalkey = "course_id"
      course_id = db.StringProperty()
      secret = db.BlobProperty()
      code = db.StringProperty()
+     # When a course *owns* an org
+     org = db.ReferenceProperty(LTI_Org)
      name = db.StringProperty()
      title = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
@@ -53,7 +53,6 @@ class LTI_Membership(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Digest(db.Model):
-     logicalkey = "digest"
      digest = db.StringProperty()
      request = db.TextProperty()
      debug = db.TextProperty()
@@ -83,6 +82,12 @@ class LTI():
   course = None
   memb = None
   org = None
+
+  # Option values
+  Liberal = { 'nonce_time': 1000000, 
+              'digest_expire': timedelta(hours=23), 
+              'launch_expire': timedelta(days=2)
+            } 
 
   def debug(self, str):
     logging.info(str)
@@ -210,31 +215,40 @@ class LTI():
     self.setvars()
 
   def handlelaunch(self, web, session, options):
+    # Check for sanity - silently return
     action = web.request.get('action')
     if ( len(action) < 1 ) : action = web.request.get("lti_action")
     if ( len(action) < 1 ) : return
     action = action.lower()
-    if ( action != 'launchresolve' and action != 'direct' and action != 'launchhtml' ) :
+    if action != 'launchresolve' and action != 'direct' and action != 'launchhtml' :
       return
-
-    self.debug("Running on " + web.request.application_url)
-    self.debug("Launch post action=" + action)
-
-    doHtml = action.lower() == "launchhtml"
-    doDirect = action.lower() == "direct"
-
-    targets = web.request.get('launch_targets')
 
     nonce = web.request.get('sec_nonce')
     timestamp = web.request.get('sec_created')
     digest = web.request.get('sec_digest')
+    course_id = web.request.get("course_id")
+    user_id = web.request.get("user_id")
+
+    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 : 
+       return
+    if len(user_id) < 0 or len(course_id) <= 0 : return
+
+    self.debug("Running on " + web.request.application_url)
+    self.debug("Launch post action=" + action)
+
+    # Determine check the timestamp for validity
+    tock = self.parsetime(timestamp)
+    if not tock : return
+
+    doHtml = action.lower() == "launchhtml"
+    doDirect = action.lower() == "direct"
+    targets = web.request.get('launch_targets')
     org_digest = web.request.get('sec_org_digest')
 
     self.debug("sec_digest=" + digest)
     self.debug("sec_org_digest=" + org_digest)
 
     org_id = web.request.get("org_id")
-    course_id = web.request.get("course_id")
 
     # Look in the URL for the course id
     urlpath = web.request.path
@@ -250,11 +264,12 @@ class LTI():
         if len(urlpath) == 0 : urlpath = "/"
         self.debug("course_id from path="+course_id+" new url="+urlpath)
 
-    success = self.checknonce(nonce, timestamp, digest, "secret", 100000 ) 
+    success = self.checknonce(nonce, timestamp, digest, "secret", 
+         options.get('nonce_time', 10000000) ) 
 
     # Clean up the digest - Delete up to 10 2-day-old digests
     nowtime = datetime.utcnow()
-    before = nowtime - timedelta(hours=23)
+    before = nowtime - options.get('digest_expire', timedelta(hours=23))
     self.debug("Delete digests since "+before.isoformat())
 
     q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
@@ -324,7 +339,6 @@ class LTI():
        return
 
     user = None
-    user_id = web.request.get("user_id")
     if ( len(user_id) > 0 ) :
       user = LTI_User.get_or_insert("key:"+user_id, parent=course)
       self.modelload(user, web.request, "user_")
@@ -348,6 +362,15 @@ class LTI():
     memb.role = roleval
     memb.put()
  
+    # Clean up launches - Delete up to 10 "old launches"
+    nowtime = datetime.utcnow()
+    before = nowtime - options.get('launch_expire', timedelta(days=2))
+    self.debug("Delete launches since "+before.isoformat())
+
+    q = db.GqlQuery("SELECT * FROM LTI_Launch WHERE created < :1", before)
+    results = q.fetch(10)
+    db.delete(results)
+
     # Should launches be unique per launch - or keyed by user_id and reused
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
@@ -408,12 +431,40 @@ class LTI():
     dig.debug = self.dStr
     dig.put()
 
+  def parsetime(self, timestamp) :
+    # Receiving - Parse a Simple TI TimeStamp
+    try:
+        tock = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+        self.debug("Parsed SimpleLTI TimeStamp "+tock.isoformat())
+        return tock
+    except:
+	self.debug("Error parsing timestamp format - expecting 2008-06-03T13:51:20Z")
+        return False
+    
   def checknonce(self, nonce, timestamp, digest, secret = "secret", skew = 100000 ) :
     self.debug("sec_nonce=" + nonce)
     self.debug("sec_created=" + timestamp)
     self.debug("Using secret=" + secret)
     self.debug("Using digest=" + digest)
 
+    if len(nonce) <= 0 or len(timestamp) <= 0 or len(secret) <= 0 or len(digest) <= 0 : return False
+
+    # Parse the timestamp
+    tock = self.parsetime(timestamp)
+    if not tock : return
+
+    # Check for time difference (either way)
+    nowtime = datetime.utcnow()
+    self.debug("Current time "+nowtime.isoformat())
+    diff = abs(nowtime - tock)
+
+    # Our tolerable margin
+    margin = timedelta(seconds=skew)
+    if ( diff >= margin ) :
+       self.debug("Time Mismatch Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
+       return False
+
+    # Compute the digest
     presha1 = nonce + timestamp + secret
     self.debug("Presha1 " + presha1)
     sha1 =  hashlib.sha1()
@@ -424,22 +475,6 @@ class LTI():
     self.debug("digest "+digest)
     if ( digest != y ) : return False
 
-    # Receiving - Parse a Simple TI TimeStamp
-    try:
-        tock = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-        self.debug("Parsed SimpleLTI TimeStamp "+tock.isoformat())
-    except:
-	self.debug("Error parsing timestamp format - expecting 2008-06-03T13:51:20Z")
-        return False
-    
-    # Check for time difference (either way)
-    nowtime = datetime.utcnow()
-    self.debug("Current time "+nowtime.isoformat())
-    diff = abs(nowtime - tock)
-
-    # Our tolerable margin
-    margin = timedelta(seconds=skew)
-    success = diff < margin
     self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
     return success
 
