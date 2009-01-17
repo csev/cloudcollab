@@ -1,0 +1,36 @@
+{% extends "_base.html" %}
+{% block bodycontent %}
+<h2>Choose Your Launch</h2>
+<p>
+You can launch to Simple LTI tools or you can launch to some CloudSocial-enabled content and see the
+"popup" CloudSocial Learning Management system.
+</p>
+<p>These links are to IMS Simple LTI Tools.  The first link is to a simple LMS that
+includes the Wisdome of Crowds tool.  The second link launches straight to the tool
+as if you were using the tool from an LMS.
+</p>
+<ul>
+<li><a href="/launch?role=instructor&url=http://wiscrowd.appspot.com/lti_course_id/cloud123/">The CloudCollab LMS</a></li>
+<li><a href="/launch?role=instructor&url=http://wiscrowd.appspot.com/wiz/lti_course_id/cloud123/">The Wisdom of Crowds Tool</a></li>
+</ul>
+<p>Open Educational Content using CloudSocial. Launch into 
+AppEngineLearn and navigate to the PythonLearn.   
+The popup CloudSocial LMS will follow you.</p>
+<ul>
+<li><a href="/launch?course=cloud123&role=instructor&forward=http://www.appenginelearn.com/&url=http://www.cloudsocial.org/dev/index.php">AppEngineLearn</a></li>
+<li><a href="/launch?course=cloud123&role=instructor&forward=http://www.pythonlearn.com/&url=http://www.cloudsocial.org/dev/index.php">PythonLearn</a></li>
+<li><a href="/launch?course=cloud123&role=instructor&forward=http://www.dr-chuck.com/wikipedia/tcp.htm&url=http://www.cloudsocial.org/dev/index.php">Fake Wikipedia Page</a></li>
+</ul>
+<p>Older Test Launches</p>
+<ul>
+<li>
+<a href="/launch?url=https://bezak.umms.med.umich.edu/lti/cloudsocial/med/ile/launch.php&role=instructor&course=100&forward=/lti/med/menu/index.php">
+M4 Therapetics Demo </a>
+</li>
+      </ul>
+      {% ifnotequal error None %}
+       <p>
+       {{ error }}
+       </p>
+      {% endifnotequal %}
+{% endblock %}

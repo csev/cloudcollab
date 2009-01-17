@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+   <title>CloudCollab - Collaboration and Learning Tools for CloudSocial</title>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+   <link href="/static/glike.css" media="screen" rel="Stylesheet" type="text/css" />
+</head>
+<body>
+   <div id="header">
+       <h1><a href="/index.htm" class="selected">CloudCollab</a></h1>
+       <ul class="toolbar">
+       <li><a href="/about.htm" {% ifequal path '/about.htm' %}class="selected"{% endifequal %}>About</a></li>
+       <li><a href="http://code.google.com/p/cloudcollab/">Software</a></li>
+      {% ifnotequal user None %}
+       <li><a href="/login" {% ifequal path '/login' %}class="selected"{% endifequal %}>Launch</a></li>
+       <li><a href="{{logouturl}}">({{user.email}})</a></li>
+      {% else %}
+       <li><a href="/login" {% ifequal path '/login' %}class="selected"{% endifequal %}>Login</a></li>
+      {% endifnotequal %}
+       </ul>
+   </div>
+   <div id="bodycontent">
+      {% block bodycontent %}
+           Here is the original stuff!
+      {% endblock %}
+<br clear="all"/>
+<p class="footer">
+<img src="http://code.google.com/appengine/images/appengine-silver-120x30.gif" 
+alt="Powered by Google App Engine" align="right" />
+<a href=http://www.imsglobal.org/toolsinteroperability2.cfm>IMS Learning Tools Interoperability v2.0 Working Group</a> <br/>
+<a href=http://simplelti.appspot.com/>Simple IMS LTI</a> <br/>
+<a href="http:///www.dr-chucm.com/" class="footerlink">&copy; 2008 Charles Severance</a> All Rights Reserved.</p>
+</div>
+</body>
+</html>

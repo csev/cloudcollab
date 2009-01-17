@@ -408,7 +408,7 @@ class LTI():
       if options.get('auto_create_courses', False) :
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
-        self.modelload(org, web.request, "course_")
+        self.modelload(course, web.request, "course_")
         course.course_id = path_course_id
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
