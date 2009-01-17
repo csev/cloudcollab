@@ -16,7 +16,7 @@ from google.appengine.ext import webapp
 class LTI_Org(db.Model):
      logicalkey = "org_id"
      org_id = db.StringProperty()
-     secret = db.StringProperty()
+     secret = db.BlobProperty()
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -39,37 +39,16 @@ class LTI_User(db.Model):
 class LTI_Course(db.Model):
      logicalkey = "course_id"
      course_id = db.StringProperty()
+     secret = db.BlobProperty()
      code = db.StringProperty()
      name = db.StringProperty()
      title = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
-class LTI_Session(db.Model):
-     logicalkey = None
-     user = db.ReferenceProperty(LTI_User)
-     course = db.ReferenceProperty(LTI_Course)
-     created = db.DateTimeProperty(auto_now_add=True)
-     updated = db.DateTimeProperty(auto_now=True)
-
 class LTI_Membership(db.Model):
-     course = db.ReferenceProperty(LTI_Course)
-     user = db.ReferenceProperty (LTI_User)
      role = db.IntegerProperty()
      roster = db.StringProperty()
-     created = db.DateTimeProperty(auto_now_add=True)
-     updated = db.DateTimeProperty(auto_now=True)
-
-class LTI_Tool(db.Model):
-     logicalkey = "tool_id"
-     tool_id = db.StringProperty()
-     tool_name = db.StringProperty()
-     tool_title = db.StringProperty()
-     targets = db.StringProperty()
-     resource_id = db.StringProperty()
-     resource_url = db.StringProperty()
-     width = db.StringProperty()
-     height = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
@@ -278,47 +257,40 @@ class LTI():
     if ( len(org_id) > 0 ) :
       # Todo figure out what to do with the org secret
       # and org policy options
-      org = self.modelread(LTI_Org, org_id)
-      self.debug("org.org_id="+str(org.org_id))
-
+      org = LTI_Org.get_or_insert("key:"+org_id)
       self.modelload(org, web.request, "org_")
-      self.debug("org.name="+str(org.name))
-
       org.put()
-      self.debug("key = "+str(org.key()))
+      self.debug("org.key()="+str(org.key()))
       self.org = org
+
+    # We need to check before we accept a new course
+    course_id = web.request.get("course_id")
+    course = None
+    if ( len(course_id) > 0 ) :
+      course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+      self.modelload(course, web.request, "course_")
+      course.org = org      
+      self.debug("course.name="+str(course.name))
+      course.put()
+
+    if ( not course ) :
+       self.debug("Must have course for a complete launch")
+       return
 
     user = None
     user_id = web.request.get("user_id")
     if ( len(user_id) > 0 ) :
-      user = self.modelread(LTI_User, user_id)
+      user = LTI_User.get_or_insert("key:"+user_id, parent=course)
       self.modelload(user, web.request, "user_")
       self.debug("user.email="+str(user.email))
       user.put()
-
-    course_id = web.request.get("course_id")
-    course = None
-    if ( len(course_id) > 0 ) :
-      course = self.modelread(LTI_Course, course_id)
-      self.modelload(course, web.request, "course_")
-      self.debug("course.name="+str(course.name))
-      course.put()
 
     memb = None
     if ( not (user and course ) ) :
        self.debug("Must have user and course for a complete launch")
        return
 
-    que = db.Query(LTI_Membership)
-    que = que.filter("course =", course.key())
-    que = que.filter("user = ", user.key())
-    results = que.fetch(limit=1)
-    if len(results) > 0 :
-      memb = results[0]
-      self.debug("Existing membership record found")
-    else : 
-      memb = LTI_Membership(course = course, user = user)
-
+    memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
     role = web.request.get("user_role")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
@@ -328,22 +300,15 @@ class LTI():
     memb.role = roleval
     memb.put()
  
-    que = db.Query(LTI_Launch)
-    que = que.filter("course =", course.key())
-    que = que.filter("user = ", user.key())
-    results = que.fetch(limit=1)
-    if len(results) > 0 :
-      launch = results[0]
-      self.debug("Existing launch record found")
-    else : 
-      launch = LTI_Launch(course = course, user = user, memb = memb)
-
+    launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
-    launch.org = self.org
     launch.password = str(uuid.uuid4())
+    launch.user = user
+    launch.memb = memb
+    launch.org = org
+    launch.course = course
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
-    self.launch = launch
 
     url = web.request.application_url+web.request.path
 
@@ -359,10 +324,11 @@ class LTI():
  
     # We have made it to the point where we have handled this request
     self.complete = True
-    self.user = launch.user
-    self.course = launch.course
-    self.memb = launch.memb
-    self.org = launch.org
+    self.launch = launch
+    self.user = user
+    self.course = course
+    self.org = org
+    self.memb = memb
 
     # Need to make an option to allow a 
     # simple return instead of redirect
@@ -501,22 +467,6 @@ class LTI():
     if attr.find("ext.db.DateTimeProperty")  > 0: return "datetime"
     if attr.find("ext.db.IntegerProperty")  > 0: return "int"
     return "none"
-
-  def modelread(self, theclass, keyvalue) :
-    if ( len(keyvalue) > 0 ) :
-      que = db.Query(theclass)
-      que = que.filter(theclass.logicalkey+" =",keyvalue)
-
-      results = que.fetch(limit=1)
-
-      if len(results) > 0 :
-        org = results[0]
-      else :
-        org = theclass()
-        setattr(org, theclass.logicalkey, keyvalue)
-      return org
-    else : 
-      return None 
 
   def modeldump(self, obj):
     if ( not obj ) : 
