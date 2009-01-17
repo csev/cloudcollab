@@ -97,7 +97,9 @@ class LTI():
   # Option values
   Liberal = { 'nonce_time': 1000000, 
               'digest_expire': timedelta(hours=23), 
-              'launch_expire': timedelta(days=2)
+              'launch_expire': timedelta(days=2),
+              'auto_create_orgs' : True,
+              'default_org_secret' : "secret"
             } 
 
   def debug(self, str):
@@ -125,6 +127,8 @@ class LTI():
   def __init__(self, web, session = None, options = {}):
     self.web = web
     self.launch = None
+    # Later set this to ocnservative
+    if len(options) < 1 : options = self.Liberal
     self.handlelaunch(web, session, options)
     if ( self.complete ) : return
     self.handlesetup(web, session, options)
@@ -264,19 +268,50 @@ class LTI():
     # Look in the URL for the course id
     urlpath = web.request.path
     trigger = "/lti_course_id/"
+    path_course_id = None
     pos = urlpath.find(trigger)
     if ( pos >= 0 ) :
       path = urlpath[pos+len(trigger):]
       if path.find("/") > 0 :
         path = path[:path.find("/")]
       if len(path) > 0 : 
-        course_id = path
+        path_course_id = path
         urlpath = urlpath[:pos]
         if len(urlpath) == 0 : urlpath = "/"
-        self.debug("course_id from path="+course_id+" new url="+urlpath)
 
-    success = self.checknonce(nonce, timestamp, digest, "secret", 
+    self.debug("course_id="+course_id+" path_course_id="+path_course_id+" path="+urlpath)
+
+    # Lets check to see if we have an organizational id and organizational secret
+    # Look up a global organization matching the org_id
+    org = None
+    org_secret = None
+    self.org = None
+    if len(org_id) > 0  and len(org_digest) > 0  :
+      if options.get('auto_create_orgs', False) :
+        org = LTI_Org.get_or_insert("key:"+org_id)
+        org_secret = org.secret  # Can't change secret from the web
+        self.modelload(org, web.request, "org_")
+        org.secret = org_secret
+        org.put()
+      else : 
+        org = LTI_Org.get_by_keyname("key:"+org_id)
+        if org : 
+          org_secret = org.secret
+
+    if org and org_secret == None :
+      org_secret = options.get("default_org_secret",None) 
+
+    # No global orgs without secrets - sorry
+    if not org_secret:
+      org = None
+
+    if org and org_secret:
+      self.debug("org.key()="+str(org.key()))
+      success = self.checknonce(nonce, timestamp, org_digest, org_secret, 
          options.get('nonce_time', 10000000) ) 
+      if not success: org = None
+
+    self.org = org
 
     # Clean up the digest - Delete up to 10 2-day-old digests
     nowtime = datetime.utcnow()
@@ -318,17 +353,6 @@ class LTI():
       dig.debug = self.dStr
       dig.put()
       return
-
-    org = None
-    self.org = None
-    if ( len(org_id) > 0 ) :
-      # Todo figure out what to do with the org secret
-      # and org policy options
-      org = LTI_Org.get_or_insert("key:"+org_id)
-      self.modelload(org, web.request, "org_")
-      org.put()
-      self.debug("org.key()="+str(org.key()))
-      self.org = org
 
     # We need to check before we accept a new course
     course = None
