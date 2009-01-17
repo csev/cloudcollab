@@ -11,6 +11,8 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
+## Note to self - build "optimiztic_get_or_insert"
+
 class LTI_Org(db.Model):
      org_id = db.StringProperty()
      secret = db.BlobProperty()
@@ -451,13 +453,15 @@ class LTI():
     if ( not course ) :
        self.launcherror(web, doHtml, dig, "Must have a valid course for a complete launch")
        return
-     
+
+    # Make the user and link to either then organization or the course
     user = None
     if ( len(user_id) > 0 ) :
       if org:
         user = LTI_User.get_or_insert("key:"+user_id, parent=org)
       else :
-        user = LTI_User.get_or_insert("key:"+user_id, parent=course)
+        user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user.course = course
       self.modelload(user, web.request, "user_")
       user.put()
 
@@ -475,7 +479,17 @@ class LTI():
     if ( role == "administrator") : roleval = 2
     memb.role = roleval
     memb.put()
+
+    # One more data structure to build - if we don't have an 
+    # organization and we have some organizational data - 
+    # we stash it under the course.
  
+    if not org and len(org_id) > 0 :
+      org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
+      self.modelload(org, web.request, "org_")
+      org.course = course
+      org.put()
+
     # Clean up launches - Delete up to 10 "old launches"
     nowtime = datetime.utcnow()
     before = nowtime - options.get('launch_expire', timedelta(days=2))
