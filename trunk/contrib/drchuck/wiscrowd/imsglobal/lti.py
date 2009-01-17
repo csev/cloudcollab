@@ -97,9 +97,10 @@ class LTI():
   # Option values
   Liberal = { 'nonce_time': 1000000, 
               'allow_digest_reuse': True,
-              'digest_expire': timedelta(hours=23), 
+              'digest_expire': timedelta(minutes=20), 
               'digest_cleanup_count' : 100,
-              'launch_expire': timedelta(days=2),
+              'launch_expire': timedelta(hours=1),
+              'launch_cleanup_count': 100,
               'auto_create_orgs' : True,
               'default_org_secret' : "secret",
               'auto_create_courses' : True,
@@ -379,7 +380,7 @@ class LTI():
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
         self.modelload(org, web.request, "course_")
-        courseorg.secret = course_secret
+        course.secret = course_secret
         course.put()
       else : 
         course = LTI_Course.get_by_keyname("key:"+course_id)
@@ -405,35 +406,64 @@ class LTI():
         self.launcherror(web, doHtml, dig, "Course secret does not validate:"+path_course_id)
         return
 
-    # Deal with the course - We may have a course_id from POST
-    # data as well as a course_id from the path
-    # We need to check before we accept a new course
-    if ( len(course_id) > 0 ) :
-      course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
-      self.modelload(course, web.request, "course_")
-      course.course_id = course_id
-      course.org = org      
-      self.debug("course.name="+str(course.name))
-      course.put()
+    # If we have a global org and a global course - add the link
+    if len(course_id) > 0 and course and org :
+      self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+path_course_id)
+      orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse.course = course
+      orgcourse.put()
+    # If we have a path_course_id that is good, we are done
+    # Just use that course
+    elif len(course_id) > 0 and course :
+      pass
+    # We only have a course_id from the post data
+    elif len(course_id) > 0 :
+      if options.get('auto_create_courses', False) :
+        course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        course_secret = course.secret  # Can't change secret from the web
+        self.modelload(org, web.request, "course_")
+        course.secret = course_secret
+        course.put()
+      else : 
+        course = LTI_Course.get_by_keyname("key:"+course_id, parent=org)
+        if course : 
+          course_secret = course.secret
+
+      if not course:
+        self.launcherror(web, doHtml, dig, "Course not found:"+course_id)
+        return
+
+      if course_secret == None :
+        course_secret = options.get("default_course_secret",None) 
+
+      # No courses without secrets - sorry
+      if not course_secret:
+        self.launcherror(web, doHtml, dig, "Course secret is not set:"+course_id)
+        return
+
+      self.debug("course.key()="+str(course.key()))
+      success = self.checknonce(nonce, timestamp, digest, course_secret, 
+         options.get('nonce_time', 10000000) ) 
+      if not success: 
+        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+path_course_id)
+        return
 
     if ( not course ) :
-       self.debug("Must have course for a complete launch")
-       dig.debug = self.dStr
-       dig.put()
+       self.launcherror(web, doHtml, dig, "Must have a valid course for a complete launch")
        return
-
+     
     user = None
     if ( len(user_id) > 0 ) :
-      user = LTI_User.get_or_insert("key:"+user_id, parent=course)
+      if org:
+        user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+      else :
+        user = LTI_User.get_or_insert("key:"+user_id, parent=course)
       self.modelload(user, web.request, "user_")
-      self.debug("user.email="+str(user.email))
       user.put()
 
     memb = None
     if ( not (user and course ) ) :
-       self.debug("Must have user and course for a complete launch")
-       dig.debug = self.dStr
-       dig.put()
+       self.launcherror(web, doHtml, dig, "Must have a valid user for a complete launch")
        return
 
     memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
@@ -452,7 +482,7 @@ class LTI():
     self.debug("Delete launches since "+before.isoformat())
 
     q = db.GqlQuery("SELECT * FROM LTI_Launch WHERE created < :1", before)
-    results = q.fetch(10)
+    results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
     # Should launches be unique per launch - or keyed by user_id and reused
