@@ -41,6 +41,7 @@ class MainHandler(webapp.RequestHandler):
     if ( lti.complete ) : return
 
     rendervars = { 'path': self.request.path }
+    logging.info("index.py launch="+str(lti.launch));
     if lti.launch :
       if ( lti.user ) : rendervars['user'] = lti.user
       rendervars['tools'] = tools

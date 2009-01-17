@@ -155,7 +155,7 @@ class LTI():
   def __init__(self, web, session = None, options = {}):
     self.web = web
     self.launch = None
-    # Later set this to ocnservative
+    # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
     self.handlelaunch(web, session, options)
     if ( self.complete ) : return
@@ -168,7 +168,7 @@ class LTI():
     self.org = None
     if self.launch : 
       if self.launch.user : self.user = self.launch.user
-      if self.launch.course_user : self.course = self.launch.course_user
+      if self.launch.course_user : self.user = self.launch.course_user
       if self.launch.course : self.course = self.launch.course
       if self.launch.memb : self.memb = self.launch.memb
       if self.launch.course_org : self.org = self.launch.course_org
@@ -272,16 +272,16 @@ class LTI():
     digest = web.request.get('sec_digest')
     course_id = web.request.get("course_id")
     user_id = web.request.get("user_id")
-
-    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 : return
-    if len(user_id) <= 0 or len(course_id) <= 0 : return
-
-    self.debug("Running on " + web.request.application_url)
-    self.debug("Launch post action=" + action)
-
     doHtml = action.lower() == "launchhtml"
     doDirect = action.lower() == "direct"
     targets = web.request.get('launch_targets')
+
+    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 or len(user_id) <= 0 or len(course_id) <= 0 : 
+      self.launcherror(web, doHtml, None, "Missing one of sec_nonce, sec_created, sec_digest, course_id, user_id")
+      return
+
+    self.debug("Running on " + web.request.application_url)
+    self.debug("Launch post action=" + action)
 
     # Determine check the timestamp for validity
     tock = self.parsetime(timestamp)
