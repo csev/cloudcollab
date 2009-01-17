@@ -265,8 +265,7 @@ class LTI():
     if ( len(action) < 1 ) : action = web.request.get("lti_action")
     if ( len(action) < 1 ) : return
     action = action.lower()
-    if action != 'launchresolve' and action != 'direct' and action != 'launchhtml' :
-      return
+    if action != 'launchresolve' and action != 'direct' and action != 'launchhtml' : return
 
     nonce = web.request.get('sec_nonce')
     timestamp = web.request.get('sec_created')
@@ -274,20 +273,22 @@ class LTI():
     course_id = web.request.get("course_id")
     user_id = web.request.get("user_id")
 
-    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 : 
-       return
-    if len(user_id) < 0 or len(course_id) <= 0 : return
+    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 : return
+    if len(user_id) <= 0 or len(course_id) <= 0 : return
 
     self.debug("Running on " + web.request.application_url)
     self.debug("Launch post action=" + action)
 
-    # Determine check the timestamp for validity
-    tock = self.parsetime(timestamp)
-    if not tock : return
-
     doHtml = action.lower() == "launchhtml"
     doDirect = action.lower() == "direct"
     targets = web.request.get('launch_targets')
+
+    # Determine check the timestamp for validity
+    tock = self.parsetime(timestamp)
+    if not tock :
+      self.launcherror(web, doHtml, None, "Error in format of TimeStamp")
+      return
+
     org_digest = web.request.get('sec_org_digest')
 
     self.debug("sec_digest=" + digest)
