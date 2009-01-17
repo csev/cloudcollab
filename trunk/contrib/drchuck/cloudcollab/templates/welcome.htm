@@ -1,0 +1,22 @@
+{% extends "_base.html" %}
+{% block bodycontent %}
+<img src="/static/images/cloudcollab.jpg" border="0" height="80" align="right"/>
+<h2>Collaboration and Learning in the Cloud</h2>
+      {% ifnotequal message None %}
+       <p>
+       {{ message }}
+       </p>
+      {% endifnotequal %}
+      <form method="post" action="/login">
+      First Name: <input type="text" name="firstname" value="{{userobj.firstname}}"/> <br/>
+      Last Name: <input type="text" name="lastname" value="{{userobj.lastname}}"/> <br/>
+      <input type="submit" value="Continue"/>
+      <button onClick="window.location='/'; return false;">Cancel</button>
+      </form>
+      </p>
+      {% ifnotequal error None %}
+       <p>
+       {{ error }}
+       </p>
+      {% endifnotequal %}
+{% endblock %}
