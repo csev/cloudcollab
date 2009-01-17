@@ -10,7 +10,6 @@ from util.sessions import Session
 from imsglobal.lti import LTI
 
 class Wisdom(db.Model) :
-   course = db.ReferenceProperty()
    blob = db.BlobProperty()
 
 class ToolRegistration():
@@ -52,14 +51,10 @@ class WisHandler(webapp.RequestHandler):
       outstr = template.render(temp, { })
       return outstr
 
-    que = db.Query(Wisdom).filter("course =",lti.course)
-    results = que.fetch(limit=1)
-
-    if len(results) > 0 :
-      wisdom = results[0]
-    else:
-      wisdom = Wisdom(course=lti.course, blob= pickle.dumps( dict() ) )
-      wisdom.put();
+    wisdom = Wisdom.get_or_insert("a", parent=lti.course)
+    if wisdom.blob == None : 
+      wisdom.blob = pickle.dumps( dict() ) 
+      wisdom.put()
 
     data = pickle.loads(wisdom.blob)
     name = self.request.get("name")
