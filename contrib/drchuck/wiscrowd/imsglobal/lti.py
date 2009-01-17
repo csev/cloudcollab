@@ -97,9 +97,12 @@ class LTI():
   # Option values
   Liberal = { 'nonce_time': 1000000, 
               'digest_expire': timedelta(hours=23), 
+              'digest_cleanup_count' : 100,
               'launch_expire': timedelta(days=2),
               'auto_create_orgs' : True,
-              'default_org_secret' : "secret"
+              'default_org_secret' : "secret",
+              'auto_create_courses' : True,
+              'default_course_secret' : "secret"
             } 
 
   def debug(self, str):
@@ -281,8 +284,55 @@ class LTI():
 
     self.debug("course_id="+course_id+" path_course_id="+path_course_id+" path="+urlpath)
 
+    ### What about ORG Digests - they need love too
+    # Clean up the digest - Delete up to 100 2-day-old digests
+    nowtime = datetime.utcnow()
+    before = nowtime - options.get('digest_expire', timedelta(hours=23))
+    self.debug("Delete digests since "+before.isoformat())
+
+    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
+    results = q.fetch(options.get("digest_cleanup_count", 100))
+    db.delete(results)
+
+    # Validate the sec_digest 
+    dig = LTI_Digest.get_or_insert("key:"+digest)
+    reused = False
+    if dig.digest == None :
+      self.debug("Digest fresh")
+      dig.digest = digest
+    else:
+      self.debug("Digest reused")
+      reused = True
+
+    dig.request = requestdebug(web)
+    dig.put()
+
+    # Get critical if there is some unauthorized reuse
+    if reused and not options.get("allow_digest_reuse", False) :
+      self.launcherror(web, doHtml, dig, "Digest Reused")
+      return
+
+    # Validate the sec_org_digest 
+    if len(org_digest) > 0:
+      orgdig = LTI_Digest.get_or_insert("key:"+org_digest)
+      reused = False
+      if orgdig.digest == None :
+        self.debug("Organizational digest fresh")
+        orgdig.digest = digest
+      else:
+        self.debug("Organizational digest reused")
+        reused = True
+  
+      orgdig.request = requestdebug(web)
+      orgdig.put()
+  
+      # Get critical if there is some unauthorized reuse
+      if reused and not options.get("allow_digest_reuse", False) :
+        self.launcherror(web, doHtml, orgdig, "Organizational digest reused")
+        return
+
     # Lets check to see if we have an organizational id and organizational secret
-    # Look up a global organization matching the org_id
+    # and check to see if we are really hearing from the organization
     org = None
     org_secret = None
     self.org = None
@@ -305,6 +355,10 @@ class LTI():
     if not org_secret:
       org = None
 
+    # Failing the org secret is not a complete failure - it 
+    # simply means that the user_id and course_id and org data
+    # are scoped to the course - on failure set org to None
+    # and continue
     if org and org_secret:
       self.debug("org.key()="+str(org.key()))
       success = self.checknonce(nonce, timestamp, org_digest, org_secret, 
@@ -313,49 +367,42 @@ class LTI():
 
     self.org = org
 
-    # Clean up the digest - Delete up to 10 2-day-old digests
-    nowtime = datetime.utcnow()
-    before = nowtime - options.get('digest_expire', timedelta(hours=23))
-    self.debug("Delete digests since "+before.isoformat())
-
-    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
-    results = q.fetch(10)
-    db.delete(results)
-
-    dig = LTI_Digest.get_or_insert("key:"+digest)
-    if dig.digest == None :
-      self.debug("Digest fresh")
-      dig.digest = digest
-    else:
-      self.debug("Digest reused")
-
-    reqstr = web.request.path + "\n"
-    for key in web.request.params.keys():
-      value = web.request.get(key)
-      if len(value) < 100: 
-         reqstr = reqstr + key+':'+value+'\n'
-      else: 
-         reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
-    dig.request = reqstr
-    dig.put()
-
-    if not success:
-      self.debug("!!!!!! NO MATCH !!!!!!")
-      respString = self.errorResponse()
-      if doHtml:
-        web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
-        respString = cgi.escape(respString) 
-      web.response.out.write(respString)
-      if doHtml:
-        web.response.out.write("\n\nDebug Output:\n")
-        web.response.out.write(self.dStr)
-        web.response.out.write("\n</pre>\n")
-      dig.debug = self.dStr
-      dig.put()
-      return
-
-    # We need to check before we accept a new course
+    # If we have a path_course_id then the course is not owned
+    # by the organization - it is a standalone course where 
+    # potentially many organiational course_ids will be mapped to it.
     course = None
+    if len(path_course_id) > 0 :
+      if options.get('auto_create_courses', False) :
+        course = LTI_Course.get_or_insert("key:"+path_course_id)
+        course_secret = course.secret  # Can't change secret from the web
+        self.modelload(org, web.request, "course_")
+        courseorg.secret = course_secret
+        course.put()
+      else : 
+        course = LTI_Course.get_by_keyname("key:"+course_id)
+        if course : 
+          course_secret = course.secret
+
+    if course and course_secret == None :
+      course_secret = options.get("default_course_secret",None) 
+
+    # No global courses without secrets - sorry
+    if not course_secret:
+      course = None
+
+    # Failing the global course secret is not a complete failure 
+    # simply means that the user_id and course_id and course data
+    # are scoped to the course - on failure set course to None
+    # and continue
+    if course and course_secret:
+      self.debug("course.key()="+str(course.key()))
+      success = self.checknonce(nonce, timestamp, digest, course_secret, 
+         options.get('nonce_time', 10000000) ) 
+      if not success: course = None
+
+    # Deal with the course - We may have a course_id from POST
+    # data as well as a course_id from the path
+    # We need to check before we accept a new course
     if ( len(course_id) > 0 ) :
       course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
       self.modelload(course, web.request, "course_")
@@ -525,13 +572,40 @@ class LTI():
     retval = retval.replace("LAUNCHURL",url)
     return retval
 
-  def errorResponse(self):
-    return '''<launchResponse>
+  def errorResponse(self, desc="The password digest was invalid"):
+    retval = '''<launchResponse>
     <status>fail</status>
     <code>BadPasswordDigest</code>
-    <description>The password digest was invalid</description>
+    <description>DESC</description>
 </launchResponse>
 '''
+    retval = retval.replace("DESC",desc)
+    return retval
+
+  def launcherror(self, doHtml, web, dig, desc) :
+      respString = self.errorResponse(desc)
+      if doHtml:
+        web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
+        respString = cgi.escape(respString) 
+      web.response.out.write(respString)
+      if doHtml:
+        web.response.out.write("\n\nDebug Output:\n")
+        web.response.out.write(self.dStr)
+        web.response.out.write("\n</pre>\n")
+      if dig:
+        dig.debug = self.dStr
+        dig.put()
+
+  def requestdebug(self, web):
+    # Drop in the request for debugging
+    reqstr = web.request.path + "\n"
+    for key in web.request.params.keys():
+      value = web.request.get(key)
+      if len(value) < 100: 
+         reqstr = reqstr + key+':'+value+'\n'
+      else: 
+         reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
+    return reqstr
 
   # Some utility mehtods
   def isInstructor(self) :
