@@ -96,6 +96,7 @@ class LTI():
 
   # Option values
   Liberal = { 'nonce_time': 1000000, 
+              'allow_digest_reuse': True,
               'digest_expire': timedelta(hours=23), 
               'digest_cleanup_count' : 100,
               'launch_expire': timedelta(days=2),
@@ -282,7 +283,7 @@ class LTI():
         urlpath = urlpath[:pos]
         if len(urlpath) == 0 : urlpath = "/"
 
-    self.debug("course_id="+course_id+" path_course_id="+path_course_id+" path="+urlpath)
+    self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+urlpath)
 
     ### What about ORG Digests - they need love too
     # Clean up the digest - Delete up to 100 2-day-old digests
@@ -304,7 +305,7 @@ class LTI():
       self.debug("Digest reused")
       reused = True
 
-    dig.request = requestdebug(web)
+    dig.request = self.requestdebug(web)
     dig.put()
 
     # Get critical if there is some unauthorized reuse
@@ -323,7 +324,7 @@ class LTI():
         self.debug("Organizational digest reused")
         reused = True
   
-      orgdig.request = requestdebug(web)
+      orgdig.request = self.requestdebug(web)
       orgdig.put()
   
       # Get critical if there is some unauthorized reuse
@@ -363,7 +364,9 @@ class LTI():
       self.debug("org.key()="+str(org.key()))
       success = self.checknonce(nonce, timestamp, org_digest, org_secret, 
          options.get('nonce_time', 10000000) ) 
-      if not success: org = None
+      if not success: 
+        self.launcherror(web, doHtml, orgdig, "Organizational digest did not validate")
+        return
 
     self.org = org
 
@@ -371,7 +374,7 @@ class LTI():
     # by the organization - it is a standalone course where 
     # potentially many organiational course_ids will be mapped to it.
     course = None
-    if len(path_course_id) > 0 :
+    if path_course_id :
       if options.get('auto_create_courses', False) :
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
@@ -383,22 +386,24 @@ class LTI():
         if course : 
           course_secret = course.secret
 
-    if course and course_secret == None :
-      course_secret = options.get("default_course_secret",None) 
+      if not course:
+        self.launcherror(web, doHtml, dig, "Course not found:"+path_course_id)
+        return
 
-    # No global courses without secrets - sorry
-    if not course_secret:
-      course = None
+      if course_secret == None :
+        course_secret = options.get("default_course_secret",None) 
 
-    # Failing the global course secret is not a complete failure 
-    # simply means that the user_id and course_id and course data
-    # are scoped to the course - on failure set course to None
-    # and continue
-    if course and course_secret:
+      # No global courses without secrets - sorry
+      if not course_secret:
+        self.launcherror(web, doHtml, dig, "Course secret is not set:"+path_course_id)
+        return
+
       self.debug("course.key()="+str(course.key()))
       success = self.checknonce(nonce, timestamp, digest, course_secret, 
          options.get('nonce_time', 10000000) ) 
-      if not success: course = None
+      if not success: 
+        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+path_course_id)
+        return
 
     # Deal with the course - We may have a course_id from POST
     # data as well as a course_id from the path
@@ -582,7 +587,8 @@ class LTI():
     retval = retval.replace("DESC",desc)
     return retval
 
-  def launcherror(self, doHtml, web, dig, desc) :
+  def launcherror(self, web, doHtml, dig, desc) :
+      self.complete = True
       respString = self.errorResponse(desc)
       if doHtml:
         web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
