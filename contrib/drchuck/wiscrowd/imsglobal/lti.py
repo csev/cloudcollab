@@ -55,7 +55,8 @@ class LTI_Membership(db.Model):
 class LTI_Digest(db.Model):
      logicalkey = "digest"
      digest = db.StringProperty()
-     request = db.StringProperty()
+     request = db.TextProperty()
+     debug = db.TextProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
 
@@ -249,6 +250,48 @@ class LTI():
 
     success = self.checknonce(nonce, timestamp, digest, "secret", 100000 ) 
 
+    # Clean up the digest - Delete up to 10 2-day-old digests
+    nowtime = datetime.utcnow()
+    self.debug("Current time "+nowtime.isoformat())
+    twodaysago = nowtime - timedelta(2)
+    self.debug("Two days ago "+twodaysago.isoformat())
+
+    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE create_date < :1", twodaysago)
+    results = q.fetch(10)
+    db.delete(results)
+
+    dig = LTI_Digest.get_or_insert("key:"+digest)
+    if dig.digest == None :
+      self.debug("Digest fresh")
+      dig.digest = digest
+    else:
+      self.debug("Digest reused")
+
+    reqstr = web.request.path + "\n"
+    for key in web.request.params.keys():
+      value = web.request.get(key)
+      if len(value) < 100: 
+         reqstr = reqstr + key+':'+value+'\n'
+      else: 
+         reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
+    dig.request = reqstr
+    dig.put()
+
+    if not success:
+      self.debug("!!!!!! NO MATCH !!!!!!")
+      respString = self.errorResponse()
+      if doHtml:
+        web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
+        respString = cgi.escape(respString) 
+      web.response.out.write(respString)
+      if doHtml:
+        web.response.out.write("\n\nDebug Output:\n")
+        web.response.out.write(self.dStr)
+        web.response.out.write("\n</pre>\n")
+      dig.debug = self.dStr
+      dig.put()
+      return
+
     width = web.request.get('launch_width')
     height = web.request.get('launch_height')
 
@@ -275,6 +318,8 @@ class LTI():
 
     if ( not course ) :
        self.debug("Must have course for a complete launch")
+       dig.debug = self.dStr
+       dig.put()
        return
 
     user = None
@@ -288,6 +333,8 @@ class LTI():
     memb = None
     if ( not (user and course ) ) :
        self.debug("Must have user and course for a complete launch")
+       dig.debug = self.dStr
+       dig.put()
        return
 
     memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
@@ -300,6 +347,7 @@ class LTI():
     memb.role = roleval
     memb.put()
  
+    # Should launches be unique per launch - or keyed by user_id and reused
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
     launch.password = str(uuid.uuid4())
@@ -333,8 +381,10 @@ class LTI():
     # Need to make an option to allow a 
     # simple return instead of redirect
     if doDirect:
-	web.redirect(url)
-	return
+      web.redirect(url)
+      dig.debug = self.dStr
+      dig.put()
+      return
 
     if  success :
         self.debug("****** MATCH ******")
@@ -351,16 +401,11 @@ class LTI():
 
     if doHtml:
         web.response.out.write("\n\nDebug Output:\n")
-    else:
-        web.response.out.write("\n\n<!--\nDebug Output:\n")
-
-    # web.response.out.write(self.dStr)
-
-    if doHtml:
+        web.response.out.write(self.dStr)
         web.response.out.write("\n</pre>\n")
-    else:
-        web.response.out.write("\n-->\n")
 
+    dig.debug = self.dStr
+    dig.put()
 
   def checknonce(self, nonce, timestamp, digest, secret = "secret", skew = 100000 ) :
     self.debug("sec_nonce=" + nonce)
