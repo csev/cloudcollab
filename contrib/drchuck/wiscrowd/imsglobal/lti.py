@@ -11,12 +11,9 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
-# A Model for a User
 class LTI_Org(db.Model):
      org_id = db.StringProperty()
      secret = db.BlobProperty()
-     # Indicates that this org is owned by a course
-     course = db.BooleanProperty(default=True)
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -39,12 +36,16 @@ class LTI_Course(db.Model):
      course_id = db.StringProperty()
      secret = db.BlobProperty()
      code = db.StringProperty()
-     # When a course *owns* an org
-     org = db.ReferenceProperty(LTI_Org)
      name = db.StringProperty()
      title = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
+
+class LTI_CourseOrg(LTI_Org):
+     course = db.ReferenceProperty(LTI_Course, collection_name='orgs')
+
+class LTI_CourseUser(LTI_Org):
+     course = db.ReferenceProperty(LTI_Course, collection_name='users')
 
 class LTI_Membership(db.Model):
      role = db.IntegerProperty()
@@ -308,9 +309,6 @@ class LTI():
       dig.put()
       return
 
-    width = web.request.get('launch_width')
-    height = web.request.get('launch_height')
-
     org = None
     self.org = None
     if ( len(org_id) > 0 ) :
@@ -372,6 +370,11 @@ class LTI():
     db.delete(results)
 
     # Should launches be unique per launch - or keyed by user_id and reused
+    # An advantage of reusing the same launch is that folks don't get logged
+    # Out on later launches - it is more like a session - perhaps we should have
+    # a session.   The the question is "One course" per session?  Would the user
+    # appear to be switched to a new course for launch?  Would it be "latest launch"?
+    # Maybe keep all the launches and make a session - hmmmm.
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
     launch.password = str(uuid.uuid4())
@@ -473,7 +476,7 @@ class LTI():
     y = base64.b64encode(x)
     self.debug("postsha1 "+y)
     self.debug("digest "+digest)
-    if ( digest != y ) : return False
+    success = (digest == y)
 
     self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
     return success
