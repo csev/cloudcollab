@@ -746,10 +746,13 @@ class LTI():
          key = key[len(prefix):]
          thetype = self.modeltype(org, key)
 
+      self.debug("thetype = "+thetype)
       # Don't do booleans automatically
-      if ( thetype == "str" or thetype == "int" ) : 
+      if ( thetype == "string" or thetype == "int" ) : 
+        self.debug("setting "+key+" = "+str(value))
         setattr(org,key,value)
         count = count + 1
+
     self.debug("MODEL LOAD "+str(org.__class__)+" loaded "+str(count)+" keys")
 
   def modeltype(self, obj, key):
@@ -779,6 +782,7 @@ class LTI():
       # print "Typ " + typ + "\n"
       if ( typ == "string" or typ == "int" or typ == "bool" ) :
         val = getattr(obj,key)
+        if key.find("secret") >= 0 : continue
 	if ( not val ) : val = "None"
         ret = ret + "  " + key + "=" + str(val) + "\n";
 
