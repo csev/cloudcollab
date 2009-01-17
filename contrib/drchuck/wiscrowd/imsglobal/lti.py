@@ -44,15 +44,33 @@ class LTI_Course(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 # Organiztions that are scoped to a course
-class LTI_CourseOrg(LTI_Org):
+# It would be nice to extend LTI_Org here - but it causes problems 
+class LTI_CourseOrg(db.Model):
      course = db.ReferenceProperty(LTI_Course, collection_name='orgs')
+     # copied from LTI_Org
+     org_id = db.StringProperty()
+     # secret = db.BlobProperty()
+     name = db.StringProperty()
+     title = db.StringProperty()
+     url = db.StringProperty()
+     created = db.DateTimeProperty(auto_now_add=True)
+     updated = db.DateTimeProperty(auto_now=True)
 
 # Users that are scoped to a course
-# Should this be pointing to a CourseOrg ?
-# Or just make a nasty composite key with the org_id ?
-# Or should we use E-Mail?  No no no!
-class LTI_CourseUser(LTI_Org):
+# It would be nice to extend LTI_User here - but it causes problems 
+class LTI_CourseUser(db.Model):
      course = db.ReferenceProperty(LTI_Course, collection_name='users')
+     # Copied from LTI_User
+     user_id = db.StringProperty()
+     eid = db.StringProperty()
+     displayid = db.StringProperty()
+     password = db.StringProperty()
+     firstname = db.StringProperty()
+     lastname = db.StringProperty()
+     email = db.StringProperty()
+     locale = db.StringProperty()
+     created = db.DateTimeProperty(auto_now_add=True)
+     updated = db.DateTimeProperty(auto_now=True)
 
 # Many to many mappings from Organizations to Courses
 class LTI_OrgCourse(db.Model):
@@ -78,6 +96,9 @@ class LTI_Launch(db.Model):
      course = db.ReferenceProperty(LTI_Course)
      org = db.ReferenceProperty(LTI_Org)
      memb = db.ReferenceProperty(LTI_Membership)
+     # For course scoped org and user
+     course_user = db.ReferenceProperty(LTI_CourseUser)
+     course_org = db.ReferenceProperty(LTI_CourseOrg)
      resource_id = db.StringProperty()
      targets = db.StringProperty()
      resource_url = db.StringProperty()
@@ -147,8 +168,10 @@ class LTI():
     self.org = None
     if self.launch : 
       if self.launch.user : self.user = self.launch.user
+      if self.launch.course_user : self.course = self.launch.course_user
       if self.launch.course : self.course = self.launch.course
       if self.launch.memb : self.memb = self.launch.memb
+      if self.launch.course_org : self.org = self.launch.course_org
       if self.launch.org : self.org = self.launch.org
 
   def handlesetup(self, web, session, options):
@@ -454,12 +477,14 @@ class LTI():
 
     # Make the user and link to either then organization or the course
     user = None
+    course_user = False
     if ( len(user_id) > 0 ) :
       if org:
         user = LTI_User.get_or_insert("key:"+user_id, parent=org)
       else :
         user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
         user.course = course
+        course_user = True
       self.modelload(user, web.request, "user_")
       user.put()
 
@@ -482,10 +507,12 @@ class LTI():
     # organization and we have some organizational data - 
     # we stash it under the course.
  
+    course_org = False
     if not org and len(org_id) > 0 :
       org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
       self.modelload(org, web.request, "org_")
       org.course = course
+      course_org = True
       org.put()
 
     # Clean up launches - Delete up to 10 "old launches"
@@ -506,9 +533,16 @@ class LTI():
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
     launch.password = str(uuid.uuid4())
-    launch.user = user
     launch.memb = memb
-    launch.org = org
+    if course_org:
+      launch.course_org = org
+    else:
+      launch.org = org
+    if course_user:
+      launch.course_user = user
+    else:
+      launch.user = user
+
     launch.course = course
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
