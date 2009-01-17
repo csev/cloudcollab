@@ -335,7 +335,7 @@ class LTI():
 
     # Get critical if there is some unauthorized reuse
     if reused and not options.get("allow_digest_reuse", False) :
-      self.launcherror(web, doHtml, dig, "Digest Reused")
+      self.launcherror(web, doHtml, doDirect, dig, "Digest Reused")
       return
 
     # Validate the sec_org_digest if it is different from sec_digest
@@ -416,7 +416,7 @@ class LTI():
       if course_secret == "" : course_secret = None
 
       if not course:
-        self.launcherror(web, doHtml, dig, "Course not found:"+path_course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course not found:"+path_course_id)
         return
 
       if course_secret == None :
@@ -424,14 +424,14 @@ class LTI():
 
       # No global courses without secrets - sorry
       if not course_secret:
-        self.launcherror(web, doHtml, dig, "Course secret is not set:"+path_course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret is not set:"+path_course_id)
         return
 
       self.debug("course.key()="+str(course.key()))
       success = self.checknonce(nonce, timestamp, digest, course_secret, 
          options.get('nonce_time', 10000000) ) 
       if not success: 
-        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+path_course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret does not validate:"+path_course_id)
         return
 
     # If we have a global org and a global course - add the link
@@ -461,7 +461,7 @@ class LTI():
       if course_secret == "" : course_secret = None
 
       if not course:
-        self.launcherror(web, doHtml, dig, "Course not found:"+course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course not found:"+course_id)
         return
 
       if course_secret == None or len(course_secret) <= 0 :
@@ -469,18 +469,18 @@ class LTI():
 
       # No courses without secrets - sorry
       if not course_secret:
-        self.launcherror(web, doHtml, dig, "Course secret is not set:"+course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret is not set:"+course_id)
         return
 
       self.debug("course.key()="+str(course.key()))
       success = self.checknonce(nonce, timestamp, digest, course_secret, 
          options.get('nonce_time', 10000000) ) 
       if not success: 
-        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+course_id)
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret does not validate:"+course_id)
         return
 
     if ( not course ) :
-       self.launcherror(web, doHtml, dig, "Must have a valid course for a complete launch")
+       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid course for a complete launch")
        return
 
     # Make the user and link to either then organization or the course
@@ -498,7 +498,7 @@ class LTI():
 
     memb = None
     if ( not (user and course ) ) :
-       self.launcherror(web, doHtml, dig, "Must have a valid user for a complete launch")
+       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
        return
 
     memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
@@ -615,10 +615,6 @@ class LTI():
         return False
     
   def checknonce(self, nonce, timestamp, digest, secret = "secret", skew = 100000 ) :
-    self.debug("sec_nonce=" + nonce)
-    self.debug("sec_created=" + timestamp)
-    self.debug("Using secret=" + secret)
-    self.debug("Using digest=" + digest)
 
     if len(nonce) <= 0 or len(timestamp) <= 0 or len(secret) <= 0 or len(digest) <= 0 : return False
 
@@ -639,13 +635,13 @@ class LTI():
 
     # Compute the digest
     presha1 = nonce + timestamp + secret
-    self.debug("Presha1 " + presha1)
+    # self.debug("Presha1 " + presha1)
     sha1 =  hashlib.sha1()
     sha1.update(presha1)
     x = sha1.digest()
     y = base64.b64encode(x)
-    self.debug("postsha1 "+y)
-    self.debug("digest "+digest)
+    # self.debug("postsha1 "+y)
+    # self.debug("digest "+digest)
     success = (digest == y)
 
     self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
@@ -671,17 +667,28 @@ class LTI():
     retval = retval.replace("DESC",desc)
     return retval
 
-  def launcherror(self, web, doHtml, dig, desc) :
+  # It sure would be nice to have an error url to redirect to 
+  def launcherror(self, web, doHtml, doDirect, dig, desc) :
       self.complete = True
+      if doDirect :
+        web.response.out.write("<p>\nIncorrect authentication data presented by the Learning Management System.\n</p>\n")
+        web.response.out.write("<p>\nError code:\n</p>\n")
+        web.response.out.write("<p>\n"+desc+"\n</p>\n")
+        web.response.out.write("<!--\n")
+  
       respString = self.errorResponse(desc)
-      if doHtml:
+      if doDirect or doHhtml:
         web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
         respString = cgi.escape(respString) 
       web.response.out.write(respString)
-      if doHtml:
-        web.response.out.write("\n\nDebug Output:\n")
+      if doDirect or doHhtml:
+        web.response.out.write("\n\nDebug Log:\n")
         web.response.out.write(self.dStr)
+        web.response.out.write("\nRequest Data:\n")
+        web.response.out.write(self.requestdebug(web))
         web.response.out.write("\n</pre>\n")
+      if doDirect :
+        web.response.out.write("\n-->\n")
       if dig:
         dig.debug = self.dStr
         dig.put()
