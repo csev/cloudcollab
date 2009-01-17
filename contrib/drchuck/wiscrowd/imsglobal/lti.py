@@ -21,6 +21,7 @@ class LTI_Org(db.Model):
      url = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
+     course_scoped = db.BooleanProperty(default=False)
 
 class LTI_User(db.Model):
      user_id = db.StringProperty()
@@ -33,6 +34,7 @@ class LTI_User(db.Model):
      locale = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
+     course_scoped = db.BooleanProperty(default=False)
 
 class LTI_Course(db.Model):
      course_id = db.StringProperty()
@@ -54,6 +56,7 @@ class LTI_CourseOrg(db.Model):
      url = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
+     course_scoped = db.BooleanProperty(default=True)
 
 # Users that are scoped to a course
 # It would be nice to extend LTI_User here - but it causes problems 
@@ -70,6 +73,7 @@ class LTI_CourseUser(db.Model):
      locale = db.StringProperty()
      created = db.DateTimeProperty(auto_now_add=True)
      updated = db.DateTimeProperty(auto_now=True)
+     course_scoped = db.BooleanProperty(default=True)
 
 # Many to many mappings from Organizations to Courses
 class LTI_OrgCourse(db.Model):
@@ -405,6 +409,7 @@ class LTI():
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
         self.modelload(org, web.request, "course_")
+        course.course_id = path_course_id
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
@@ -741,9 +746,10 @@ class LTI():
          key = key[len(prefix):]
          thetype = self.modeltype(org, key)
 
-      if ( thetype == "none" ) : continue
-      setattr(org,key,value)
-      count = count + 1
+      # Don't do booleans automatically
+      if ( thetype == "str" or thetype == "int" ) : 
+        setattr(org,key,value)
+        count = count + 1
     self.debug("MODEL LOAD "+str(org.__class__)+" loaded "+str(count)+" keys")
 
   def modeltype(self, obj, key):
@@ -756,6 +762,7 @@ class LTI():
     if attr.find("ext.db.ReferenceProperty") > 0 : return "reference"
     if attr.find("ext.db.DateTimeProperty")  > 0: return "datetime"
     if attr.find("ext.db.IntegerProperty")  > 0: return "int"
+    if attr.find("ext.db.BooleanProperty")  > 0: return "bool"
     return "none"
 
   def modeldump(self, obj):
@@ -770,7 +777,7 @@ class LTI():
       # print "Key " + key + "\n"
       typ = self.modeltype(obj, key)
       # print "Typ " + typ + "\n"
-      if ( typ == "string" or typ == "int" ) :
+      if ( typ == "string" or typ == "int" or typ == "bool" ) :
         val = getattr(obj,key)
 	if ( not val ) : val = "None"
         ret = ret + "  " + key + "=" + str(val) + "\n";
