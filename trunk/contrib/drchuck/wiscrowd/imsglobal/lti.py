@@ -15,7 +15,7 @@ from google.appengine.ext import webapp
 
 class LTI_Org(db.Model):
      org_id = db.StringProperty()
-     secret = db.BlobProperty()
+     secret = db.StringProperty(default="")
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -36,7 +36,7 @@ class LTI_User(db.Model):
 
 class LTI_Course(db.Model):
      course_id = db.StringProperty()
-     secret = db.BlobProperty()
+     secret = db.StringProperty(default="")
      code = db.StringProperty()
      name = db.StringProperty()
      title = db.StringProperty()
@@ -49,7 +49,6 @@ class LTI_CourseOrg(db.Model):
      course = db.ReferenceProperty(LTI_Course, collection_name='orgs')
      # copied from LTI_Org
      org_id = db.StringProperty()
-     # secret = db.BlobProperty()
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -312,7 +311,6 @@ class LTI():
 
     self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+urlpath)
 
-    ### What about ORG Digests - they need love too
     # Clean up the digest - Delete up to 100 2-day-old digests
     nowtime = datetime.utcnow()
     before = nowtime - options.get('digest_expire', timedelta(hours=23))
@@ -340,8 +338,8 @@ class LTI():
       self.launcherror(web, doHtml, dig, "Digest Reused")
       return
 
-    # Validate the sec_org_digest 
-    if len(org_digest) > 0:
+    # Validate the sec_org_digest if it is different from sec_digest
+    if len(org_digest) > 0 and not org_digest == digest :
       orgdig = LTI_Digest.get_or_insert("key:"+org_digest)
       reused = False
       if orgdig.digest == None :
@@ -369,12 +367,15 @@ class LTI():
         org = LTI_Org.get_or_insert("key:"+org_id)
         org_secret = org.secret  # Can't change secret from the web
         self.modelload(org, web.request, "org_")
+        if org_secret == None : org_secret = ""
         org.secret = org_secret
         org.put()
       else : 
-        org = LTI_Org.get_by_keyname("key:"+org_id)
+        org = LTI_Org.get_by_key_name("key:"+org_id)
         if org : 
           org_secret = org.secret
+
+    if org_secret == "" : org_secret = None
 
     if org and org_secret == None :
       org_secret = options.get("default_org_secret",None) 
@@ -404,12 +405,15 @@ class LTI():
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
         self.modelload(org, web.request, "course_")
+	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
       else : 
-        course = LTI_Course.get_by_keyname("key:"+course_id)
+        course = LTI_Course.get_by_key_name("key:"+course_id)
         if course : 
           course_secret = course.secret
+
+      if course_secret == "" : course_secret = None
 
       if not course:
         self.launcherror(web, doHtml, dig, "Course not found:"+path_course_id)
@@ -445,19 +449,22 @@ class LTI():
       if options.get('auto_create_courses', False) :
         course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
-        self.modelload(org, web.request, "course_")
+        self.modelload(course, web.request, "course_")
+	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
       else : 
-        course = LTI_Course.get_by_keyname("key:"+course_id, parent=org)
+        course = LTI_Course.get_by_key_name("key:"+course_id, parent=org)
         if course : 
           course_secret = course.secret
+
+      if course_secret == "" : course_secret = None
 
       if not course:
         self.launcherror(web, doHtml, dig, "Course not found:"+course_id)
         return
 
-      if course_secret == None :
+      if course_secret == None or len(course_secret) <= 0 :
         course_secret = options.get("default_course_secret",None) 
 
       # No courses without secrets - sorry
@@ -469,7 +476,7 @@ class LTI():
       success = self.checknonce(nonce, timestamp, digest, course_secret, 
          options.get('nonce_time', 10000000) ) 
       if not success: 
-        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+path_course_id)
+        self.launcherror(web, doHtml, dig, "Course secret does not validate:"+course_id)
         return
 
     if ( not course ) :
@@ -516,7 +523,7 @@ class LTI():
       course_org = True
       org.put()
 
-    # Clean up launches - Delete up to 10 "old launches"
+    # Clean up launches 
     nowtime = datetime.utcnow()
     before = nowtime - options.get('launch_expire', timedelta(days=2))
     self.debug("Delete launches since "+before.isoformat())

@@ -61,7 +61,7 @@ class MainHandler(webapp.RequestHandler):
          handler.initialize(self.request, self.response)
          fragment = handler.markup()
          if fragment == None : return
-         rendervars = {'fragment' : fragment }
+         rendervars['fragment'] = fragment
          temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
          outstr = template.render(temp, rendervars)
          self.response.out.write(outstr)
