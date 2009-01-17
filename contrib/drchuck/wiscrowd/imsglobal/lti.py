@@ -367,9 +367,7 @@ class LTI():
       self.debug("org.key()="+str(org.key()))
       success = self.checknonce(nonce, timestamp, org_digest, org_secret, 
          options.get('nonce_time', 10000000) ) 
-      if not success: 
-        self.launcherror(web, doHtml, orgdig, "Organizational digest did not validate")
-        return
+      if not success: org = None
 
     self.org = org
 
