@@ -107,24 +107,24 @@ class LTI():
 
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
-     self.web = web
-     self.launch = None
-     self.handlelaunch(web, session, options)
-     if ( self.complete ) : return
-     self.handlesetup(web, session, options)
+    self.web = web
+    self.launch = None
+    self.handlelaunch(web, session, options)
+    if ( self.complete ) : return
+    self.handlesetup(web, session, options)
 
   def setvars(self):
-      self.user = None
-      self.course = None
-      self.memb = None
-      self.org = None
-      if self.launch : 
-        if self.launch.user : self.user = self.launch.user
-        if self.launch.course : self.course = self.launch.course
-        if self.launch.memb : self.memb = self.launch.memb
-        if self.launch.org : self.org = self.launch.org
+    self.user = None
+    self.course = None
+    self.memb = None
+    self.org = None
+    if self.launch : 
+      if self.launch.user : self.user = self.launch.user
+      if self.launch.course : self.course = self.launch.course
+      if self.launch.memb : self.memb = self.launch.memb
+      if self.launch.org : self.org = self.launch.org
 
-  def handlesetup(self, web, session, ptions):
+  def handlesetup(self, web, session, options):
     # get values form the request
     password = web.request.get('lti_launch_password')
     key = web.request.get('lti_launch_key')
@@ -215,19 +215,10 @@ class LTI():
     if ( len(action) < 1 ) : return
     action = action.lower()
     if ( action != 'launchresolve' and action != 'direct' and action != 'launchhtml' ) :
-      self.debug("Nothing action for us  launch...")
       return
 
     self.debug("Running on " + web.request.application_url)
     self.debug("Launch post action=" + action)
-
-    # Echo the required parameters
-    for key in web.request.params.keys(): 
-      value = web.request.get(key) 
-      if len(value) < 100: 
-         self.debug(key+':'+value)
-      else: 
-         self.debug(key+':'+str(len(value))+' (bytes long)')
 
     doHtml = action.lower() == "launchhtml"
     doDirect = action.lower() == "direct"
@@ -235,9 +226,6 @@ class LTI():
     targets = web.request.get('launch_targets')
 
     nonce = web.request.get('sec_nonce')
-    secret = web.request.get('sec_secret')
-    if secret == None or secret == "":
-        secret = "secret"
     timestamp = web.request.get('sec_created')
     digest = web.request.get('sec_digest')
     org_digest = web.request.get('sec_org_digest')
@@ -253,10 +241,10 @@ class LTI():
     # Clean up the digest - Delete up to 10 2-day-old digests
     nowtime = datetime.utcnow()
     self.debug("Current time "+nowtime.isoformat())
-    twodaysago = nowtime - timedelta(2)
+    twodaysago = nowtime - timedelta(hours=23)
     self.debug("Two days ago "+twodaysago.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE create_date < :1", twodaysago)
+    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", twodaysago)
     results = q.fetch(10)
     db.delete(results)
 
@@ -488,7 +476,7 @@ class LTI():
   # Loop through the request keys and see if they can be put 
   # into the model
   def modelload(self, org, req, prefix = None):
-    self.debug("MODEL LOAD "+str(org.__class__))
+    count = 0
     for key in req.params.keys(): 
       value = self.web.request.get(key) 
       thetype = self.modeltype(org, key)
@@ -498,8 +486,9 @@ class LTI():
          thetype = self.modeltype(org, key)
 
       if ( thetype == "none" ) : continue
-      self.debug(key+" ("+thetype+") = "+value)
       setattr(org,key,value)
+      count = count + 1
+    self.debug("MODEL LOAD "+str(org.__class__)+" loaded "+str(count)+" keys")
 
   def modeltype(self, obj, key):
     try:

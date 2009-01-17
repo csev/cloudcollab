@@ -55,7 +55,7 @@ class MainHandler(webapp.RequestHandler):
     # Check to see if the path is a portal path and handle
     # If so get the fragment and render
     for tool in tools:
-      if self.request.path == "/portal" + tool.path :
+      if self.request.path.startswith("/portal" + tool.path) :
          handler = tool.handler()  # make an instance to call
          handler.initialize(self.request, self.response)
          fragment = handler.markup()
@@ -77,7 +77,7 @@ def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', dotest.DoTest),
             ('/logout', LogoutHandler)]
-  routes = routes + [ (x.path, x.handler) for x in tools ]
+  routes = routes + [ (x.path+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )
 
   application = webapp.WSGIApplication(routes, debug=True)
