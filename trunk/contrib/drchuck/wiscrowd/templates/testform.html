@@ -1,9 +1,29 @@
-<h1>Simple IMS LTI Fake LMS Fake POST</h1>
-<p>This simulates the REST web service which is sent to your tool
-from the LMS.  You can see detail of the protocol at
+{% extends "_base.htm" %}
+{% block bodycontent %}
+<h1>IMS Simple Learning Tools Interoperability</h1>
+<p>This system does not maintain its own accounts.  
+It is built from the ground up to accept its login and roster 
+information from some other learning management system 
+using the IMS Simple LTI protocol.  You can see detail 
+of the protocol at
 <a href="http://simplelti.appspot.com/">http://simplelti.appspot.com/</a>
-if you like.  You can also change any of the values below to test variations
-on a theme.  Both digests are generated with a password of secret.
+if you like.  
+</p>
+<p>
+You can login to this application from several places: 
+(1) Sakai using the SimpleLTI tool, 
+(2) Moodle using the SimpleLTI tool, 
+(3) www.cloudcollab.com, 
+(4) simplelti.appspot.com, or 
+(5) you can simulate the launch using the form below.
+</p>
+<p>This form POST will simulate the REST web service call which is 
+sent form the LMS to the tool to do the Single-Sign-On and 
+roster provisioning.  The post includes security signatures
+so that your message is validated - which are included below.
+You can change any of the information to be a different person
+or be part of a different course or use the system with a
+different role.  Both digests are generated with a password of secret.
 </p>
 <form action="/" method="post"> 
 <!--<form action="/lti_course_id/zzz123" method="post"> -->
@@ -109,3 +129,4 @@ on a theme.  Both digests are generated with a password of secret.
   </fieldset>
   <div><input type="submit" value="Submit Launch Parameters"></div>
 </form>
+{% endblock %}

@@ -30,7 +30,8 @@ class DoTest(webapp.RequestHandler):
               'created' : created, 
               'nonce' : nonce, 
               'digest' : y,
-              'toolid' : 'sakai.lti.168' }
+              'toolid' : 'sakai.lti.168',
+              'path' : self.request.path }
     self.response.out.write(template.render(path, parms))
 
   def post(self):
