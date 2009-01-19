@@ -35,22 +35,28 @@ google.friendconnect.container.renderMembersGadget(
       {% endifnotequal %}
 <p>
 Welcome to CloudCollab.com.  This is a login server for IMS Simple
-Learning Tools Interoperability.  This server can launch you 
-into <a href="http://www.cloudsocial.org"> CloudSocial-enabled</a> content
-or into tools that can be launched using IMS Simple Learning Tools
-Interoperability.
+Learning Tools Interoperability.  
 </p>
+<p>This server uses IMS Simple LTI to launch you into:
+<ul>
+<li>CloudSocial-enabled web content with the "pop-up" LMS.</li>
+<li>The CloudCollab LMS and tool set which uses IMS Simple 
+LTI as its Single-Sign-On</li>
+</ul>
+The steps are: (1) log in to this server using your Google credentials and (2) 
+go to the launch page and launch content.
+<p>
+When you log in to CloudCollab you will be asked for your Google ID/PW.  
+Look at the URL - this is really Google.  Rest assured that the only 
+thing that CloudCollab knows about you after you log in is your 
+E-Mail address and nickname and the fact that you have logged in.   
+We are given no other data from Google.
+<p>
 This site also is participating in the Beta of 
 <a href="http://www.google.com/friendconnect/" target="_new">Google
-Friend Connect</a>.  Please join the site at left to get the best
-experience as some of the CloudCollab tools are Friend Connect Widgets.
-<p>
-CloudCollab.com uses Google as its authentication - so when you log in to 
-CloudCollab you will be asked for your Google ID/PW.  Look at the URL - this
-is really Google.  Rest assured that the only thing that CloudCollab 
-knows about you after you log in is your E-Mail address and nickname and 
-the fact that you have logged in.   We are given no other data from 
-Google.
+Friend Connect</a>.  Please join the FriendConnect site at left to 
+get the best experience as some of the CloudCollab tools are 
+Friend Connect Widgets.
 <p>
 This site is written in Python and is running on the 
 <a href="http://code.google.com/appengine/" target="new">
