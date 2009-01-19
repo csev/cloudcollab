@@ -10,7 +10,25 @@ import dotest
 
 from  wiscrowd.wiscrowd import wiscrowd
 
+# Register all the tools - add new tools here
 tools = [ wiscrowd() ]
+
+# A helper to do the rendering and to add the necessary
+# variables for the _base.htm template
+def doRender(self, tname = "index.htm", values = { }):
+  if tname.find("_") == 0: return
+  temp = os.path.join(os.path.dirname(__file__),
+         'templates/' + tname)
+  if not os.path.isfile(temp):
+    return False
+
+  # Make a copy of the dictionary and add the path and session
+  newval = dict(values)
+  newval['path'] = self.request.path
+
+  outstr = template.render(temp, newval)
+  self.response.out.write(outstr)
+  return True
 
 class LogoutHandler(webapp.RequestHandler):
 
@@ -67,9 +85,13 @@ class MainHandler(webapp.RequestHandler):
          self.response.out.write(outstr)
          return
 
+    rendervars['dash'] = "yes"
+
+    # See if there is a template of the same name as the path
+    if doRender(self, self.request.path, rendervars ) : return
+
     # If this is not one of our registered tools,
     # send out the main page
-    rendervars['dash'] = "yes"
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
