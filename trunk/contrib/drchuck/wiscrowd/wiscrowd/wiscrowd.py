@@ -24,7 +24,7 @@ class ToolRegistration():
 def wiscrowd():
    return ToolRegistration('/wiz', WisHandler, "Wisdom of Crowds", """This application allows you to play games
 where you are trying to determine something as a group by averaging many independent guesses.  
-It is basesd on the book by James Suroweki called "The Wisdom of Crowds""")
+It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 
 class WisHandler(webapp.RequestHandler):
 
