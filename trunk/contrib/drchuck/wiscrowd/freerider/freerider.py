@@ -86,9 +86,10 @@ class FreeRiderHandler(webapp.RequestHandler):
 
   def post(self):
     istr = self.markup()
-    temp = os.path.join(os.path.dirname(__file__), 'templates/body.htm')
-    outstr = template.render(temp, {'output' : istr} )
-    self.response.out.write(outstr)
+    if istr != None:
+      temp = os.path.join(os.path.dirname(__file__), 'templates/body.htm')
+      outstr = template.render(temp, {'output' : istr} )
+      self.response.out.write(outstr)
 
   # All your base are belong to us!
   def mainscreen(self, lti, vars = { }):
