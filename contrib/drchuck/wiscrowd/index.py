@@ -9,9 +9,10 @@ from imsglobal.lti import LTI
 import dotest
 
 from  wiscrowd.wiscrowd import wiscrowd
+from  freerider.freerider import freerider
 
 # Register all the tools - add new tools here
-tools = [ wiscrowd() ]
+tools = [ wiscrowd(), freerider() ]
 
 # A helper to do the rendering and to add the necessary
 # variables for the _base.htm template
