@@ -214,7 +214,7 @@ class FreeRiderHandler(webapp.RequestHandler):
       current = 0
       turn = turn + 1
       # Split the pot
-      each = ((pot * 1.6) / playercount) 
+      each = int((pot * 1.6) / playercount) 
       for i in range(len(chips)):
         chips[i] = chips[i] + each
       pot = 0
@@ -240,6 +240,11 @@ class FreeRiderHandler(webapp.RequestHandler):
     last = data["last"]
     pot = data["pot"]
 
+    me = None
+    for i in range(len(players)):
+      if players[i] == lti.user.email : 
+         me = i
+
     r = "<pre>\n"
 
     if turn > 0 and turn < 5 and lti.user.email == players[current]:
@@ -250,10 +255,11 @@ class FreeRiderHandler(webapp.RequestHandler):
     elif turn > 4:
       r = r + "Game completed\n"
     else:
-      r = r + "Current turn: "+str(turn)+"\n";
+      r = r + "GAME ON! Current turn: "+str(turn)+"\n";
 
     r = r + "\n"
     if lti.user.email in players and not lti.isInstructor() :
+      r = r + "Your pot: "+str(chips[me])+" Contribution History:"+str(last[me])+"\n"
       r = r + "Players: "+str(len(players))+"\n"
     else:
       r = r + "Current pot total: " + str(pot) + "\n"
