@@ -66,7 +66,7 @@ class WisHandler(webapp.RequestHandler):
     except: guess = -1
 
     msg = ""
-    if lti.isInstructor() and name == "reset":
+    if lti.isInstructor() and string.lower(name) == "reset":
        data = dict()
        wisdom.blob = pickle.dumps( data ) 
        wisdom.put()

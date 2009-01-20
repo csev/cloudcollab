@@ -1,0 +1,49 @@
+<p>Hello: {{ username }} 
+{% ifequal instructor "yes" %}
+(Instructor)
+{% endifequal %}
+from {{ course }}</p>
+{% ifnotequal msg None %}
+<p>{{ msg }}</p>
+{% endifnotequal %}
+{% ifnotequal resetaction None %}
+      <button onClick="window.location='{{ resetaction }}'; return false;">
+        Reset
+      </button>
+{% endifnotequal %}
+{% ifnotequal joinaction None %}
+      <button onClick="window.location='{{ joinaction }}'; return false;">
+        Join
+      </button>
+{% endifnotequal %}
+{% ifnotequal playaction None %}
+<form method="post" action="{{ playaction }}">
+<p>Chips in Pot: <input type="text" name="chips"/></p>
+<p><input type="submit"></p>
+</form>
+{% endifnotequal %}
+{% ifnotequal ave None %}
+<p>Average: {{ ave }} Count: {{count}} </p>
+{% endifnotequal %}
+{% ifnotequal data None %}
+<pre>
+{{ data }}
+</pre>
+{% endifnotequal %}
+<div id="messagescontent">
+          Loading...
+</div>
+<script>
+function updateMsg() { 
+$.ajax({
+  url: "{{ messagesaction }}",
+  cache: false,
+  success: function(html){
+    $("#messagescontent").html(html);
+  }
+ }); 
+ setTimeout('updateMsg()', 20000); 
+}
+updateMsg();
+</script>
+
