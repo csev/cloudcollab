@@ -148,9 +148,6 @@ class FreeRiderHandler(webapp.RequestHandler):
     players = data["players"]
     chips = data["chips"]
     last = data["last"]
-    if len(players) >= playercount: 
-      msg = "The game is closed - you can play next time"
-      return self.mainscreen(lti, {'msg' : msg})
 
     if not lti.user.email or len(lti.user.email) < 1:
       msg = "You must have an E-Mail to play"
@@ -158,6 +155,10 @@ class FreeRiderHandler(webapp.RequestHandler):
     
     if lti.user.email in players:
       msg = "You have already joined the game"
+      return self.mainscreen(lti, {'msg' : msg})
+
+    if len(players) >= playercount: 
+      msg = "The game is closed - you can play next time"
       return self.mainscreen(lti, {'msg' : msg})
 
     players.append(lti.user.email)
