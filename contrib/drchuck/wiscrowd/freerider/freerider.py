@@ -82,12 +82,13 @@ class FreeRiderHandler(webapp.RequestHandler):
     memcache.replace(freekey, freerider, 3600)
 
   def get(self):
-    istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
+    self.post()
 
   def post(self):
     istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
+    temp = os.path.join(os.path.dirname(__file__), 'templates/body.htm')
+    outstr = template.render(temp, {'output' : istr} )
+    self.response.out.write(outstr)
 
   # All your base are belong to us!
   def mainscreen(self, lti, vars = { }):
