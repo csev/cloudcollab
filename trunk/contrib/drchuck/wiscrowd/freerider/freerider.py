@@ -20,11 +20,20 @@ class ToolRegistration():
     self.title = title
     self.desc = desc
 
-# Return out Registration
+# Return our Registration
 def freerider():
    return ToolRegistration('/freerider', FreeRiderHandler, "Free Rider", """This 
 application allows you to play the "Free Rider" game as described by
 James Surowiecki in the book "The Wisdom of Crowds".""")
+
+class GameState():
+   def __init__(self):
+     self.players = list()
+     self.chips = list()
+     self.last = list()
+     self.turn = -1
+     self.current = 0
+     self.pot = 0
 
 def getactionpath(self, action="", forajax=False):
   basepath = "/freerider"
@@ -54,25 +63,8 @@ class FreeRiderHandler(webapp.RequestHandler):
     freekey = "FreeRider-"+str(lti.course.key())
     logging.info("Loading Free key="+freekey)
     freerider =  memcache.get(freekey)
-    newride = False
     if freerider == None:
-      freerider = dict()
-      newride = True
-
-    if not 'players' in freerider:
-       freerider["players"] = list()
-    if not 'chips' in freerider:
-       freerider["chips"] = list()
-    if not 'last' in freerider:
-       freerider["last"] = list()
-    if not 'turn' in freerider:
-       freerider['turn'] = 0
-    if not 'current' in freerider:
-       freerider['current'] = 0
-    if not 'pot' in freerider:
-       freerider['pot'] = 0
-
-    if newride : 
+      freerider = GameState()
       memcache.add(freekey, freerider, 3600)
     return freerider
 
@@ -105,8 +97,7 @@ class FreeRiderHandler(webapp.RequestHandler):
       rendervars['instructor'] = "yes"
 
     data = self.getmodel(lti)
-    players = data["players"]
-    if ( len(players) < 4 ) :
+    if ( len(data.players) < 4 ) :
       rendervars['joinaction'] = getactionpath(self,"join")
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
@@ -138,40 +129,35 @@ class FreeRiderHandler(webapp.RequestHandler):
     if not lti.isInstructor() :
       msg = "Only the instructor can reset!"
       return self.mainscreen(lti, {'msg' : msg})
-    data = dict()
+    data = GameState()
+    logging.info("Data = "+str(data))
     self.putmodel(data, lti)
     msg = "Game data reset"
     return self.mainscreen(lti, {'msg' : msg})
 
   def action_join(self,lti) :
     data = self.getmodel(lti)
-    players = data["players"]
-    chips = data["chips"]
-    last = data["last"]
 
     if not lti.user.email or len(lti.user.email) < 1:
       msg = "You must have an E-Mail to play"
       return self.mainscreen(lti, {'msg' : msg})
     
-    if lti.user.email in players:
+    if lti.user.email in data.players:
       msg = "You have already joined the game"
       return self.mainscreen(lti, {'msg' : msg})
 
-    if len(players) >= playercount: 
+    if len(data.players) >= playercount: 
       msg = "The game is closed - you can play next time"
       return self.mainscreen(lti, {'msg' : msg})
 
-    players.append(lti.user.email)
-    chips.append(20)
-    last.append( list () )
-    data["players"] = players
-    data["chips"] = chips
-    data["last"] = last
+    data.players.append(lti.user.email)
+    data.chips.append(20)
+    data.last.append( list () )
 
     # Let the game begin!
-    if len(players) >= playercount: 
-       data['turn'] = 1
-       data['current'] = 0
+    if len(data.players) >= playercount: 
+       data.turn = 1
+       data.current = 0
        
     self.putmodel(data, lti)
 
@@ -180,20 +166,14 @@ class FreeRiderHandler(webapp.RequestHandler):
 
   def action_play(self,lti) :
     data = self.getmodel(lti)
-    players = data["players"]
-    chips = data["chips"]
-    last = data["last"]
-    current = data["current"]
-    turn = data["turn"]
-    pot = data["pot"]
 
-    if turn < 1 or turn > 4: 
+    if data.turn < 1 or data.turn > 4: 
       msg = "The game is not running!"
       return self.mainscreen(lti, {'msg' : msg})
-    if not lti.user.email in players:
+    if not lti.user.email in data.players:
       msg = "You are not currently playing!"
       return self.mainscreen(lti, {'msg' : msg})
-    if not lti.user.email == players[current] :
+    if not lti.user.email == data.players[data.current] :
       msg = "It is not your turn!"
       return self.mainscreen(lti, {'msg' : msg})
 
@@ -201,30 +181,24 @@ class FreeRiderHandler(webapp.RequestHandler):
     try: contrib = int(contrib)
     except: contrib = -1
     
-    if contrib > chips[current] : contrib = chips[current]
+    if contrib > data.chips[data.current] : contrib = data.chips[data.current]
 
     if contrib < 0 :
       msg = "Please enter a real number"
       return self.mainscreen(lti, {'msg' : msg})
 
-    pot = pot + contrib
-    chips[current] = chips[current] - contrib
-    last[current].append(contrib)
-    current = current + 1
-    if current >= playercount:
-      current = 0
-      turn = turn + 1
+    data.pot = data.pot + contrib
+    data.chips[data.current] = data.chips[data.current] - contrib
+    data.last[data.current].append(contrib)
+    data.current = data.current + 1
+    if data.current >= playercount:
+      data.current = 0
+      data.turn = data.turn + 1
       # Split the pot
-      each = int((pot * 1.6) / playercount) 
-      for i in range(len(chips)):
-        chips[i] = chips[i] + each
-      pot = 0
-
-    data["pot"] = pot
-    data["current"] = current
-    data["turn"] = turn
-    data["chips"] = chips
-    data["last"] = last
+      each = int((data.pot * 1.6) / playercount) 
+      for i in range(len(data.chips)):
+        data.chips[i] = data.chips[i] + each
+      data.pot = 0
 
     self.putmodel(data, lti)
 
@@ -233,43 +207,36 @@ class FreeRiderHandler(webapp.RequestHandler):
 
   def action_messages(self,lti) :
     data = self.getmodel(lti)
-     
-    players = data["players"]
-    chips = data["chips"]
-    turn = data["turn"]
-    current = data["current"]
-    last = data["last"]
-    pot = data["pot"]
 
     me = None
-    for i in range(len(players)):
-      if players[i] == lti.user.email : 
+    for i in range(len(data.players)):
+      if data.players[i] == lti.user.email : 
          me = i
 
     r = "<pre>\n"
 
-    if turn > 0 and turn < 5 and lti.user.email == players[current]:
+    if data.turn > 0 and data.turn < 5 and lti.user.email == data.players[data.current]:
       r = r + '<font color="red">It is your turn</font>\n\n'
 
-    if turn < 1:
+    if data.turn < 1:
       r = r + "Game has not started\n"
-    elif turn > 4:
+    elif data.turn > 4:
       r = r + "Game completed\n"
     else:
-      r = r + "GAME ON! Current turn: "+str(turn)+"\n";
+      r = r + "GAME ON! Current turn: "+str(data.turn)+"\n";
 
     r = r + "\n"
-    if lti.user.email in players and not lti.isInstructor() :
-      r = r + "Your pot: "+str(chips[me])+" Contribution History:"+str(last[me])+"\n"
-      r = r + "Players: "+str(len(players))+"\n"
+    if lti.user.email in data.players and not lti.isInstructor() :
+      r = r + "Your pot: "+str(data.chips[me])+" Contribution History:"+str(data.last[me])+"\n"
+      r = r + "Players: "+str(len(data.players))+"\n"
     else:
-      r = r + "Current pot total: " + str(pot) + "\n"
-      for i in range(len(players)):
-         if current == i :
+      r = r + "Current pot total: " + str(data.pot) + "\n"
+      for i in range(len(data.players)):
+         if data.current == i :
            r = r + "===> "
          else:
            r = r + "     "
-         r = r + "(" + str(chips[i]) + " / " + str(last[i]) + ") " + players[i] + "\n"
+         r = r + "(" + str(data.chips[i]) + " / " + str(data.last[i]) + ") " + data.players[i] + "\n"
 
     r = r + "</pre>\n"
     return r
