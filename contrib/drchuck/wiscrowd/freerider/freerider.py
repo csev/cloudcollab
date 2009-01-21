@@ -9,8 +9,6 @@ from google.appengine.api import memcache
 from util.sessions import Session
 from imsglobal.lti import LTI
 
-playercount = 2
-
 # Move this to LMS
 class ToolRegistration():
 
@@ -27,7 +25,8 @@ application allows you to play the "Free Rider" game as described by
 James Surowiecki in the book "The Wisdom of Crowds".""")
 
 class GameState():
-   def __init__(self):
+   def __init__(self, playercount=2):
+     self.playercount = playercount
      self.players = list()
      self.chips = list()
      self.last = list()
@@ -96,8 +95,8 @@ class FreeRiderHandler(webapp.RequestHandler):
       rendervars['resetaction'] = getactionpath(self,"reset")
       rendervars['instructor'] = "yes"
 
-    data = self.getmodel(lti)
-    if ( len(data.players) < 4 ) :
+    gm = self.getmodel(lti)
+    if ( len(gm.players) < 4 ) :
       rendervars['joinaction'] = getactionpath(self,"join")
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
@@ -129,51 +128,50 @@ class FreeRiderHandler(webapp.RequestHandler):
     if not lti.isInstructor() :
       msg = "Only the instructor can reset!"
       return self.mainscreen(lti, {'msg' : msg})
-    data = GameState()
-    logging.info("Data = "+str(data))
-    self.putmodel(data, lti)
-    msg = "Game data reset"
+    gm = GameState()
+    self.putmodel(gm, lti)
+    msg = "Game gm reset"
     return self.mainscreen(lti, {'msg' : msg})
 
   def action_join(self,lti) :
-    data = self.getmodel(lti)
+    gm = self.getmodel(lti)
 
     if not lti.user.email or len(lti.user.email) < 1:
       msg = "You must have an E-Mail to play"
       return self.mainscreen(lti, {'msg' : msg})
     
-    if lti.user.email in data.players:
+    if lti.user.email in gm.players:
       msg = "You have already joined the game"
       return self.mainscreen(lti, {'msg' : msg})
 
-    if len(data.players) >= playercount: 
+    if len(gm.players) >= gm.playercount: 
       msg = "The game is closed - you can play next time"
       return self.mainscreen(lti, {'msg' : msg})
 
-    data.players.append(lti.user.email)
-    data.chips.append(20)
-    data.last.append( list () )
+    gm.players.append(lti.user.email)
+    gm.chips.append(20)
+    gm.last.append( list () )
 
     # Let the game begin!
-    if len(data.players) >= playercount: 
-       data.turn = 1
-       data.current = 0
+    if len(gm.players) >= gm.playercount: 
+       gm.turn = 1
+       gm.current = 0
        
-    self.putmodel(data, lti)
+    self.putmodel(gm, lti)
 
     msg = "Welcome to the game"
     return self.mainscreen(lti, {'msg' : msg})
 
   def action_play(self,lti) :
-    data = self.getmodel(lti)
+    gm = self.getmodel(lti)
 
-    if data.turn < 1 or data.turn > 4: 
+    if gm.turn < 1 or gm.turn > 4: 
       msg = "The game is not running!"
       return self.mainscreen(lti, {'msg' : msg})
-    if not lti.user.email in data.players:
+    if not lti.user.email in gm.players:
       msg = "You are not currently playing!"
       return self.mainscreen(lti, {'msg' : msg})
-    if not lti.user.email == data.players[data.current] :
+    if not lti.user.email == gm.players[gm.current] :
       msg = "It is not your turn!"
       return self.mainscreen(lti, {'msg' : msg})
 
@@ -181,62 +179,62 @@ class FreeRiderHandler(webapp.RequestHandler):
     try: contrib = int(contrib)
     except: contrib = -1
     
-    if contrib > data.chips[data.current] : contrib = data.chips[data.current]
+    if contrib > gm.chips[gm.current] : contrib = gm.chips[gm.current]
 
     if contrib < 0 :
       msg = "Please enter a real number"
       return self.mainscreen(lti, {'msg' : msg})
 
-    data.pot = data.pot + contrib
-    data.chips[data.current] = data.chips[data.current] - contrib
-    data.last[data.current].append(contrib)
-    data.current = data.current + 1
-    if data.current >= playercount:
-      data.current = 0
-      data.turn = data.turn + 1
+    gm.pot = gm.pot + contrib
+    gm.chips[gm.current] = gm.chips[gm.current] - contrib
+    gm.last[gm.current].append(contrib)
+    gm.current = gm.current + 1
+    if gm.current >= gm.playercount:
+      gm.current = 0
+      gm.turn = gm.turn + 1
       # Split the pot
-      each = int((data.pot * 1.6) / playercount) 
-      for i in range(len(data.chips)):
-        data.chips[i] = data.chips[i] + each
-      data.pot = 0
+      each = int((gm.pot * 1.6) / gm.playercount) 
+      for i in range(len(gm.chips)):
+        gm.chips[i] = gm.chips[i] + each
+      gm.pot = 0
 
-    self.putmodel(data, lti)
+    self.putmodel(gm, lti)
 
     msg = "Thanks for your contribution!"
     return self.mainscreen(lti, {'msg' : msg})
 
   def action_messages(self,lti) :
-    data = self.getmodel(lti)
+    gm = self.getmodel(lti)
 
     me = None
-    for i in range(len(data.players)):
-      if data.players[i] == lti.user.email : 
+    for i in range(len(gm.players)):
+      if gm.players[i] == lti.user.email : 
          me = i
 
     r = "<pre>\n"
 
-    if data.turn > 0 and data.turn < 5 and lti.user.email == data.players[data.current]:
+    if gm.turn > 0 and gm.turn < 5 and lti.user.email == gm.players[gm.current]:
       r = r + '<font color="red">It is your turn</font>\n\n'
 
-    if data.turn < 1:
+    if gm.turn < 1:
       r = r + "Game has not started\n"
-    elif data.turn > 4:
+    elif gm.turn > 4:
       r = r + "Game completed\n"
     else:
-      r = r + "GAME ON! Current turn: "+str(data.turn)+"\n";
+      r = r + "GAME ON! Current turn: "+str(gm.turn)+"\n";
 
     r = r + "\n"
-    if lti.user.email in data.players and not lti.isInstructor() :
-      r = r + "Your pot: "+str(data.chips[me])+" Contribution History:"+str(data.last[me])+"\n"
-      r = r + "Players: "+str(len(data.players))+"\n"
+    if lti.user.email in gm.players and not lti.isInstructor() :
+      r = r + "Your pot: "+str(gm.chips[me])+" Contribution History:"+str(gm.last[me])+"\n"
+      r = r + "Players: "+str(len(gm.players))+"\n"
     else:
-      r = r + "Current pot total: " + str(data.pot) + "\n"
-      for i in range(len(data.players)):
-         if data.current == i :
+      r = r + "Current pot total: " + str(gm.pot) + "\n"
+      for i in range(len(gm.players)):
+         if gm.current == i :
            r = r + "===> "
          else:
            r = r + "     "
-         r = r + "(" + str(data.chips[i]) + " / " + str(data.last[i]) + ") " + data.players[i] + "\n"
+         r = r + "(" + str(gm.chips[i]) + " / " + str(gm.last[i]) + ") " + gm.players[i] + "\n"
 
     r = r + "</pre>\n"
     return r
