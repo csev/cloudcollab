@@ -682,11 +682,11 @@ class LTI():
         web.response.out.write("<!--\n")
   
       respString = self.errorResponse(desc)
-      if doDirect or doHhtml:
+      if doDirect or doHtml:
         web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
         respString = cgi.escape(respString) 
       web.response.out.write(respString)
-      if doDirect or doHhtml:
+      if doDirect or doHtml:
         web.response.out.write("\n\nDebug Log:\n")
         web.response.out.write(self.dStr)
         web.response.out.write("\nRequest Data:\n")
