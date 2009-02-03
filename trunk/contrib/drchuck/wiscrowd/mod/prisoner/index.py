@@ -11,10 +11,9 @@ from imsglobal.lti import LTI
 from core.tool import ToolRegistration
 
 # Return our Registration
-def freerider():
-   return ToolRegistration('/freerider', FreeRiderHandler, "Free Rider", """This 
-application allows you to play the "Free Rider" game as described by
-James Surowiecki in the book "The Wisdom of Crowds".""")
+def register():
+   return ToolRegistration('/prisoner', PrisonerHandler, "Prisoner's Dilemma", """This 
+application allows you to play the "Prisoner's Dilemma" game.""")
 
 class GameState():
    def __init__(self, playercount=2):
@@ -46,12 +45,12 @@ def getaction(self):
   logging.info("Action="+action)
   return action
 
-class FreeRiderHandler(webapp.RequestHandler):
+class PrisonerHandler(webapp.RequestHandler):
 
   outStr = ""
 
   def getmodel(self, lti):
-    freekey = "FreeRider-"+str(lti.course.key())
+    freekey = "Prisoner-"+str(lti.course.key())
     logging.info("Loading Free key="+freekey)
     freerider =  memcache.get(freekey)
     # If we changed the program ignore old things in the cache
@@ -61,7 +60,7 @@ class FreeRiderHandler(webapp.RequestHandler):
     return freerider
 
   def putmodel(self, freerider, lti):
-    freekey = "FreeRider-"+str(lti.course.key())
+    freekey = "Prisoner-"+str(lti.course.key())
     logging.info("Storing Free key="+freekey)
     memcache.replace(freekey, freerider, 3600)
 

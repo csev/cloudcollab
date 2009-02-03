@@ -14,6 +14,11 @@ from  freerider.freerider import freerider
 # Register all the tools - add new tools here
 tools = [ wiscrowd(), freerider() ]
 
+# New Registration Pattern - Soon to Generalize
+X = __import__("mod.prisoner.prisoner", globals(), locals(), [''])
+tools.append( X.register() )
+
+
 # A helper to do the rendering and to add the necessary
 # variables for the _base.htm template
 def doRender(self, tname = "index.htm", values = { }):
