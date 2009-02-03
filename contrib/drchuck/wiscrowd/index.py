@@ -15,7 +15,7 @@ from  freerider.freerider import freerider
 tools = [ wiscrowd(), freerider() ]
 
 # New Registration Pattern - Soon to Generalize
-X = __import__("mod.prisoner.prisoner", globals(), locals(), [''])
+X = __import__("mod.prisoner.index", globals(), locals(), [''])
 tools.append( X.register() )
 
 
