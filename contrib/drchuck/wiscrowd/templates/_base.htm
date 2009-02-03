@@ -19,7 +19,7 @@
        <li><a href="/screenshots.htm" {% ifequal path '/screenshots.htm' %}class="selected"{% endifequal %}>ScreenShots</a></li>
        <li><a href="http://www.cloudcollab.com/">CloudCollab</a>
       {% ifnotequal user None %}
-       <li><a href="/logout">Logout ({{user.email}})</a></li>
+       <li><a href="/logout">Logout ({{username}})</a></li>
       {% else %}
        <li><a href="/login" {% ifequal path '/login' %}class="selected"{% endifequal %}>Login</a></li>
       {% endifnotequal %}

@@ -719,13 +719,13 @@ class LTI():
 
   def getUserName(self):
      if ( not ( self.launch and self.user ) ) : return "Anonymous"
-     if ( self.user.displayid ) : return self.user.displayid
+     if ( self.user.displayid and len(self.user.displayid) > 0) : return self.user.displayid
      retval = ""
-     if ( self.user.firstname and self.user.lastname ) : 
+     if ( self.user.firstname and self.user.lastname and len(self.user.firstname) > 0 and len(self.user.lastname) > 0) : 
         return self.user.firstname + " " + self.user.lastname
-     elif ( self.user.firstname ) : return self.user.firstname
-     elif ( self.user.lastname ) : return self.user.lastname
-     if ( self.user.email ) : return self.user.email
+     elif ( self.user.firstname and len(self.user.firstname) > 0) : return self.user.firstname
+     elif ( self.user.lastname and len(self.user.lastname) > 0) : return self.user.lastname
+     if ( self.user.email and len(self.user.email) > 0) : return self.user.email
      return ""
 
   def getCourseName(self):
