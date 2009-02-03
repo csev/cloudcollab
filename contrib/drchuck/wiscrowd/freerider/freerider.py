@@ -62,7 +62,8 @@ class FreeRiderHandler(webapp.RequestHandler):
     freekey = "FreeRider-"+str(lti.course.key())
     logging.info("Loading Free key="+freekey)
     freerider =  memcache.get(freekey)
-    if freerider == None:
+    # If we changed the program ignore old things in the cache
+    if freerider == None or not isinstance(freerider, GameState):
       freerider = GameState()
       memcache.add(freekey, freerider, 3600)
     return freerider
