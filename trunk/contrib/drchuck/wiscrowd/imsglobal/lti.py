@@ -280,7 +280,7 @@ class LTI():
     targets = web.request.get('launch_targets')
 
     if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 or len(user_id) <= 0 or len(course_id) <= 0 : 
-      self.launcherror(web, doHtml, None, "Missing one of sec_nonce, sec_created, sec_digest, course_id, user_id")
+      self.launcherror(web, doHtml, doDirect, None, "Missing one of sec_nonce, sec_created, sec_digest, course_id, user_id")
       return
 
     self.debug("Running on " + web.request.application_url)
@@ -289,7 +289,7 @@ class LTI():
     # Determine check the timestamp for validity
     tock = self.parsetime(timestamp)
     if not tock :
-      self.launcherror(web, doHtml, None, "Error in format of TimeStamp")
+      self.launcherror(web, doHtml, doDirect, None, "Error in format of TimeStamp")
       return
 
     org_digest = web.request.get('sec_org_digest')
@@ -358,7 +358,7 @@ class LTI():
   
       # Get critical if there is some unauthorized reuse
       if reused and not options.get("allow_digest_reuse", False) :
-        self.launcherror(web, doHtml, orgdig, "Organizational digest reused")
+        self.launcherror(web, doHtml, doDirect, orgdig, "Organizational digest reused")
         return
 
     # Lets check to see if we have an organizational id and organizational secret
@@ -694,6 +694,7 @@ class LTI():
         web.response.out.write("\n</pre>\n")
       if doDirect :
         web.response.out.write("\n-->\n")
+
       if dig:
         dig.debug = self.dStr
         dig.put()
