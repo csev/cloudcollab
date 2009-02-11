@@ -3,6 +3,7 @@ import os
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
+from google.appengine.api import users
 from util.sessions import Session
 from imsglobal.lti import LTI
 
@@ -40,6 +41,26 @@ def doRender(self, tname = "index.htm", values = { }):
   self.response.out.write(outstr)
   return True
 
+class LoginHandler(webapp.RequestHandler):
+
+  def get(self):
+    user = users.get_current_user()
+
+    if user:
+      pass
+    else:
+      self.redirect(users.create_login_url(self.request.uri))
+      return
+
+    que = db.Query(User).filter("email =",user.email())
+    results = que.fetch(limit=1)
+    if len(results) > 0 :
+      doRender(self, 'welcome.htm',
+               { 'message' : 'Welcome back - You may update your info or press "Continue"',
+                                'userobj': results[0]})
+    else:
+      doRender(self, 'welcome.htm', { 'message' : 'Please enter your first and last name'})
+
 class LogoutHandler(webapp.RequestHandler):
 
   def get(self):
@@ -68,7 +89,8 @@ class MainHandler(webapp.RequestHandler):
     # so we are done
     if ( lti.complete ) : return
 
-    rendervars = { 'path': self.request.path }
+    rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
+
     logging.info("index.py launch="+str(lti.launch));
     if lti.launch :
       if ( lti.user ) : rendervars['user'] = lti.user
