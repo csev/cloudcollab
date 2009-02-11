@@ -7,7 +7,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext import db
 
 from util.sessions import Session
-from imsglobal.lti import LTI
+from imsglobal.lti import Context
 from core.tool import ToolRegistration
 
 class Wisdom(db.Model) :
@@ -34,7 +34,7 @@ class WisHandler(webapp.RequestHandler):
   # This method returns tool output as a string
   def markup(self):
     self.session = Session()
-    lti = LTI(self, self.session);
+    lti = Context(self, self.session);
     
     if ( lti.complete ) : return
 

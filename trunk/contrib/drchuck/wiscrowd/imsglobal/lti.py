@@ -110,7 +110,7 @@ class LTI_Launch(db.Model):
      width = db.StringProperty()
      height = db.StringProperty()
 
-class LTI():
+class Context():
   dStr = ""
   complete = False
   launch = None
@@ -118,6 +118,18 @@ class LTI():
   course = None
   memb = None
   org = None
+
+  def getUrlParms(self) :
+    if self.launch :
+      return { 'lti_launch_key': self.launch.key() }
+    else : 
+      return { }
+
+  def getFormFields(self) : 
+    if self.launch :
+      return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
+    else : 
+      return { }
 
   # Option values
   Liberal = { 'nonce_time': 1000000, 
