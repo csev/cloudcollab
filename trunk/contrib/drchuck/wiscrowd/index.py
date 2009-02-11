@@ -23,7 +23,6 @@ tools.append( X.register() )
 X = __import__("mod.wiscrowd.index", globals(), locals(), [''])
 tools.append( X.register() )
 
-
 # A helper to do the rendering and to add the necessary
 # variables for the _base.htm template
 def doRender(self, tname = "index.htm", values = { }):
@@ -84,8 +83,24 @@ class MainHandler(webapp.RequestHandler):
 
     # Check to see if the path is a portal path and handle
     # If so get the fragment and render
-    for tool in tools:
-      if self.request.path.startswith("/portal" + tool.path) :
+    tool = None
+    for toolreg in tools:
+        if self.request.path.startswith("/portal" + toolreg.path) :
+            tool = toolreg
+            break
+
+    # Dyn-O-Register!
+    if tool == None and self.request.path.startswith("/portal/") :
+         toolpath = self.request.path[len("/portal/"):]
+         if toolpath.find("/") > 0 : 
+             toolpath = toolpath[:toolpath.find("/")]
+         # Load the module!
+         X = __import__("mod."+toolpath+".index", globals(), locals(), [''])
+         if X != None:
+             tool = X.register()
+
+    # Dispatch the request to the tool's handler
+    if tool != None : 
          handler = tool.handler()  # make an instance to call
          handler.initialize(self.request, self.response)
          fragment = handler.markup()
