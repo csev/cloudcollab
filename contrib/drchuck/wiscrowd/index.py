@@ -8,14 +8,19 @@ from imsglobal.lti import LTI
 
 import dotest
 
-from  wiscrowd.wiscrowd import wiscrowd
-from  freerider.freerider import freerider
-
 # Register all the tools - add new tools here
-tools = [ wiscrowd(), freerider() ]
+tools = list()
 
 # New Registration Pattern - Soon to Generalize
 X = __import__("mod.prisoner.index", globals(), locals(), [''])
+tools.append( X.register() )
+
+# New Registration Pattern - Soon to Generalize
+X = __import__("mod.freerider.index", globals(), locals(), [''])
+tools.append( X.register() )
+
+# New Registration Pattern - Soon to Generalize
+X = __import__("mod.wiscrowd.index", globals(), locals(), [''])
 tools.append( X.register() )
 
 
