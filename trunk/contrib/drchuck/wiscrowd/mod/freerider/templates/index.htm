@@ -3,6 +3,9 @@
 (Instructor)
 {% endifequal %}
 from {{ course }}</p>
+{% ifnotequal msg None %}
+<p>{{ msg }}</p>
+{% endifnotequal %}
 {% ifnotequal resetaction None %}
       <button onClick="window.location='{{ resetaction }}'; return false;">
         Reset
@@ -13,12 +16,9 @@ from {{ course }}</p>
         Join
       </button>
 {% endifnotequal %}
-{% ifnotequal msg None %}
-<p>{{ msg }}</p>
-{% endifnotequal %}
 {% ifnotequal playaction None %}
 <form method="post" action="{{ playaction }}">
-<p>Chips To Put in The Pot: <input type="text" name="chips"/></p>
+<p>Chips in Pot: <input type="text" name="chips"/></p>
 <p><input type="submit"></p>
 </form>
 {% endifnotequal %}
@@ -42,10 +42,8 @@ $.ajax({
     $("#messagescontent").html(html);
   }
  }); 
- setTimeout('updateMsg()', 4000); 
+ setTimeout('updateMsg()', 20000); 
 }
 updateMsg();
 </script>
-<p>In this game, there are four turns.  In each turn you can give any amount of your
-tokens.  At the end of each round, the pot is multiplied by 1.6 and divided 
-amongst the players.</p>
+
