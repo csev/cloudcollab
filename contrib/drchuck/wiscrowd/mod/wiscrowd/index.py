@@ -81,7 +81,9 @@ class WisHandler(webapp.RequestHandler):
     rendervars = {'username': lti.user.email, 
                   'course': lti.getCourseName(), 
                   'msg' : msg, 
-                  'request': self.request}
+                  'request': self.request,
+                  'lti_hidden_parms': lti.getFormFields()}
+    
     if lti.isInstructor() : rendervars['instructor'] = "yes"
 
     if lti.isInstructor() and len(data) > 0 :

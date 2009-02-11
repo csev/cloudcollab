@@ -7,6 +7,7 @@ from {{ course }}</p>
 <p>{{ msg }}</p>
 {% endifnotequal %}
 <form method="post" action="{{ request.path }}">
+{{ lti_hidden_parms }}
 <p>Enter Guess: <input type="text" name="guess"/></p>
 <p>Enter Name (opt): <input type="text" name="name"/></p>
 <p><input type="submit"></p>
