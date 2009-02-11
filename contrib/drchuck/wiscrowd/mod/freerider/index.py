@@ -7,7 +7,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
 from util.sessions import Session
-from imsglobal.lti import LTI
+from imsglobal.lti import Context
 from core.tool import ToolRegistration
 
 # Return our Registration
@@ -26,7 +26,7 @@ class GameState():
      self.current = 0
      self.pot = 0
 
-def getactionpath(self, action="", forajax=False):
+def getactionpath(self, lti, action="", forajax=False):
   basepath = "/freerider"
   str = self.request.path
   pos = str.find(basepath)
@@ -79,18 +79,18 @@ class FreeRiderHandler(webapp.RequestHandler):
   def mainscreen(self, lti, vars = { }):
     rendervars = {'username': lti.user.email, 
                   'course': lti.getCourseName(), 
-                  'messagesaction' : getactionpath(self,"messages", True), 
-                  'playaction' : getactionpath(self,"play"), 
+                  'messagesaction' : getactionpath(self, lti, "messages", True), 
+                  'playaction' : getactionpath(self, lti, "play"), 
                   'request': self.request}
     rendervars.update(vars)
 
     if lti.isInstructor() : 
-      rendervars['resetaction'] = getactionpath(self,"reset")
+      rendervars['resetaction'] = getactionpath(self, lti,"reset")
       rendervars['instructor'] = "yes"
 
     gm = self.getmodel(lti)
     if ( len(gm.players) < 4 ) :
-      rendervars['joinaction'] = getactionpath(self,"join")
+      rendervars['joinaction'] = getactionpath(self,lti,"join")
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     outstr = template.render(temp, rendervars)
@@ -99,7 +99,7 @@ class FreeRiderHandler(webapp.RequestHandler):
   # This method returns tool output as a string
   def markup(self):
     self.session = Session()
-    lti = LTI(self, self.session);
+    lti = Context(self, self.session);
     
     if ( lti.complete ) : return
 

@@ -5,7 +5,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
 from util.sessions import Session
-from imsglobal.lti import LTI
+from imsglobal.lti import Context
 
 import dotest
 
@@ -83,7 +83,7 @@ class MainHandler(webapp.RequestHandler):
     # comes back to us after launch, or (3) if we are just
     # cruising along we load the proper launch context using
     # a session value.
-    lti = LTI(self, self.session)
+    lti = Context(self, self.session)
     
     # If the LTI code already sent a response it sets "complete"
     # so we are done
