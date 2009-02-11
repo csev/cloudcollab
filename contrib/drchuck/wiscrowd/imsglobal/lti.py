@@ -94,7 +94,6 @@ class LTI_Digest(db.Model):
      updated = db.DateTimeProperty(auto_now=True)
 
 class LTI_Launch(db.Model):
-     password = db.StringProperty()
      user = db.ReferenceProperty(LTI_User)
      course = db.ReferenceProperty(LTI_Course)
      org = db.ReferenceProperty(LTI_Org)
@@ -179,79 +178,28 @@ class LTI():
 
   def handlesetup(self, web, session, options):
     # get values form the request
-    password = web.request.get('lti_launch_password')
     key = web.request.get('lti_launch_key')
-    if ( len(password) < 0 ) : password = None
     if ( len(key) < 0 ) : key = None
-    if ( key and not password ) : key = None
-    if ( password and not key ) : password = None
-    # self.debug("Password = "+str(password)+" Key="+(key))
+    # self.debug("Key="+(key))
 
+    # TODO: Make sure that this is *not* needed
     # get the values from the session
     sesskey = None
-    sesspassword = None
-    if session :  
-      sesskey = session.get('lti_launch_key', None)
-      sesspassword = session.get('lti_launch_password', None)
-      # Deal with when only one is set
-      if ( sesskey and not sesspassword) :
-        del(session['lti_launch_key'])
-        sesskey = None
-      if ( sesspassword and not sesskey) :
-        del(session['lti_launch_password'])
-        sesspassword = None
-    # self.debug("Session Password = "+str(sesspassword)+" Key="+str(sesskey))
-
-    # If we have a key and password in session and they match
-    # it is OK - if there is a mismatch - ignore the session
-    if ( key and sesskey ) :
-      if ( sesskey != key or sesspassword != password ) :
-        del(session['lti_launch_key'])
-        del(session['lti_launch_password'])
-        sesskey = None
-        sesspassword = None
+    if not key and session :  
+      key = session.get('lti_launch_key', None)
 
     # On a normal request there are no parammeters - we just use session
-    if ( sesskey ) :
-      # Need try/except in case Key() is unhappy with the string
-      try:
-        launch = LTI_Launch.get(db.Key(sesskey))
-      except:
-        launch = None
-
-      if not launch:
-        self.debug("Session not found in store "+sesskey)
-        if sesspassword : del(session['lti_launch_password'])
-        if sesskey : del(session['lti_launch_key'])
-
-      self.launch = launch
-      self.setvars()
-      return
-
-    # On an initial we have parammeters and use them
     if ( key ) :
       # Need try/except in case Key() is unhappy with the string
       try:
         launch = LTI_Launch.get(db.Key(key))
       except:
-        self.debug("Session Not Found in Store")
         launch = None
-
-      # if the password does not match, give up
-      if launch:
-         self.debug("Database password="+str(launch.password))
-         if len(password) > 0 and password == launch.password :
-           launch.password = None
-           launch.put()
-           self.debug("Session one-time use password cleared")
-         else :
-           self.debug("Session password mis motch")
-           launch = None
 
       if launch:
         session['lti_launch_key'] = key
-        session['lti_launch_password'] = password
       else:
+        self.debug("Session not found in store "+sesskey)
         if sesspassword : del(session['lti_launch_password'])
         if sesskey : del(session['lti_launch_key'])
 
@@ -537,15 +485,8 @@ class LTI():
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    # Should launches be unique per launch - or keyed by user_id and reused
-    # An advantage of reusing the same launch is that folks don't get logged
-    # Out on later launches - it is more like a session - perhaps we should have
-    # a session.   The the question is "One course" per session?  Would the user
-    # appear to be switched to a new course for launch?  Would it be "latest launch"?
-    # Maybe keep all the launches and make a session - hmmmm.
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     self.modelload(launch, web.request, "launch_")
-    launch.password = str(uuid.uuid4())
     launch.memb = memb
     if course_org:
       launch.course_org = org
@@ -567,7 +508,7 @@ class LTI():
     else :
       url = url + "?"
 
-    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key()), "lti_launch_password" : launch.password})
+    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key())})
 
     self.debug("url = "+url)
     url = url.replace("&", "&amp;")
