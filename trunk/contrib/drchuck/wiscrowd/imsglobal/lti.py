@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
+from google.appengine.api import users
 
 ## Note to self - build "optimiztic_get_or_insert"
 
@@ -668,6 +669,10 @@ class Context():
     if self.launch and self.memb :
       return (self.memb.role == 2)
     else : 
+      return False
+
+  def isAdmin(self):
+      if users.is_current_user_admin(): return True
       return False
 
   def getUserName(self):

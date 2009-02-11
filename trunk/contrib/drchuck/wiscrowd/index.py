@@ -24,6 +24,10 @@ tools.append( X.register() )
 X = __import__("mod.wiscrowd.index", globals(), locals(), [''])
 tools.append( X.register() )
 
+# New Registration Pattern - Soon to Generalize
+X = __import__("admin.index", globals(), locals(), [''])
+tools.append( X.register() )
+
 # A helper to do the rendering and to add the necessary
 # variables for the _base.htm template
 def doRender(self, tname = "index.htm", values = { }):
