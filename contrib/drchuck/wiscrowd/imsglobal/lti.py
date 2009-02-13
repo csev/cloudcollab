@@ -225,7 +225,7 @@ class Context():
   # We have several scenarios to handle
   def __init__(self, web, session = False, options = {}):
     ##### BIG HACK fake no cookies:
-    session = False
+    # session = False
     self.web = web
     self.request = web.request
     self.launch = None
@@ -258,13 +258,12 @@ class Context():
     # get the values from the session
     sesskey = None
     self.sessioncookie = False
-    if session:
+    if session != False:
       sesskey = session.get('lti_launch_key', None)
-      if key and sesskey : 
-        if key == sesskey:
-          self.sessioncookie = True
-          # logging.info("Session and URL Key Match cookies are working...")
-      elif sesskey:
+      if key and sesskey and key == sesskey:
+        self.sessioncookie = True
+        # logging.info("Session and URL Key Match cookies are working...")
+      elif sesskey and not key:
         self.sessioncookie = True
         key = sesskey
         # logging.info("Taking key from session ...")
@@ -278,12 +277,11 @@ class Context():
         launch = None
 
       if launch:
-        if session : session['lti_launch_key'] = key
-        logging.info("Placing in session: %s" % key)
+        if session  != False: session['lti_launch_key'] = key
+        # logging.info("Placing in session: %s" % key)
       else:
-        self.debug("Session not found in store "+sesskey)
-        if session and sesspassword : del(session['lti_launch_password'])
-        if session and sesskey : del(session['lti_launch_key'])
+        logging.info("Session not found in store "+sesskey)
+        if session != False and sesskey : del(session['lti_launch_key'])
 
       self.launch = launch
       self.setvars()
