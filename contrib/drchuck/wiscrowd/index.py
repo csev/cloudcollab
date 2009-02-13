@@ -102,7 +102,7 @@ class MainHandler(webapp.RequestHandler):
     # so we are done
     if ( context.complete ) : return
 
-    (controller, action, rest) = context.parsePath()
+    (controller, action, resource) = context.parsePath()
     # print "POST", context.getPostPath()
     # print "GET", context.getGetPath()
     rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
