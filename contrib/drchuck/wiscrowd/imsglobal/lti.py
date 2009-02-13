@@ -115,7 +115,7 @@ class Context():
   dStr = ""
   request = None
   complete = False
-  sessioncookie = False
+  sessioncookie = False # Indicates if sookies are working
   launch = None
   user = None
   course = None
@@ -136,49 +136,58 @@ class Context():
             } 
 
   def getUrlParms(self) :
-    if self.launch :
+    if self.launch and not self.sessioncookie :
       return { 'lti_launch_key': self.launch.key() }
     else : 
       return { }
 
   def getFormFields(self) : 
-    if self.launch :
+    if self.launch and not self.sessioncookie :
       return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
     else : 
-      return { }
+      return ' '
 
-  def getGetPath(self, action="", params = {}, forajax=False):
-    newpath = self.getPostPath(action, forajax)
+  def getPath(self, action="", resource=False, direct=False, controller=False):
+    '''Retrieve the raw path to a controller/action pair.   Does not handle 
+    when parameters are needed when cookies are not set.  Do not use
+    directly from tool code.'''
+    newpath = "/"
+    if not direct and ( self.request.path.startswith("/portal") or self.request.path == "/" ):
+      newpath = "/portal/"
+
+    (pathcontroller, oldact, rest) = self.parsePath()
+
+    if controller:
+      newpath = newpath + controller + "/"
+    elif pathcontroller :
+      newpath = newpath + pathcontroller + "/"
+
+    if action and len(action) > 0 : 
+      newpath = newpath + action + "/"
+    return newpath
+
+  # For now return the parameters all the time - even for the post
+  def getPostPath(self, action="", resource=False, direct=False, controller=False):
+    return self.getGetPath(action, resource, { }, direct, controller)
+
+  def getGetPath(self, action="", resource=False, params = {}, direct=False, controller=False):
+    newpath = self.getPath(action, resource, direct, controller)
     p = self.getUrlParms()
     p.update(params)
     if len(p) > 0 : 
        newpath = newpath + '?' + urllib.urlencode(p)
-    logging.info("New GET Path="+newpath)
     return newpath
 
-  def getPostPath(self, action="", forajax=False):
-    newpath = "/"
-    if not forajax and self.request.path.startswith("/portal"):
-      newpath = "/portal/"
-    (controller, oldact, rest) = self.parsePath()
-    if controller != None:
-      newpath = newpath + controller + "/"
-    if action and len(action) > 0 : 
-      newpath = newpath + action + "/"
-    logging.info("New POST Path="+newpath)
-    return newpath
-  
   def parsePath(self):
     '''Returns a tuple which is the controller, action and the rest of the path.
     The "rest of the path" does not start with a slash.'''
-    action = None
-    controller = None
-    remainder = None
+    action = False
+    controller = False
+    remainder = False
     str = self.request.path
     words = str.split("/")
     if len(words) > 0 and len(words[0]) < 1 :
        del words[0]
-    controller = None
     if len(words) > 0 and words[0] == "portal" :
        del words[0]
     if len(words) > 0 :
@@ -215,9 +224,12 @@ class Context():
 
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
+    ##### BIG HACK fake no cookies:
+    session = None
     self.web = web
     self.request = web.request
     self.launch = None
+    self.sessioncookie = False
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
     self.handlelaunch(web, session, options)
@@ -240,14 +252,22 @@ class Context():
   def handlesetup(self, web, session, options):
     # get values form the request
     key = web.request.get('lti_launch_key')
-    if ( len(key) < 0 ) : key = None
-    # self.debug("Key="+(key))
+    if ( len(key) <= 0 ) : key = None
 
     # TODO: Make sure that this is *not* needed
     # get the values from the session
     sesskey = None
-    if not key and session :  
-      key = session.get('lti_launch_key', None)
+    self.sessioncookie = False
+    if not session == None:
+      sesskey = session.get('lti_launch_key', None)
+      if key and sesskey : 
+        if key == sesskey:
+          self.sessioncookie = True
+          # logging.info("Session and URL Key Match cookies are working...")
+      elif sesskey:
+        self.sessioncookie = True
+        key = sesskey
+        # logging.info("Taking key from session ...")
 
     # On a normal request there are no parammeters - we just use session
     if ( key ) :
@@ -258,11 +278,12 @@ class Context():
         launch = None
 
       if launch:
-        session['lti_launch_key'] = key
+        if not session == None : session['lti_launch_key'] = key
+        logging.info("Placing in session: %s" % key)
       else:
         self.debug("Session not found in store "+sesskey)
-        if sesspassword : del(session['lti_launch_password'])
-        if sesskey : del(session['lti_launch_key'])
+        if not session == None and sesspassword : del(session['lti_launch_password'])
+        if not session == None and sesskey : del(session['lti_launch_key'])
 
       self.launch = launch
       self.setvars()
