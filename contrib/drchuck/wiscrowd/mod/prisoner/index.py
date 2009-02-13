@@ -12,7 +12,7 @@ from core.tool import ToolRegistration
 
 # Return our Registration
 def register():
-   return ToolRegistration('/prisoner', PrisonerHandler, "Prisoner's Dilemma", """This 
+   return ToolRegistration(PrisonerHandler, "Prisoner's Dilemma", """This 
 application allows you to play the "Prisoner's Dilemma" game.""")
 
 class GameState():

@@ -15,7 +15,7 @@ class Wisdom(db.Model) :
 
 # Return our Registration
 def register():
-   return ToolRegistration('/wiz', WisHandler, "Wisdom of Crowds", """This application allows you to play games
+   return ToolRegistration(WisHandler, "Wisdom of Crowds", """This application allows you to play games
 where you are trying to determine something as a group by averaging many independent guesses.  
 It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 
