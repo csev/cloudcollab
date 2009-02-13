@@ -223,9 +223,9 @@ class Context():
     return ret
 
   # We have several scenarios to handle
-  def __init__(self, web, session = None, options = {}):
+  def __init__(self, web, session = False, options = {}):
     ##### BIG HACK fake no cookies:
-    session = None
+    session = False
     self.web = web
     self.request = web.request
     self.launch = None
@@ -258,7 +258,7 @@ class Context():
     # get the values from the session
     sesskey = None
     self.sessioncookie = False
-    if not session == None:
+    if session:
       sesskey = session.get('lti_launch_key', None)
       if key and sesskey : 
         if key == sesskey:
@@ -278,12 +278,12 @@ class Context():
         launch = None
 
       if launch:
-        if not session == None : session['lti_launch_key'] = key
+        if session : session['lti_launch_key'] = key
         logging.info("Placing in session: %s" % key)
       else:
         self.debug("Session not found in store "+sesskey)
-        if not session == None and sesspassword : del(session['lti_launch_password'])
-        if not session == None and sesskey : del(session['lti_launch_key'])
+        if session and sesspassword : del(session['lti_launch_password'])
+        if session and sesskey : del(session['lti_launch_key'])
 
       self.launch = launch
       self.setvars()

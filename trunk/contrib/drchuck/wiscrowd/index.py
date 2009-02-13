@@ -69,7 +69,8 @@ class LoginHandler(webapp.RequestHandler):
     if len(results) > 0 :
       doRender(self, 'welcome.htm',
                { 'message' : 'Welcome back - You may update your info or press "Continue"',
-                                'userobj': results[0]})
+                 'portalpath': context.getGetPath(direct=True,controller="portal"),
+                 'userobj': results[0] } )
     else:
       doRender(self, 'welcome.htm', { 'message' : 'Please enter your first and last name'})
 
