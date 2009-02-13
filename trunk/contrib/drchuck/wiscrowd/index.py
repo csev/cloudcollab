@@ -102,6 +102,8 @@ class MainHandler(webapp.RequestHandler):
     if ( lti.complete ) : return
 
     (controller, action, rest) = lti.parsePath()
+    # print "POST", lti.getPostPath()
+    # print "GET", lti.getGetPath()
     rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
 
     logging.info("index.py launch="+str(lti.launch));

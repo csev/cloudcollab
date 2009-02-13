@@ -147,26 +147,25 @@ class Context():
     else : 
       return { }
 
-  def getGetPath(self, req, action="", params = {}, forajax=False):
-    basepath = "/freerider"
-    str = self.request.path
-    pos = str.find(basepath)
-    newpath = str[0:pos+len(basepath)].strip()
-    if len(action.strip()) > 0 :
-      newpath = newpath + "/" + action
-    if forajax : newpath = newpath.replace("/portal/","/")
-    logging.info("New Path="+newpath)
+  def getGetPath(self, action="", params = {}, forajax=False):
+    newpath = self.getPostPath(action, forajax)
+    p = self.getUrlParms()
+    p.update(params)
+    if len(p) > 0 : 
+       newpath = newpath + '?' + urllib.urlencode(p)
+    logging.info("New GET Path="+newpath)
     return newpath
 
-  def getPostPath(self, req, action="", forajax=False):
-    basepath = "/freerider"
-    str = self.request.path
-    pos = str.find(basepath)
-    newpath = str[0:pos+len(basepath)].strip()
-    if len(action.strip()) > 0 :
-      newpath = newpath + "/" + action
-    if forajax : newpath = newpath.replace("/portal/","/")
-    logging.info("New Path="+newpath)
+  def getPostPath(self, action="", forajax=False):
+    newpath = "/"
+    if not forajax and self.request.path.startswith("/portal"):
+      newpath = "/portal/"
+    (controller, oldact, rest) = self.parsePath()
+    if controller != None:
+      newpath = newpath + controller + "/"
+    if action and len(action) > 0 : 
+      newpath = newpath + action + "/"
+    logging.info("New POST Path="+newpath)
     return newpath
   
   def parsePath(self):

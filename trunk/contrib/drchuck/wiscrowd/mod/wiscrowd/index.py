@@ -15,8 +15,10 @@ class Wisdom(db.Model) :
 
 # Return our Registration
 def register():
-   return ToolRegistration(WisHandler, "Wisdom of Crowds", """This application allows you to play games
-where you are trying to determine something as a group by averaging many independent guesses.  
+   return ToolRegistration(WisHandler, "Wisdom of Crowds", """This 
+application allows you to play games
+where you are trying to determine something as 
+a group by averaging many independent guesses.  
 It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 
 class WisHandler(webapp.RequestHandler):
@@ -34,24 +36,24 @@ class WisHandler(webapp.RequestHandler):
   # This method returns tool output as a string
   def markup(self):
     self.session = Session()
-    lti = Context(self, self.session);
+    context = Context(self, self.session);
     
-    if ( lti.complete ) : return
+    if ( context.complete ) : return
 
     # if we don't have a launch - we are not provisioned
-    if ( not lti.launch ) :
+    if ( not context.launch ) :
       temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
       outstr = template.render(temp, { })
       return outstr
 
-    wisdom = Wisdom.get_or_insert("a", parent=lti.course)
+    wisdom = Wisdom.get_or_insert("a", parent=context.course)
     if wisdom.blob == None : 
       wisdom.blob = pickle.dumps( dict() ) 
       wisdom.put()
 
     data = pickle.loads(wisdom.blob)
     name = self.request.get("name")
-    if len(name) < 1 : name = lti.user.email
+    if len(name) < 1 : name = context.user.email
 
     guess = self.request.get("guess")
 
@@ -59,7 +61,7 @@ class WisHandler(webapp.RequestHandler):
     except: guess = -1
 
     msg = ""
-    if lti.isInstructor() and name.lower() == "reset":
+    if context.isInstructor() and name.lower() == "reset":
        data = dict()
        wisdom.blob = pickle.dumps( data ) 
        wisdom.put()
@@ -78,15 +80,10 @@ class WisHandler(webapp.RequestHandler):
        else:
          msg = "Unable to store your guess please re-submit"
 
-    rendervars = {'username': lti.user.email, 
-                  'course': lti.getCourseName(), 
-                  'msg' : msg, 
-                  'request': self.request,
-                  'lti_hidden_parms': lti.getFormFields()}
+    rendervars = {'context': context,
+                  'msg' : msg}
     
-    if lti.isInstructor() : rendervars['instructor'] = "yes"
-
-    if lti.isInstructor() and len(data) > 0 :
+    if context.isInstructor() and len(data) > 0 :
        text = ""
        total = 0
        for (key, val) in data.items(): 
