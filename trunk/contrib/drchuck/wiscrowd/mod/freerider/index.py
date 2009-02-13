@@ -26,26 +26,6 @@ class GameState():
      self.current = 0
      self.pot = 0
 
-def getactionpath(self, context, action="", forajax=False):
-  basepath = "/freerider"
-  str = self.request.path
-  pos = str.find(basepath)
-  newpath = str[0:pos+len(basepath)].strip()
-  if len(action.strip()) > 0 :
-    newpath = newpath + "/" + action
-  if forajax : newpath = newpath.replace("/portal/","/")
-  logging.info("New Path="+newpath)
-  return newpath
-
-def getaction(self):
-  basepath = "/freerider"
-  str = self.request.path
-  pos = str.find(basepath)
-  try: action = str[pos+len(basepath)+1:].strip()
-  except: action = ""
-  logging.info("Action="+action)
-  return action
-
 class FreeRiderHandler(webapp.RequestHandler):
 
   outStr = ""

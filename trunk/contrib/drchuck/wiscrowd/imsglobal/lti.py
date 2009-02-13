@@ -155,7 +155,7 @@ class Context():
     if not direct and ( self.request.path.startswith("/portal") or self.request.path == "/" ):
       newpath = "/portal/"
 
-    (pathcontroller, oldact, rest) = self.parsePath()
+    (pathcontroller, oldact, resource) = self.parsePath()
 
     if controller:
       newpath = newpath + controller + "/"
@@ -183,7 +183,7 @@ class Context():
     The "rest of the path" does not start with a slash.'''
     action = False
     controller = False
-    remainder = False
+    resource = False
     str = self.request.path
     words = str.split("/")
     if len(words) > 0 and len(words[0]) < 1 :
@@ -198,8 +198,8 @@ class Context():
        del words[0]
     if len(words) > 0 :
        remainder = "/".join(words)
-    # print "Cont=",controller," Act=",action," Rest=",remainder
-    return (controller, action,remainder)
+    # print "Cont=",controller," Act=",action," Resource=",resource
+    return (controller, action, resource)
 
   def debug(self, str):
     logging.info(str)
@@ -225,7 +225,7 @@ class Context():
   # We have several scenarios to handle
   def __init__(self, web, session = False, options = {}):
     ##### BIG HACK fake no cookies:
-    # session = False
+    session = False
     self.web = web
     self.request = web.request
     self.launch = None
