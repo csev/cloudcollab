@@ -12,7 +12,7 @@ from core.tool import ToolRegistration
 
 # Return our Registration
 def register():
-   return ToolRegistration('/admin', AdminHandler, "Administration Tool", """This application allows
+   return ToolRegistration(AdminHandler, "Administration Tool", """This application allows
 you to administer this system.""")
 
 class AdminHandler(webapp.RequestHandler):

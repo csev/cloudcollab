@@ -12,7 +12,7 @@ from core.tool import ToolRegistration
 
 # Return our Registration
 def register():
-   return ToolRegistration('/freerider', FreeRiderHandler, "Free Rider", """This 
+   return ToolRegistration(FreeRiderHandler, "Free Rider", """This 
 application allows you to play the "Free Rider" game as described by
 James Surowiecki in the book "The Wisdom of Crowds".""")
 

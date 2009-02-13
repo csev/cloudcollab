@@ -9,7 +9,7 @@
 <ul>
           {% for tool in tools %}
           <li>
-            <a href="/portal{{tool.path}}">{{tool.title}}</a>
+            <a href="/portal/{{tool.controller}}">{{tool.title}}</a>
             <a href="{{tool.path}}" target=_new style="color: gray; font-size: small;">(fragment-only)</a>
             <p>{{ tool.desc }}
           </li>

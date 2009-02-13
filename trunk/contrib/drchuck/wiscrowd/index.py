@@ -12,21 +12,29 @@ import dotest
 # Register all the tools - add new tools here
 tools = list()
 
-# New Registration Pattern - Soon to Generalize
-X = __import__("mod.prisoner.index", globals(), locals(), [''])
-tools.append( X.register() )
-
-# New Registration Pattern - Soon to Generalize
-X = __import__("mod.freerider.index", globals(), locals(), [''])
-tools.append( X.register() )
-
-# New Registration Pattern - Soon to Generalize
-X = __import__("mod.wiscrowd.index", globals(), locals(), [''])
-tools.append( X.register() )
-
-# New Registration Pattern - Soon to Generalize
+# Register the adimin tool
 X = __import__("admin.index", globals(), locals(), [''])
-tools.append( X.register() )
+Y = X.register() 
+Y.setcontroller("admin")
+tools.append( Y )
+
+# Loop through and register the modules
+temp = os.path.join(os.path.dirname(__file__),'mod')
+dirs = os.listdir(temp)
+
+for dir in dirs:
+  if len(dir) < 1 : continue
+  if dir[0] == '.' : continue
+  if dir[0] == '_' : continue
+  try:
+    X = __import__("mod."+dir+".index", globals(), locals(), [''])
+    Y = X.register() 
+    Y.setcontroller(dir)
+    tools.append( Y )
+  except:
+    pass
+
+# TODO: Memcache the tool list!  Sweet!
 
 # A helper to do the rendering and to add the necessary
 # variables for the _base.htm template
@@ -93,6 +101,7 @@ class MainHandler(webapp.RequestHandler):
     # so we are done
     if ( lti.complete ) : return
 
+    (controller, action, rest) = lti.parsePath()
     rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
 
     logging.info("index.py launch="+str(lti.launch));
@@ -111,19 +120,17 @@ class MainHandler(webapp.RequestHandler):
     # If so get the fragment and render
     tool = None
     for toolreg in tools:
-        if self.request.path.startswith("/portal" + toolreg.path) :
+        if controller == toolreg.controller :
             tool = toolreg
             break
 
     # Dyn-O-Register!
-    if tool == None and self.request.path.startswith("/portal/") :
-         toolpath = self.request.path[len("/portal/"):]
-         if toolpath.find("/") > 0 : 
-             toolpath = toolpath[:toolpath.find("/")]
+    if tool == None and controller :
          # Load the module!
-         X = __import__("mod."+toolpath+".index", globals(), locals(), [''])
+         X = __import__("mod."+controller+".index", globals(), locals(), [''])
          if X != None:
              tool = X.register()
+             tool.controller(controller)
 
     # Dispatch the request to the tool's handler
     if tool != None : 
@@ -152,7 +159,7 @@ def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', dotest.DoTest),
             ('/logout', LogoutHandler)]
-  routes = routes + [ (x.path+".*", x.handler) for x in tools ]
+  routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )
 
   application = webapp.WSGIApplication(routes, debug=True)

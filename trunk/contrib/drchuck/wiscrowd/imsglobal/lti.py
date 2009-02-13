@@ -12,7 +12,7 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.api import users
 
-## Note to self - build "optimiztic_get_or_insert"
+# Note to self - build "optimiztic_get_or_insert"
 
 class LTI_Org(db.Model):
      org_id = db.StringProperty()
@@ -113,24 +113,14 @@ class LTI_Launch(db.Model):
 
 class Context():
   dStr = ""
+  request = None
   complete = False
+  sessioncookie = False
   launch = None
   user = None
   course = None
   memb = None
   org = None
-
-  def getUrlParms(self) :
-    if self.launch :
-      return { 'lti_launch_key': self.launch.key() }
-    else : 
-      return { }
-
-  def getFormFields(self) : 
-    if self.launch :
-      return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
-    else : 
-      return { }
 
   # Option values
   Liberal = { 'nonce_time': 1000000, 
@@ -144,6 +134,64 @@ class Context():
               'auto_create_courses' : True,
               'default_course_secret' : "secret"
             } 
+
+  def getUrlParms(self) :
+    if self.launch :
+      return { 'lti_launch_key': self.launch.key() }
+    else : 
+      return { }
+
+  def getFormFields(self) : 
+    if self.launch :
+      return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
+    else : 
+      return { }
+
+  def getGetPath(self, req, action="", params = {}, forajax=False):
+    basepath = "/freerider"
+    str = self.request.path
+    pos = str.find(basepath)
+    newpath = str[0:pos+len(basepath)].strip()
+    if len(action.strip()) > 0 :
+      newpath = newpath + "/" + action
+    if forajax : newpath = newpath.replace("/portal/","/")
+    logging.info("New Path="+newpath)
+    return newpath
+
+  def getPostPath(self, req, action="", forajax=False):
+    basepath = "/freerider"
+    str = self.request.path
+    pos = str.find(basepath)
+    newpath = str[0:pos+len(basepath)].strip()
+    if len(action.strip()) > 0 :
+      newpath = newpath + "/" + action
+    if forajax : newpath = newpath.replace("/portal/","/")
+    logging.info("New Path="+newpath)
+    return newpath
+  
+  def parsePath(self):
+    '''Returns a tuple which is the controller, action and the rest of the path.
+    The "rest of the path" does not start with a slash.'''
+    action = None
+    controller = None
+    remainder = None
+    str = self.request.path
+    words = str.split("/")
+    if len(words) > 0 and len(words[0]) < 1 :
+       del words[0]
+    controller = None
+    if len(words) > 0 and words[0] == "portal" :
+       del words[0]
+    if len(words) > 0 :
+       controller = words[0]
+       del words[0]
+    if len(words) > 0 :
+       action = words[0]
+       del words[0]
+    if len(words) > 0 :
+       remainder = "/".join(words)
+    # print "Cont=",controller," Act=",action," Rest=",remainder
+    return (controller, action,remainder)
 
   def debug(self, str):
     logging.info(str)
@@ -169,6 +217,7 @@ class Context():
   # We have several scenarios to handle
   def __init__(self, web, session = None, options = {}):
     self.web = web
+    self.request = web.request
     self.launch = None
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
