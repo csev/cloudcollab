@@ -95,28 +95,29 @@ class MainHandler(webapp.RequestHandler):
     # comes back to us after launch, or (3) if we are just
     # cruising along we load the proper launch context using
     # a session value.
-    lti = Context(self, self.session)
+    context = Context(self, self.session)
     
     # If the LTI code already sent a response it sets "complete"
     # so we are done
-    if ( lti.complete ) : return
+    if ( context.complete ) : return
 
-    (controller, action, rest) = lti.parsePath()
-    # print "POST", lti.getPostPath()
-    # print "GET", lti.getGetPath()
+    (controller, action, rest) = context.parsePath()
+    # print "POST", context.getPostPath()
+    # print "GET", context.getGetPath()
     rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
 
-    logging.info("index.py launch="+str(lti.launch));
-    if lti.launch :
-      if ( lti.user ) : rendervars['user'] = lti.user
-      rendervars['tools'] = tools
-      rendervars['username'] = lti.getUserName()
-      rendervars['coursename'] = lti.getCourseName()
-      if ( lti.isInstructor() ) :
+    logging.info("index.py launch="+str(context.launch));
+    if context.launch :
+      if ( context.user ) : rendervars['user'] = context.user
+      rendervars['username'] = context.getUserName()
+      rendervars['coursename'] = context.getCourseName()
+      if ( context.isInstructor() ) :
         rendervars['role'] = "instructor"
       else:
         rendervars['role'] = "student"
-      rendervars['dump'] = lti.dump()
+      rendervars['dump'] = context.dump()
+
+    rendervars['portalpath'] = context.getGetPath(direct=True,controller="portal")
 
     # Check to see if the path is a portal path and handle
     # If so get the fragment and render
@@ -129,10 +130,13 @@ class MainHandler(webapp.RequestHandler):
     # Dyn-O-Register!
     if tool == None and controller :
          # Load the module!
-         X = __import__("mod."+controller+".index", globals(), locals(), [''])
-         if X != None:
-             tool = X.register()
-             tool.controller(controller)
+         try:
+             X = __import__("mod."+controller+".index", globals(), locals(), [''])
+             if X != None:
+                 tool = X.register()
+                 tool.controller(controller)
+         except:
+              pass
 
     # Dispatch the request to the tool's handler
     if tool != None : 
@@ -147,6 +151,15 @@ class MainHandler(webapp.RequestHandler):
          return
 
     rendervars['dash'] = "yes"
+
+    # Copy the tools and add the Real URLs
+    toolz = list(tools)
+    for tool in toolz:
+       tool.portalpath = context.getGetPath(controller=tool.controller)
+       tool.directpath = context.getGetPath(direct=True,controller=tool.controller)
+       # print "C=",tool.controller,"P=",tool.portalpath,"D=",tool.directpath
+
+    rendervars['tools'] = toolz
 
     # See if there is a template of the same name as the path
     if doRender(self, self.request.path, rendervars ) : return
