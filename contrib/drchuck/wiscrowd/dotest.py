@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-# import cgi
 import os
 import wsgiref.handlers
 import logging
@@ -31,6 +28,7 @@ class DoTest(webapp.RequestHandler):
               'nonce' : nonce, 
               'digest' : y,
               'toolid' : 'sakai.lti.168',
+              'portalpath' : '/',
               'path' : self.request.path }
     self.response.out.write(template.render(path, parms))
 
