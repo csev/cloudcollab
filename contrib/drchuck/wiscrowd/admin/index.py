@@ -12,8 +12,8 @@ from core.tool import ToolRegistration
 
 # Return our Registration
 def register():
-   return ToolRegistration(AdminHandler, "Administration Tool", """This application allows
-you to administer this system.""")
+   return ToolRegistration(AdminHandler, "Administration Tool", 
+     """This application allows you to administer this system.""")
 
 class AdminHandler(webapp.RequestHandler):
 
@@ -34,4 +34,5 @@ class AdminHandler(webapp.RequestHandler):
 
     if ( lti.complete ) : return
 
-    if lti.isAdmin() : print "HELLO MASTER"
+    if lti.isAdmin() : return "HELLO MASTER"
+    else: return "YOU ARE NOT ADMIN"
