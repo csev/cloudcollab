@@ -8,7 +8,7 @@
     <script language="JavaScript">
       window.open('{{launchurl}}')
     </script>
-    <p>Content has been openned in a new window.</p>
+    <p>Content has been opened in a new window.</p>
   {% else %}
     <iframe width="100%" frameborder="0" marginwidth="0"
             marginheight="0" scrolling="auto"
@@ -46,3 +46,36 @@
 {{ data }}
 </pre>
 {% endif %}
+<hr>
+<h2>CloudSocial Hacking Guide</h2>
+<p>
+If you want to hack CloudSocial on your own page, add the following
+Javascript at the end of your web documents.  It does not matter
+if the documents come from a content system, LMS, or just flat HTML
+on your desktop.
+<pre>
+&lt;script type="text/javascript"
+  src="http://www.cloudsocial.org/code/ile-main.js"&gt;
+&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+  ile_init("ILE_APP_KEY");
+&lt;/script&gt;
+</pre>
+Then launch to to your site through CloudSocial changing the cs_launch
+parameters above.  Your page will consult with CloudSocial and
+notice that you are logged in and bring up the LMS.   Folks who don't log
+in will not see anything different on your site.
+<p>
+You can also launch to the "sample.htm" above and view source.
+<p>
+Agin the fun bit is to get logged in and then navigate between pages
+with your litte LMS tagging along.   You could put the Javascript in the footer
+of a site and the little LMS will be present on every page.
+<p>
+Someday soon - we will have CloudSocial really up so you can create and
+configure your own courses.  <b>Please don't put this Javascript in
+lots of production pages unless it is easily changed.  We will end up with
+real application keys and may even change the Javascript syntax as 
+part of our evolutionary learning.</b>
+</p>
+
