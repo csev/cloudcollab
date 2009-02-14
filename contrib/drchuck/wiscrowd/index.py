@@ -106,6 +106,7 @@ class MainHandler(webapp.RequestHandler):
 
     user = users.get_current_user()
     rendervars = { 'user' : user, 'path': self.request.path, 
+                   'context' : context,
                    'logouturl': users.create_logout_url("/") }
 
     logging.info("index.py launch="+str(context.launch));
