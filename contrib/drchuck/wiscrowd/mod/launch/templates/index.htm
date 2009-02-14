@@ -1,7 +1,7 @@
 {% if launchurl %}
   <p>
   <button onClick="window.location='{{ context.getGetPath }}'; return false;">
-    Back
+    New Launch
   </button>
   </p>
   {% if newwindow %}
@@ -32,6 +32,15 @@
   <input type="checkbox" name="newwindow" value="yes"> Open in new window<br>
   <p><input type="submit"></p>
   </form>
+<p>Here are a few places you might want to launch to:</p>
+<ul>
+<li>http://simplelti.appspot.com/launch/</li>
+<li>http://wiscrowd.appspot.com/wisdom/</li>
+<li>http://www.cloudsocial.org/dev/index.php?cs_course=cloud123&cs_forward=http://www.appenginelearn.com/</li>
+<li>http://www.cloudsocial.org/dev/index.php?cs_course=cloud123&cs_forward=http://www.pythonlearn.com/</li>
+<li>http://www.cloudsocial.org/dev/index.php?cs_course=cloud123&cs_forward=http://www.cloudsocial.org/sample.htm</li>
+</ul>
+<p>Make sure to get the whole line for the cloudsocial launches.</p>
 <pre>
 {{ data }}
 </pre>
