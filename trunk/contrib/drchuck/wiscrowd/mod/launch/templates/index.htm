@@ -1,8 +1,22 @@
 {% if launchurl %}
+  <p>
+  <button onClick="window.location='{{ context.getGetPath }}'; return false;">
+    Back
+  </button>
+  </p>
   {% if newwindow %}
-    <p>New Window</p>
+    <script language="JavaScript">
+      window.open('{{launchurl}}')
+    </script>
+    <p>Content has been openned in a new window.</p>
   {% else %}
-    <p>Iframe</p>
+    <iframe width="100%" frameborder="0" marginwidth="0"
+            marginheight="0" scrolling="auto"
+            src="{{launchurl}}"
+            height="{{height}}">
+      Your browser does not support iframes. <br>
+      <a href="{{launchurl}}" target="_new">Press here for content</a>
+    </iframe>
   {% endif %}
 {% else %}
   <p>This is a Simple LTI Launcher.  You can enter a URL and a secret.</p>

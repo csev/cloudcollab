@@ -49,10 +49,16 @@ class LaunchHandler(webapp.RequestHandler):
       outstr = template.render(temp, { })
       return outstr
 
+    rendervars = { 'context' : context }
+
     url = self.request.get('url')
     secret = self.request.get('secret')
     height = self.request.get('height')
+    try: height = int(height)
+    except: height = 1200
+    rendervars['height'] = height
     newwindow = self.request.get('newwindow')
+    if newwindow and len(newwindow) > 0 : rendervars['newwindow'] = newwindow
     if not url or len(url) < 1 :
       temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
       outstr = template.render(temp, { })
@@ -117,7 +123,8 @@ class LaunchHandler(webapp.RequestHandler):
 	     rurl = rurl + "&cs_course=" + course
           logging.info("Launching email="+context.user.email+" key="+str(context.user.key())+" url="+rurl)
           temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-          outstr = template.render(temp, { 'launchurl': rurl })
+          rendervars['launchurl'] = rurl
+          outstr = template.render(temp, rendervars)
           return outstr
 
     data = "Failed web service call:\n" 
@@ -132,6 +139,8 @@ class LaunchHandler(webapp.RequestHandler):
          data = data + str(line) + '\n'
 
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-    outstr = template.render(temp, { 'msg': 'Failed web service call', 'data': data })
+    rendervars['msg'] = 'Failed web service call'
+    rendervars['data'] = data
+    outstr = template.render(temp, rendervars)
     return outstr
 
