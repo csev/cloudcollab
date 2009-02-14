@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import pickle
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
@@ -48,8 +49,14 @@ class LaunchHandler(webapp.RequestHandler):
       outstr = template.render(temp, { })
       return outstr
 
-    secret = "secret"
-    url = "http://simplelti.appspot.com/launch"
+    url = self.request.get('url')
+    secret = self.request.get('secret')
+    height = self.request.get('height')
+    newwindow = self.request.get('newwindow')
+    if not url or len(url) < 1 :
+      temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+      outstr = template.render(temp, { })
+      return outstr
 
     # Sending - Make a Simple TI TimeStamp
     tstime = datetime.utcnow()
@@ -83,12 +90,17 @@ class LaunchHandler(webapp.RequestHandler):
         'launch_targets': "iframe",
         'launch_resource_id': "get-from-form" } )
 
-    result = urlfetch.fetch(url=url,
+    detail = None
+    result = None
+    try:
+      result = urlfetch.fetch(url=url,
                         payload=form_data,
                         method=urlfetch.POST,
                         headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    except Exception :
+      detail = sys.exc_info()
 
-    if result.status_code == 200:
+    if result and result.status_code == 200:
        map = mdom_parse(result.content)
        rurl = None
        if map : rurl = map.get("/launchResponse/launchUrl",None)
@@ -104,11 +116,22 @@ class LaunchHandler(webapp.RequestHandler):
 	     rurl = rurl + "&cs_forward=" + forward
 	     rurl = rurl + "&cs_course=" + course
           logging.info("Launching email="+context.user.email+" key="+str(context.user.key())+" url="+rurl)
-          self.redirect(rurl)
-          return
+          temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+          outstr = template.render(temp, { 'launchurl': rurl })
+          return outstr
 
-    self.response.out.write("Failed web service call:\n")
-    self.response.out.write("Response code="+str(result.status_code)+"\n")
-    self.response.out.write("Content:\n"+result.content+"\n")
-    self.response.out.write("Form Data:\n"+form_data+"\n")
+    data = "Failed web service call:\n" 
+    data = data + "Launch URL:"+url+"\n"
+    if result: data = data + "Response code="+str(result.status_code)+"\n" 
+    if result: data = data + "Content:\n"+result.content+"\n" 
+    data = data + "Form Data:\n"+form_data+"\n"
+    data = data.replace("<","&lt;")
+    data = data.replace(">","&gt;")
+    if detail: 
+      for line in detail:
+         data = data + str(line) + '\n'
+
+    temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
+    outstr = template.render(temp, { 'msg': 'Failed web service call', 'data': data })
+    return outstr
 
