@@ -11,9 +11,9 @@ from imsglobal.lms import Launch
 bootstrap = {
   'user_locale': 'en_US',
   'user_role': 'Instructor',
-  'course_code': 'Intro 101',
+  'course_code': 'Info 101',
   'course_id': '12345',
-  'course_name': 'IN101',
+  'course_name': 'SI101',
   'course_title': 'Introductory Informatics',
   'org_name': 'SO: Self Organization',
   'org_id': 'localhost',
