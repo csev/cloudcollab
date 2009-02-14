@@ -43,13 +43,10 @@ for dir in dirs:
   if len(dir) < 1 : continue
   if dir[0] == '.' : continue
   if dir[0] == '_' : continue
-  try:
-    X = __import__("mod."+dir+".index", globals(), locals(), [''])
-    Y = X.register() 
-    Y.setcontroller(dir)
-    tools.append( Y )
-  except:
-    pass
+  X = __import__("mod."+dir+".index", globals(), locals(), [''])
+  Y = X.register() 
+  Y.setcontroller(dir)
+  tools.append( Y )
 
 # TODO: Memcache the tool list!  Sweet!
 

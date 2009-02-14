@@ -1,0 +1,114 @@
+import logging
+import os
+import pickle
+import wsgiref.handlers
+from google.appengine.ext.webapp import template
+from google.appengine.ext import webapp
+from google.appengine.ext import db
+
+from util.sessions import Session
+from imsglobal.lticontext import LTI_Context
+from core.tool import ToolRegistration
+
+import cgi
+from google.appengine.api import urlfetch
+from mdom import *
+import httplib, urllib
+from  datetime import datetime, timedelta
+import hashlib, base64
+import uuid
+
+# Return our Registration
+def register():
+   return ToolRegistration(LaunchHandler, "LTI Launcher", 
+          """This application allows you to launch other LTI Resources.""")
+
+class LaunchHandler(webapp.RequestHandler):
+
+  outStr = ""
+
+  def get(self):
+    istr = self.markup()
+    if ( istr != None ) : self.response.out.write(istr)
+
+  def post(self):
+    istr = self.markup()
+    if ( istr != None ) : self.response.out.write(istr)
+
+  # This method returns tool output as a string
+  def markup(self):
+    self.session = Session()
+    context = LTI_Context(self, self.session);
+    
+    if ( context.complete ) : return
+
+    # if we don't have a launch - we are not provisioned
+    if ( not context.launch ) :
+      temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
+      outstr = template.render(temp, { })
+      return outstr
+
+    secret = "secret"
+    url = "http://simplelti.appspot.com/launch"
+
+    # Sending - Make a Simple TI TimeStamp
+    tstime = datetime.utcnow()
+    timestamp = tstime.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    nonce = str(uuid.uuid4());
+    presha1 = nonce + timestamp + secret
+    sha1 =  hashlib.sha1()
+    sha1.update(presha1)
+    x = sha1.digest()
+    digest = base64.b64encode(x)
+    if context.isInstructor() :
+      role = "Instructor"
+    else:
+      role = "Student"
+
+    form_data = urllib.urlencode({
+        'action': "launchresolve",
+        'sec_nonce': nonce,
+        'sec_created': timestamp,
+        'sec_digest': digest,
+        'user_id': str(context.user.key()),
+        'user_role': role,
+        'user_displayid': context.getUserName(),
+        'user_email': context.user.email,
+        'user_firstname': context.user.firstname,
+        'user_lastname': context.user.lastname,
+        'course_id': context.course.course_id,
+        'course_title': context.course.title,
+        'course_name': context.course.name,
+        'launch_targets': "iframe",
+        'launch_resource_id': "get-from-form" } )
+
+    result = urlfetch.fetch(url=url,
+                        payload=form_data,
+                        method=urlfetch.POST,
+                        headers={'Content-Type': 'application/x-www-form-urlencoded'})
+
+    if result.status_code == 200:
+       map = mdom_parse(result.content)
+       rurl = None
+       if map : rurl = map.get("/launchResponse/launchUrl",None)
+       if rurl != None:
+          forward = self.request.get('forward')
+          if forward != "":
+             pos = rurl.find('?')
+             if pos > 0 :
+                rurl = rurl + '&'
+             else :
+                rurl = rurl + '?'
+	     rurl = rurl + "forward=" + forward
+	     rurl = rurl + "&cs_forward=" + forward
+	     rurl = rurl + "&cs_course=" + course
+          logging.info("Launching email="+context.user.email+" key="+str(context.user.key())+" url="+rurl)
+          self.redirect(rurl)
+          return
+
+    self.response.out.write("Failed web service call:\n")
+    self.response.out.write("Response code="+str(result.status_code)+"\n")
+    self.response.out.write("Content:\n"+result.content+"\n")
+    self.response.out.write("Form Data:\n"+form_data+"\n")
+
