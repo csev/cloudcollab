@@ -5,8 +5,8 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
 from util.sessions import Session
-from imsglobal.lti import Context
-from imsglobal.lms import Launch
+from imsglobal.context import Context
+from imsglobal.lticontext import LTI_Context
 
 bootstrap = {
   'user_locale': 'en_US',
@@ -109,14 +109,14 @@ class MainHandler(webapp.RequestHandler):
       bootstrap['user_displayid'] = user.nickname()
       bootstrap['user_email'] = user.email()
       bootstrap['user_id'] = user.email()
-      context = Launch(self.request, bootstrap)
+      context = Context(self.request, bootstrap, self.session)
     else:
       # Provision LTI.  This either (1) handles an incoming
       # launch request, (2) handles the incoming GET that
       # comes back to us after launch, or (3) if we are just
       # cruising along we load the proper launch context using
       # a session value.
-      context = Context(self, self.session)
+      context = LTI_Context(self, self.session)
     
       # If the LTI code already sent a response it sets "complete"
       # so we are done

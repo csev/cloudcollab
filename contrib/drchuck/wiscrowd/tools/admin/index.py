@@ -7,8 +7,8 @@ from google.appengine.ext import webapp
 from google.appengine.ext import db
 
 from util.sessions import Session
-from imsglobal.lti import Context
 from core.tool import ToolRegistration
+from imsglobal.lticontext import LTI_Context
 
 # Return our Registration
 def register():
@@ -30,7 +30,7 @@ class AdminHandler(webapp.RequestHandler):
   # This method returns tool output as a string
   def markup(self):
     self.session = Session()
-    lti = Context(self, self.session);
+    lti = LTI_Context(self, self.session);
 
     if ( lti.complete ) : return
 
