@@ -7,7 +7,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
 from util.sessions import Session
-from imsglobal.lti import Context
+from imsglobal.lticontext import LTI_Context
 from core.tool import ToolRegistration
 
 # Return our Registration
@@ -78,7 +78,7 @@ class FreeRiderHandler(webapp.RequestHandler):
   # This method returns tool output as a string
   def markup(self):
     self.session = Session()
-    context = Context(self, self.session);
+    context = LTI_Context(self, self.session);
     
     if ( context.complete ) : return
 
