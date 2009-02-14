@@ -184,7 +184,7 @@ class Context():
         if session  != False: session['lti_launch_key'] = key
         # logging.info("Placing in session: %s" % key)
       else:
-        logging.info("Session not found in store "+sesskey)
+        logging.info("Session not found in store "+key)
         if session != False and sesskey : del(session['lti_launch_key'])
 
       self.launch = launch
