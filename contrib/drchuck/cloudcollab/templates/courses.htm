@@ -6,14 +6,12 @@ You can launch to Simple LTI tools or you can launch to some CloudSocial-enabled
 "popup" CloudSocial Learning Management system.
 </p>
 <p>These links are to IMS Simple LTI Tools.  The first link is to a simple LMS that
-includes the Wisdome of Crowds tool.  The second link launches straight to the tool
+includes the Wisdom of Crowds tool.  The second link launches straight to the tool
 as if you were using the tool from an LMS.
 </p>
-<ul>
-<li><a href="/launch?role=instructor&url=http://wiscrowd.appspot.com/lti_course_id/cloud123/">The CloudCollab LMS</a></li>
-<li><a href="/launch?role=instructor&url=http://wiscrowd.appspot.com/wiz/lti_course_id/cloud123/">The Wisdom of Crowds Tool</a></li>
-<li><a href="/launch?role=instructor&url=http://wiscrowd.appspot.com/freerider/lti_course_id/cloud123/">The Free Rider Tool</a></li>
-</ul>
+<p>
+<b>Note: These are legacy launches - the Demo Server is a better place to log in and play
+with SimpleLTI.</b></p>
 <p>Open Educational Content using CloudSocial. Launch into 
 AppEngineLearn and navigate to the PythonLearn.   
 The popup CloudSocial LMS will follow you.</p>
@@ -30,38 +28,6 @@ The popup CloudSocial LMS will follow you.</p>
 M4 Therapetics Demo </a>
 </li>
       </ul>
-<h2>CloudSocial Hacking Guide</h2>
-<p>
-If you want to hack CloudSocial on your own page, add the following
-Javascript at the end of your web documents.  It does not matter
-if the documents come from a content system, LMS, or just flat HTML
-on your desktop.
-<pre>
-&lt;script type="text/javascript"
-  src="http://www.cloudsocial.org/code/ile-main.js"&gt;
-&lt;/script&gt;
-&lt;script type="text/javascript"&gt;
-  ile_init("ILE_APP_KEY");
-&lt;/script&gt;
-</pre>
-Then launch to the PythonLearn site - to get logged into CloudSocial.  And
-then navigate to your page.  Your page will consult with CloudSocial and
-notice that you are logged in and bring up the LMS.   Folks who don't log 
-in will not see anything different on your site.
-<p>
-You can also launch to the "Sample, trivial page" above and view source.
-<p>
-Agin the fun bit is to get logged in and then navigate between pages
-with your litte LMS tagging along.   You could put the Javascript in the footer
-of a site and the little LMS will be present on every page.
-<p>
-Someday soon - we will have CloudSocial really up so you can create and 
-configure your own courses.  <b>Please don't put this Javascript in
-lots of production pages unless it is easily changed.  We will end up with
-real application keys and may even change the Javascript syntax as 
-parto of our evolutionary learning.</b>
-</p>
-
       {% ifnotequal error None %}
        <p>
        {{ error }}
