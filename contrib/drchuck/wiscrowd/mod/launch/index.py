@@ -54,6 +54,8 @@ class LaunchHandler(webapp.RequestHandler):
     url = self.request.get('url')
     secret = self.request.get('secret')
     height = self.request.get('height')
+    tool_id = self.request.get('tool_id')
+    if len(tool_id) < 1 : tool_id = None
     try: height = int(height)
     except: height = 1200
     rendervars['height'] = height
@@ -94,7 +96,7 @@ class LaunchHandler(webapp.RequestHandler):
         'course_title': context.course.title,
         'course_name': context.course.name,
         'launch_targets': "iframe",
-        'launch_resource_id': "get-from-form" } )
+        'launch_tool_id': tool_id } )
 
     detail = None
     result = None
