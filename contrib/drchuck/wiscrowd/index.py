@@ -6,6 +6,19 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 from util.sessions import Session
 from imsglobal.lti import Context
+from imsglobal.lms import Launch
+
+bootstrap = {
+  'user_locale': 'en_US',
+  'user_role': 'Instructor',
+  'course_code': 'Intro 101',
+  'course_id': '12345',
+  'course_name': 'IN101',
+  'course_title': 'Introductory Informatics',
+  'org_name': 'SO: Self Organization',
+  'org_id': 'localhost',
+  'org_title': 'The self-organizing organization.',
+  'org_url': 'http://www.cloudcolab.com'}
 
 # Register all the tools - add new tools here
 tools = list()
@@ -89,22 +102,31 @@ class MainHandler(webapp.RequestHandler):
     # LTI Can use any session that has dictionary semantics
     self.session = Session()
 
-    # Provision LTI.  This either (1) handles an incoming
-    # launch request, (2) handles the incoming GET that
-    # comes back to us after launch, or (3) if we are just
-    # cruising along we load the proper launch context using
-    # a session value.
-    context = Context(self, self.session)
+    # If the user is logged in, we construct a launch, if not, we 
+    # try to provision via LTI
+    user = users.get_current_user()
+    if user:
+      bootstrap['user_displayid'] = user.nickname()
+      bootstrap['user_email'] = user.email()
+      bootstrap['user_id'] = user.email()
+      context = Launch(self.request, bootstrap)
+    else:
+      # Provision LTI.  This either (1) handles an incoming
+      # launch request, (2) handles the incoming GET that
+      # comes back to us after launch, or (3) if we are just
+      # cruising along we load the proper launch context using
+      # a session value.
+      context = Context(self, self.session)
     
-    # If the LTI code already sent a response it sets "complete"
-    # so we are done
-    if ( context.complete ) : return
+      # If the LTI code already sent a response it sets "complete"
+      # so we are done
+      if ( context.complete ) : return
 
     (controller, action, resource) = context.parsePath()
     # print "POST", context.getPostPath()
     # print "GET", context.getGetPath()
 
-    user = users.get_current_user()
+
     rendervars = { 'user' : user, 'path': self.request.path, 
                    'context' : context,
                    'logouturl': users.create_logout_url("/") }

@@ -25,6 +25,28 @@ def Model_Load(obj, req, prefix = None):
 
     logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
 
+def Model_Load2(obj, params, prefix = None):
+    '''Loop through the request keys and see if they can be put 
+    into the model.   An optional prefix is used to append
+    to the request keys.'''
+    count = 0
+    for key in params.keys(): 
+      value = params.get(key) 
+      thetype = Model_Type(obj, key)
+      if ( thetype == "none" and prefix != None ) :
+         if ( not key.startswith(prefix) ) : continue
+         key = key[len(prefix):]
+         thetype = Model_Type(obj, key)
+
+      # logging.info("thetype = "+thetype)
+      # Don't do booleans automatically
+      if ( thetype == "string" or thetype == "int" ) : 
+        # logging.info("setting "+key+" = "+str(value))
+        setattr(obj,key,value)
+        count = count + 1
+
+    logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
+
 def Model_Type(obj, key):
     try:
       attr = str(type(getattr(obj.__class__, key)))
