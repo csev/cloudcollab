@@ -13,6 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 
 from ltimodel import *
+from core.modelutil import *
 
 class Context():
   dStr = ""
@@ -117,11 +118,11 @@ class Context():
       ret = ret + "No launch data\n"
       return ret
     ret = ret + "Complete = "+str(self.complete) + "\n";
-    ret = ret + self.modeldump(self.user)
-    ret = ret + self.modeldump(self.course)
-    ret = ret + self.modeldump(self.memb)
-    ret = ret + self.modeldump(self.org)
-    ret = ret + self.modeldump(self.launch)
+    ret = ret + Model_Dump(self.user)
+    ret = ret + Model_Dump(self.course)
+    ret = ret + Model_Dump(self.memb)
+    ret = ret + Model_Dump(self.org)
+    ret = ret + Model_Dump(self.launch)
 
     return ret
 
@@ -301,7 +302,7 @@ class Context():
       if options.get('auto_create_orgs', False) :
         org = LTI_Org.get_or_insert("key:"+org_id)
         org_secret = org.secret  # Can't change secret from the web
-        self.modelload(org, web.request, "org_")
+        Model_Load(org, web.request, "org_")
         if org_secret == None : org_secret = ""
         org.secret = org_secret
         org.put()
@@ -339,7 +340,7 @@ class Context():
       if options.get('auto_create_courses', False) :
         course = LTI_Course.get_or_insert("key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
-        self.modelload(course, web.request, "course_")
+        Model_Load(course, web.request, "course_")
         course.course_id = path_course_id
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
@@ -385,7 +386,7 @@ class Context():
       if options.get('auto_create_courses', False) :
         course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
-        self.modelload(course, web.request, "course_")
+        Model_Load(course, web.request, "course_")
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
@@ -429,7 +430,7 @@ class Context():
         user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
         user.course = course
         course_user = True
-      self.modelload(user, web.request, "user_")
+      Model_Load(user, web.request, "user_")
       user.put()
 
     memb = None
@@ -454,7 +455,7 @@ class Context():
     course_org = False
     if not org and len(org_id) > 0 :
       org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
-      self.modelload(org, web.request, "org_")
+      Model_Load(org, web.request, "org_")
       org.course = course
       course_org = True
       org.put()
@@ -469,7 +470,7 @@ class Context():
     db.delete(results)
 
     launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
-    self.modelload(launch, web.request, "launch_")
+    Model_Load(launch, web.request, "launch_")
     launch.memb = memb
     if course_org:
       launch.course_org = org
@@ -663,57 +664,3 @@ class Context():
      if ( self.course.code ) : return self.course.code
      return ""
 
-  # Loop through the request keys and see if they can be put 
-  # into the model
-  def modelload(self, org, req, prefix = None):
-    count = 0
-    for key in req.params.keys(): 
-      value = self.web.request.get(key) 
-      thetype = self.modeltype(org, key)
-      if ( thetype == "none" and prefix != None ) :
-         if ( not key.startswith(prefix) ) : continue
-         key = key[len(prefix):]
-         thetype = self.modeltype(org, key)
-
-      self.debug("thetype = "+thetype)
-      # Don't do booleans automatically
-      if ( thetype == "string" or thetype == "int" ) : 
-        self.debug("setting "+key+" = "+str(value))
-        setattr(org,key,value)
-        count = count + 1
-
-    self.debug("MODEL LOAD "+str(org.__class__)+" loaded "+str(count)+" keys")
-
-  def modeltype(self, obj, key):
-    try:
-      attr = str(type(getattr(obj.__class__, key)))
-    except :
-      return "none"
-
-    if attr.find("ext.db.StringProperty") > 0 : return "string"
-    if attr.find("ext.db.ReferenceProperty") > 0 : return "reference"
-    if attr.find("ext.db.DateTimeProperty")  > 0: return "datetime"
-    if attr.find("ext.db.IntegerProperty")  > 0: return "int"
-    if attr.find("ext.db.BooleanProperty")  > 0: return "bool"
-    return "none"
-
-  def modeldump(self, obj):
-    if ( not obj ) : 
-       return ""
-       ret = ret + " Not populated\n"
-       return ret
-
-    ret = "Dumping " + obj.__class__.__name__  + "\n"
-
-    for key in dir(obj.__class__) : 
-      # print "Key " + key + "\n"
-      typ = self.modeltype(obj, key)
-      # print "Typ " + typ + "\n"
-      if ( typ == "string" or typ == "int" or typ == "bool" ) :
-        val = getattr(obj,key)
-        if key.find("secret") >= 0 : continue
-	if ( not val ) : val = "None"
-        ret = ret + "  " + key + "=" + str(val) + "\n";
-
-    return ret
-    

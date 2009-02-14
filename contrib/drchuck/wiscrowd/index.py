@@ -7,15 +7,19 @@ from google.appengine.api import users
 from util.sessions import Session
 from imsglobal.lti import Context
 
-import dotest
-
 # Register all the tools - add new tools here
 tools = list()
 
-# Register the adimin tool
-X = __import__("admin.index", globals(), locals(), [''])
+# Register the admin tool
+X = __import__("tools.admin.index", globals(), locals(), [''])
 Y = X.register() 
 Y.setcontroller("admin")
+tools.append( Y )
+
+# Register the lti_test
+X = __import__("tools.lti_test.index", globals(), locals(), [''])
+Y = X.register() 
+Y.setcontroller("lti_test")
 tools.append( Y )
 
 # Loop through and register the modules
@@ -59,28 +63,22 @@ class LoginHandler(webapp.RequestHandler):
     user = users.get_current_user()
 
     if user:
-      pass
+      self.redirect("/")
     else:
-      self.redirect(users.create_login_url(self.request.uri))
+      self.redirect(users.create_login_url("/"))
       return
-
-    que = db.Query(User).filter("email =",user.email())
-    results = que.fetch(limit=1)
-    if len(results) > 0 :
-      doRender(self, 'welcome.htm',
-               { 'message' : 'Welcome back - You may update your info or press "Continue"',
-                 'portalpath': context.getGetPath(direct=True,controller="portal"),
-                 'userobj': results[0] } )
-    else:
-      doRender(self, 'welcome.htm', { 'message' : 'Please enter your first and last name'})
 
 class LogoutHandler(webapp.RequestHandler):
 
   def get(self):
+    # Logout if we came in via launch
     self.session = Session()
     self.session.delete('lti_launch_key')
-    self.session.delete('lti_launch_password')
-    self.redirect("/")
+    user = users.get_current_user()
+    if user:
+        self.redirect(users.create_logout_url("/") )
+    else:
+        self.redirect("/")
 
 class MainHandler(webapp.RequestHandler):
 
@@ -105,7 +103,10 @@ class MainHandler(webapp.RequestHandler):
     (controller, action, resource) = context.parsePath()
     # print "POST", context.getPostPath()
     # print "GET", context.getGetPath()
-    rendervars = { 'path': self.request.path, 'logouturl': users.create_logout_url("/") }
+
+    user = users.get_current_user()
+    rendervars = { 'user' : user, 'path': self.request.path, 
+                   'logouturl': users.create_logout_url("/") }
 
     logging.info("index.py launch="+str(context.launch));
     if context.launch :
@@ -154,8 +155,11 @@ class MainHandler(webapp.RequestHandler):
     rendervars['dash'] = "yes"
 
     # Copy the tools and add the Real URLs
-    toolz = list(tools)
-    for tool in toolz:
+    # WARNING - Need to copy the tool registrations !!!!!
+    toolz = list()
+    for tool in tools:
+       if tool.controller.find("_") >= 0 : continue
+       toolz.append(tool)
        tool.portalpath = context.getGetPath(controller=tool.controller)
        tool.directpath = context.getGetPath(direct=True,controller=tool.controller)
        # print "C=",tool.controller,"P=",tool.portalpath,"D=",tool.directpath
@@ -173,7 +177,7 @@ class MainHandler(webapp.RequestHandler):
 
 def main():
   # Compute the routes and add routes for the tools
-  routes = [ ('/login', dotest.DoTest),
+  routes = [ ('/login', LoginHandler),
             ('/logout', LogoutHandler)]
   routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )
