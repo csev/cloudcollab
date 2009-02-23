@@ -10,6 +10,7 @@ use lti;
 drop table if exists lti_org;
 create table lti_org (
      id          MEDIUMINT NOT NULL AUTO_INCREMENT,
+     course_id   MEDIUMINT NULL, 
      org_id       CHAR(255) NOT NULL,
      secret      CHAR(255) NULL,
      name        CHAR(255) NULL,
@@ -24,6 +25,7 @@ drop table if exists lti_user;
 create table lti_user (
      id MEDIUMINT NOT NULL AUTO_INCREMENT,
      user_id CHAR(255) NOT NULL,
+     course_id  MEDIUMINT NULL, 
      eid CHAR(255) NULL,
      displayid CHAR(255) NULL,
      password CHAR(255) NULL,
@@ -49,9 +51,11 @@ drop table if exists lti_course;
 create table lti_course (
      id MEDIUMINT NOT NULL AUTO_INCREMENT,
      course_id CHAR(255) NOT NULL,
+     org_id MEDIUMINT NULL,
      code CHAR(255) NULL,
      name CHAR(255) NULL,
      title CHAR(255) NULL,
+     secret CHAR(255) NULL,
      created_at DATETIME NOT NULL, 
      updated_at DATETIME NOT NULL,
      PRIMARY KEY (id)
@@ -97,7 +101,6 @@ create table lti_digest (
 drop table if exists lti_launch;
 create table lti_launch (
      id MEDIUMINT NOT NULL AUTO_INCREMENT,
-     password        CHAR(255) NULL,      -- A very short-term password
      created_at      DATETIME NOT NULL,
      updated_at      DATETIME NOT NULL,
      user_id     MEDIUMINT NOT NULL,
