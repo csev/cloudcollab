@@ -190,24 +190,24 @@ class ORM {
        // DPRT("Field $fieldname($fieldtype)=$fieldvalue(".gettype($fieldvalue).")");
 
        // id and logical key are handled separately
-       if ( $skipfields && $fieldname == 'id' ) return false;
-       if ( $skipfields && $fieldname == $this->keyname ) return false;
+       if ( $skipfields && $fieldname == 'id' ) return;
+       if ( $skipfields && $fieldname == $this->keyname ) return;
 
        // The pre-defined time fields
        if ( $fieldname == "created_at" ) return 'NOW()';
        if ( $fieldname == "updated_at" ) return 'NOW()';
 
-       if ( ! $datafields[$fieldname] ) return false;
+       if ( ! isset($datafields[$fieldname]) ) return;
        // Someday this will cause problems :)
-       if ( $fieldvalue == "NULL" ) return "NULL";
+       if ( is_string($fieldvalue) && $fieldvalue == "NULL" ) return "NULL";
        if ( preg_match("/char(.*)/", $fieldtype) == 1 || 
             preg_match("/text(.*)/", $fieldtype) == 1 ) {
           // DPRT("$fieldname is a text field");
           // Concatenate to force a string in case it was not
           return "'".mysql_real_escape_string($fieldvalue."")."'"; 
        }
-       if ( preg_match("/mediumin(.*)/", $fieldtype) == 1 ) {
-          // DPRT("$fieldname is a integer field");
+       if ( preg_match("/mediumint(.*)/", $fieldtype) == 1 ) {
+          DPRT("$fieldname is a integer field");
           if ( is_string($fieldvalue) ) {
              if ( $fieldvalue == "0" ) {
                 $fieldvalue = 0;
@@ -251,7 +251,7 @@ class ORM {
       }
       // TODO: Allow integer and other keys than string
       // Time to make an insert statement
-      // print_r( $this->datafields);
+      // DPRTR( $this->datafields);
       $fieldlist = "";
       $valuelist = "";
       if ( $keyname ) {
@@ -262,7 +262,7 @@ class ORM {
           $fieldvalue = $this->getValueForColumn($column,$this->datafields);
           $fieldname = $column[Field];
 	  // DPRT("GOT A VALUE $fieldname=$fieldvalue");
-          if ( ! $fieldvalue ) continue;
+          if ( ! isset($fieldvalue) ) continue;
           if ( $fieldlist != "" ) $fieldlist = $fieldlist.", ";
           if ( $valuelist != "" ) $valuelist = $valuelist.", ";
           $fieldlist = $fieldlist.$fieldname;
@@ -365,15 +365,15 @@ class ORM {
       for ($i=0; $i<$count; $i+=1 ) {
          $fld = mysql_fetch_field($result, $i);
          if ( $this->tablename != $fld->table ) continue;
-         print "Adding $fld->name = $row[$i] \n";
+         DPRT("Row Adding $fld->name = $row[$i] \n");
          if ( $fld->name == "id" ) {
            $this->idvalue = $row[$i];
          } else {
            $newrow[$fld->name] = $row[$i];
          }
       }
-      print_r($newrow); 
-      $this->data = $newrow;
+      DPRTR($newrow); 
+      $this->datafields = $newrow;
       if ( ! $this->idvalue ) {
          WARN("Model $this->modelname load_from_row did not find id column");
          return false;

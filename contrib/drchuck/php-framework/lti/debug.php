@@ -11,7 +11,7 @@ function WARN($message) { DPRT($message); } // Figure something later
 function DPRT($message) {
     global $DEBUG_LOG_DATA;
     if (DBG_VERBOSE() ) {
-        //print rtrim($message)."\n";
+        // print rtrim($message)."\n";
     }
     error_log($message."\n");
     $DEBUG_LOG_DATA = $DEBUG_LOG_DATA . rtrim($message) . "\n";
