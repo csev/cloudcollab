@@ -4,7 +4,8 @@ import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
-from util.sessions import Session
+#from util.sessions import Session
+from util import sessions
 from imsglobal.context import Context
 from imsglobal.lticontext import LTI_Context
 
@@ -82,7 +83,7 @@ class LogoutHandler(webapp.RequestHandler):
 
   def get(self):
     # Logout if we came in via launch
-    self.session = Session()
+    self.session = sessions.Session()
     self.session.delete('lti_launch_key')
     user = users.get_current_user()
     if user:
@@ -97,7 +98,7 @@ class MainHandler(webapp.RequestHandler):
 
   def post(self):
     # LTI Can use any session that has dictionary semantics
-    self.session = Session()
+    self.session = sessions.Session()
 
     # If the user is logged in, we construct a launch, if not, we 
     # try to provision via LTI
@@ -164,7 +165,14 @@ class MainHandler(webapp.RequestHandler):
     if tool != None : 
          handler = tool.handler()  # make an instance to call
          handler.initialize(self.request, self.response)
-         fragment = handler.markup()
+         if controller == "sample":
+             if not handler.setup() : return
+             # tell the portlet to stay inside the div named "fred"
+             handler.setDiv('fred');
+             fragment = handler.getview(None)
+         else:
+             fragment = handler.markup()
+
          if fragment == None : return
          rendervars['fragment'] = fragment
          temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')

@@ -3,7 +3,13 @@
 <a href="http://www.cloudcollab.com" target=_new><img align=right 
     width="80" src="/static/images/cloudcollab.jpg" border=0></a>
 {% if fragment %}
+<hr>
+<!-- Above the div -->
+<div id="fred">
 {{ fragment }}
+</div>
+<!-- Below the div -->
+<hr>
 {% else %}
 {% if context.launch %}
 <p>You are now successfully logged in using LTI Launch - this system has the following tools:</p>
