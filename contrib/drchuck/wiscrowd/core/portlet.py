@@ -224,10 +224,17 @@ class Portlet(webapp.RequestHandler):
   def getFormButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
+    ret = '<a href="%s" %s id="buttonhref">%s</a>' % (fullurl, self.getAttributeString(attributes), text)
     if self.div == False :
-      ret = '<button onclick="window.location=\'%s\'; return false;" %s>%s</button>' % (url, self.getAttributeString(attributes), text)
+      ret = ret + '<button onclick="window.location=\'%s\'; return false;" %s id="buttonbutton" style="display:none;">%s</button>' % (url, self.getAttributeString(attributes), text)
     else :
-      ret = """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s>%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), text)
+      ret = ret + """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s id="buttonbutton" style="display:none;">%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), text)
+    ret = ret + """
+<script type="text/javascript"> 
+document.getElementById('buttonhref').style.display="none";
+document.getElementById('buttonbutton').style.display="inline";
+</script>
+"""
     return ret
 
   def getFormSubmit(self, text, attributes ={ } ) :
