@@ -70,27 +70,33 @@ class Portlet(webapp.RequestHandler):
     if ( output != None ) : self.response.out.write(output)
 
   # For now return the parameters all the time - even for the post
-  def getPostPath(self, action=False, resource=False, direct=False, controller=False):
-    return self.getGetPath(action, resource, { }, direct, controller)
+  def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
+    return self.getGetPath(action, resource, { }, direct, controller, ignoreajax)
 
-  def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False):
-    newpath = self.getPath(action, resource, direct, controller)
+  def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False):
+    newpath = self.getPath(action, resource, direct, controller, ignoreajax)
     p = self.getUrlParms()
     p.update(params)
     if len(p) > 0 : 
        newpath = newpath + '?' + urllib.urlencode(p)
     return newpath
 
-# Reconstruct the path, changing the action, controller
-  def getPath(self, action=False, resource=False, direct=False, controller=False):
+  # Reconstruct the path, changing the action, controller
+  # direct means do not use the portal (i.e. make a servlet like URL)
+  # ignoreajax means - even if we are in a div, generate the non-div URL
+  def getPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
     '''Retrieve the raw path to a controller/action pair.   Does not handle 
     when parameters are needed when cookies are not set.  Do not use
     directly from tool code.'''
 
     # TODO: Get mad if action, controller, or resource have nasty characters - maybe use preg
+    addajax = self.div != False and ignoreajax != True
+    addportal = self.portal != False and direct != True and addajax == False
+    # print "addajax = %s addportal = %s " % ( addajax, addportal)
+
     newpath = "/"
     # We cannot both be the whole portal screen and told to be in a div - pick div
-    if self.portal and self.div == False:
+    if addportal:
       newpath = "/portal/"
 
     if controller != False:
@@ -98,7 +104,7 @@ class Portlet(webapp.RequestHandler):
     elif self.controller != False :
       newpath = newpath + self.controller + "/"
 
-    if self.div != False:
+    if addajax:
       newpath = newpath + self.portlet_ajax_prefix + self.div + "/"
 
     if action != False :
@@ -184,21 +190,19 @@ class Portlet(webapp.RequestHandler):
       ret = ret + key + '="' + value + '"'
     return ret
     
-  def getAnchorTag(self, text, url, attributes = {} ) :
-    # Pitch a fit if this does not start with /
-    if not url.startswith("/") : 
-      raise KeyError("getAnchorTag - Url must start with / - "+url);
+  def getAnchorTag(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
+    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
+    fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     if self.div == False :
       ret = '<a href="%s" %s>%s</a>' % (url, self.getAttributeString(attributes), text)
     else :
-      # TODO: Get the non-ajax and ajax url
-      ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (url, self.div, url, self.getAttributeString(attributes), text)
+      ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (fullurl, self.div, url, self.getAttributeString(attributes), text)
     return ret
 
-  def getFormTag(self, url, attributes = { }) :
-    if not url.startswith("/") : 
-       raise KeyError("getFormTag - Url must start with / - "+url);
-    ret = '<form action="%s" method="post" %s id="myform">' % (url, self.getAttributeString(attributes))
+  def getFormTag(self, attributes = {},  params = {}, action=False, resource=False, controller=False):
+    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
+    fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
+    ret = '<form action="%s" method="post" %s id="myform">' % (fullurl, self.getAttributeString(attributes))
     if self.div != False :
       ret = ret + """
 <script type="text/javascript"> 
@@ -211,15 +215,19 @@ class Portlet(webapp.RequestHandler):
 </script> 
 """ % ( url ) 
 
+    fields = self.getFormFields()
+    if len(fields) > 0 :
+        ret = ret + self.getFormFields() + '\n';
     return ret
 
-  def getFormButton(self, text, url, attributes ={ } ) :
-    if not url.startswith("/") : 
-       raise KeyError("getFormButton - Url must start with / - "+url);
+  # TODO: What about if Javascript is turned off?  Maybe generate both href and button and when JS is on flip which is hidden
+  def getFormButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
+    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
+    fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     if self.div == False :
       ret = '<button onclick="window.location=\'%s\'; return false;" %s>%s</button>' % (url, self.getAttributeString(attributes), text)
     else :
-      ret = '<button onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</button>' % (self.div, url, self.getAttributeString(attributes), text)
+      ret = """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s>%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), text)
     return ret
 
   def getFormSubmit(self, text, attributes ={ } ) :
