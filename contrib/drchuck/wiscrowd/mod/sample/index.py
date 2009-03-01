@@ -19,14 +19,16 @@ def register():
 class SampleHandler(learningportlet.LearningPortlet):
 
   def doaction(self):
-    return ( "This is some info")
+    return ( { 'infox': 'hello infox', 'thing': self.request.get('thing')  } )
 
+  # Don't asume POST data will be here - only info
   def getview(self, info):
-    url = self.getPostPath()
-    self.debug("New URL: "+url)
-    ret = "Sample Output\n"
+    ret = "Sample Output<br/>\n"
+    ret = ret + "Info %s<br/>\n" % info
+    ret = ret + "Path controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
     ret = ret + self.getAnchorTag("Click Me", { 'class' : "selected" }, action="anchor" ) + '\n'
     ret = ret + self.getFormTag({ 'class' : "selected" } , action="formtag" ) + '\n'
+    ret = ret + '<input type="text" name="thing" size="40">\n'
     ret = ret + self.getFormButton("Cancel", { 'class' : "selected" }, action="formbutton" ) + '\n'
     ret = ret + self.getFormSubmit("GO") + '\n'
     ret = ret + "</form>\n";
