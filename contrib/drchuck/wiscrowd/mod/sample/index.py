@@ -14,7 +14,7 @@ from core import learningportlet
 # Return our Registration
 def register():
    return tool.ToolRegistration(SampleHandler, "Sample Tool", 
-     """This tool shows how to build a simple Learning Portlet.""")
+     """This tool shows how to build a simple Learning Portlet which supports AJAX.""")
 
 class SampleHandler(learningportlet.LearningPortlet):
 
