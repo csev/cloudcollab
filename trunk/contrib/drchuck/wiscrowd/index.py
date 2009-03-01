@@ -4,10 +4,12 @@ import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
+from google.appengine.api import memcache
 #from util.sessions import Session
 from util import sessions
 from imsglobal.context import Context
 from imsglobal.lticontext import LTI_Context
+import facebook
 
 bootstrap = {
   'user_locale': 'en_US',
@@ -94,6 +96,7 @@ class LogoutHandler(webapp.RequestHandler):
 class MainHandler(webapp.RequestHandler):
 
   def get(self):
+    self.isget = True
     self.post()
 
   def post(self):
@@ -203,9 +206,63 @@ class MainHandler(webapp.RequestHandler):
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
 
+# http://dollarmani-facebook.blogspot.com/2008/09/using-facebook-api-in-python.html
+class FaceBookHandler(webapp.RequestHandler):
+  def get(self):
+    doRender(self, '/facebook.htm' )
+
+  def post(self):
+  # Both these keys are provided to you when you create a Facebook Application.
+    api_key = self.request.get("facebook_api_key")
+    api_secret = self.request.get("facebook_api_secret")
+    if len(api_key) > 0 and len(api_secret) > 0:
+       memcache.add("facebook_api_key", api_key)
+       memcache.add("facebook_api_secret", api_secret)
+       self.response.out.write("Facebook API Keys stored in memcache")
+       return
+
+    api_key = memcache.get("facebook_api_key")
+    secret_key = memcache.get("facebook_api_secret")
+
+    if api_secret == None or api_key == None:
+       self.get()
+       return
+
+    # Initialize the Facebook Object.
+    self.facebookapi = facebook.Facebook(api_key, secret_key)
+
+    # Checks to make sure that the user is logged into Facebook.
+    if self.facebookapi.check_session(self.request):
+      pass
+    else:
+      # If not redirect them to your application add page.
+      url = self.facebookapi.get_add_url()
+      self.response.out.write('<fb:redirect url="' + url + '" />')
+      return
+
+    # Checks to make sure the user has added your application.
+    if self.facebookapi.added:
+      pass
+    else:
+      # If not redirect them to your application add page.
+      url = self.facebookapi.get_add_url()
+      self.response.out.write('<fb:redirect url="' + url + '" />')
+      return
+
+    # Get the information about the user.
+    user = self.facebookapi.users.getInfo( [self.facebookapi.uid], ['uid', 'name', 'birthday', 'relationship_status'])[0]
+
+    # Display a welcome message to the user along with all the greetings.
+    self.response.out.write("<html> <body>")
+    self.response.out.write('Hello %s,<br>' % user['name'])
+    self.response.out.write('Welcome to wiscrowd in facebook.<br>')
+    self.response.out.write('See all the entries in your guestbook below.<br><br>')
+    self.response.out.write('</body></html>')
+
 def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', LoginHandler),
+            ('/facebook', FaceBookHandler),
             ('/logout', LogoutHandler)]
   routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )
