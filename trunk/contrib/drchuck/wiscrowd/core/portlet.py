@@ -26,6 +26,10 @@ class Portlet(webapp.RequestHandler):
     self.portlet_header = None
     self.portlet_ajax_prefix = 'portlet_ajax_'
 
+    self.javascript_allowed = False
+    self.cookies_allowed = True
+    self.session_allowed = True
+
   def setDiv(self, newdiv) :
     """Allows the div to be injected from above"""
     self.div = newdiv
@@ -193,8 +197,8 @@ class Portlet(webapp.RequestHandler):
   def getAnchorTag(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
-    if self.div == False :
-      ret = '<a href="%s" %s>%s</a>' % (url, self.getAttributeString(attributes), text)
+    if self.div == False or self.javascript_allowed == False:
+      ret = '<a href="%s" %s>%s</a>' % (fullurl, self.getAttributeString(attributes), text)
     else :
       ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (fullurl, self.div, url, self.getAttributeString(attributes), text)
     return ret
@@ -203,7 +207,7 @@ class Portlet(webapp.RequestHandler):
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     ret = '<form action="%s" method="post" %s id="myform">' % (fullurl, self.getAttributeString(attributes))
-    if self.div != False :
+    if self.div != False and self.javascript_allowed != False:
       ret = ret + """
 <script type="text/javascript"> 
     $(document).ready(function() {
@@ -217,7 +221,7 @@ class Portlet(webapp.RequestHandler):
 
     fields = self.getFormFields()
     if len(fields) > 0 :
-        ret = ret + self.getFormFields() + '\n';
+        ret = ret + '\n' + self.getFormFields();
     return ret
 
   # TODO: What about if Javascript is turned off?  Maybe generate both href and button and when JS is on flip which is hidden
@@ -225,11 +229,15 @@ class Portlet(webapp.RequestHandler):
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     ret = '<a href="%s" %s id="buttonhref">%s</a>' % (fullurl, self.getAttributeString(attributes), text)
-    if self.div == False :
+    if self.javascript_allowed == False:
+	pass
+    elif self.div == False:
       ret = ret + '<button onclick="window.location=\'%s\'; return false;" %s id="buttonbutton" style="display:none;">%s</button>' % (url, self.getAttributeString(attributes), text)
     else :
       ret = ret + """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s id="buttonbutton" style="display:none;">%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), text)
-    ret = ret + """
+    
+    if self.javascript_allowed != False:
+      ret = ret + """
 <script type="text/javascript"> 
 document.getElementById('buttonhref').style.display="none";
 document.getElementById('buttonbutton').style.display="inline";
