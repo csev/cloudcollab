@@ -25,10 +25,9 @@ class SampleHandler(learningportlet.LearningPortlet):
     url = self.getPostPath()
     self.debug("New URL: "+url)
     ret = "Sample Output\n"
-    ret = ret + self.getAnchorTag("Click Me", url, { 'class' : "selected" } ) + '\n'
-    ret = ret + self.getFormTag(url, { 'class' : "selected" } ) + '\n'
-    ret = ret + self.getFormFields() + '\n'
-    ret = ret + self.getFormButton("Cancel", url, { 'class' : "selected" } ) + '\n'
+    ret = ret + self.getAnchorTag("Click Me", { 'class' : "selected" }, action="anchor" ) + '\n'
+    ret = ret + self.getFormTag({ 'class' : "selected" } , action="formtag" ) + '\n'
+    ret = ret + self.getFormButton("Cancel", { 'class' : "selected" }, action="formbutton" ) + '\n'
     ret = ret + self.getFormSubmit("GO") + '\n'
     ret = ret + "</form>\n";
     ret = ret + "\n<pre>\n----   Debug Output ----\n"
