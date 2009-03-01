@@ -11,6 +11,7 @@ from imsglobal.lticontext import LTI_Context
 from core import tool
 from core import learningportlet
 
+
 # Return our Registration
 def register():
    return tool.ToolRegistration(SampleHandler, "Sample Tool", 
