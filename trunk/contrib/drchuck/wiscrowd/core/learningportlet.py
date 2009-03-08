@@ -7,6 +7,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext import db
 from core import portlet
 from imsglobal.lticontext import LTI_Context
+from util.sessions import Session
 
 class LearningPortlet(portlet.Portlet):
 
@@ -19,23 +20,25 @@ class LearningPortlet(portlet.Portlet):
 
   def setup(self):
 
-    Portlet.setup(self)
+    portlet.Portlet.setup(self)
 
     self.context = False
     if self.establishContext() : 
+      # Insist on a session
+      if self.session is None: self.session = Session()
       self.context = LTI_Context(self, self.session);
       if ( self.context.complete ) : return False
 
     return True
 
   def getUrlParms(self) :
-    retval = Portlet.getUrlParms()
+    retval = portlet.Portlet.getUrlParms(self)
     if self.context != False and self.context.launch and not self.context.sessioncookie :
       retval['lti_launch_key'] = self.context.launch.key()
     return retval
 
   def getFormFields(self) :
-    ret = Portlet.getFormFields()
+    ret = portlet.Portlet.getFormFields(self)
     if self.context != False and self.context.launch and not self.context.sessioncookie :
       return ret + '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.context.launch.key()
     else :

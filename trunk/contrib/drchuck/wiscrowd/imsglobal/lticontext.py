@@ -43,7 +43,7 @@ class LTI_Context(Context):
   # We have several scenarios to handle
   def __init__(self, web, session = False, options = {}):
     ##### BIG HACK fake no cookies:
-    session = False
+    ## session = False
     self.web = web
     self.request = web.request
     self.launch = None
