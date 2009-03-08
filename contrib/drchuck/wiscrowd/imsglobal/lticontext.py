@@ -42,8 +42,6 @@ class LTI_Context(Context):
 
   # We have several scenarios to handle
   def __init__(self, web, session = False, options = {}):
-    ##### BIG HACK fake no cookies:
-    ## session = False
     self.web = web
     self.request = web.request
     self.launch = None
@@ -81,7 +79,7 @@ class LTI_Context(Context):
         launch = None
 
       if launch:
-        if session  != False: session['lti_launch_key'] = key
+        if session != False: session['lti_launch_key'] = key
         # logging.info("Placing in session: %s" % key)
       else:
         logging.info("Session not found in store "+key)

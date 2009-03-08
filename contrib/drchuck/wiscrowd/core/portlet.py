@@ -20,6 +20,7 @@ class Portlet(webapp.RequestHandler):
     self.action = False
     self.controller = False
     self.resource = False
+    self.session = None
 
     self.dStr = ""
 

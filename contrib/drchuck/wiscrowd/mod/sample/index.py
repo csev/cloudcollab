@@ -12,7 +12,6 @@ from core import tool
 from core import learningportlet
 from core import portlet
 
-
 # Return our Registration
 def register():
    return tool.ToolRegistration(SampleHandler, "Sample Tool", 
@@ -20,12 +19,19 @@ def register():
 
 class SampleHandler(learningportlet.LearningPortlet):
 
+  def establishContext(self):
+    return True
+
+# getUserName
   def doaction(self):
-    return ( { 'infox': 'hello infox', 'thing': self.request.get('thing')  } )
+    return ( { 'infox': 'hello', 'thing': self.request.get('thing')  } )
 
   # Don't asume POST data will be here - only info
   def getview(self, info):
     ret = "Sample Output<br/>\n"
+    ret = ret + "Info %s<br/>\n" % info
+    if self.context != None:
+        ret = ret + "User: %s<br/>\n" % self.context.getUserName()
     ret = ret + "Info %s<br/>\n" % info
     ret = ret + "Path controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
     ret = ret + self.getAnchorTag("Click Me", { 'class' : "selected" }, action="anchor" ) + '\n'
