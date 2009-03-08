@@ -17,11 +17,9 @@ class LearningPortlet(portlet.Portlet):
   def establishContext(self):
     return True
 
-  # TODO: extend the patent setup
-  # For now a 100% override of the method
   def setup(self):
 
-    self.super_setup()
+    Portlet.setup(self)
 
     self.context = False
     if self.establishContext() : 
@@ -31,14 +29,13 @@ class LearningPortlet(portlet.Portlet):
     return True
 
   def getUrlParms(self) :
-    retval = self.super_getUrlParms()
+    retval = Portlet.getUrlParms()
     if self.context != False and self.context.launch and not self.context.sessioncookie :
       retval['lti_launch_key'] = self.context.launch.key()
     return retval
 
-  # To do call super
   def getFormFields(self) :
-    ret = self.super_getFormFields()
+    ret = Portlet.getFormFields()
     if self.context != False and self.context.launch and not self.context.sessioncookie :
       return ret + '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.context.launch.key()
     else :

@@ -97,9 +97,13 @@ class MainHandler(webapp.RequestHandler):
 
   def get(self):
     self.isget = True
-    self.post()
+    return self.process()
 
   def post(self):
+    self.isget = True
+    return self.process()
+
+  def process(self):
     # LTI Can use any session that has dictionary semantics
     self.session = sessions.Session()
 

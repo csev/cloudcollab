@@ -6,6 +6,7 @@ import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from util.sessions import Session
 
 # TODO: Add some debugging
 # Add try / except on get/post and put out a decent message
@@ -46,12 +47,12 @@ class Portlet(webapp.RequestHandler):
   def setHeader(self,newheader):
     self.portlet_header = newheader
 
-  # TODO: Make this a super
-  def super_setup(self):
+  def setup(self):
     if self.requireSession() :
-      self.session = None
+      self.session = Session(self.request)
     else:
-      self.session = Session()
+      self.session = None
+    logging.info("Session = %s" % self.session)
 
     # Set all of the path based variables
     self.parsePath()
@@ -180,12 +181,17 @@ class Portlet(webapp.RequestHandler):
          reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
     return reqstr
 
-  # TODO: DO something about cookieless sessions
-  def super_getUrlParms(self) :
-    return { }
+  def getUrlParms(self) :
+    retval = { }
+    if self.session != None and self.session.foundcookie is False:
+        retval =  { self.session.cookiename: self.session.sid }
+    return retval
 
-  def super_getFormFields(self) :
-    return ''
+  def getFormFields(self) :
+    retval = ''
+    if ( self.session != None ) and self.session.foundcookie is False:
+       retval = '<input type="hidden" name="%s" value="%s">\n' % (self.session.cookiename, self.session.sid)
+    return retval
 
   def getAttributeString(self, attributes = {} ) :
     ret = ''

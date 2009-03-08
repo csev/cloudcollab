@@ -6,29 +6,40 @@ import Cookie
 import logging
 from google.appengine.api import memcache
 
-COOKIE_NAME = 'appengine-simple-session-sid'
+COOKIE_NAME = '_wiscrowd_session_id'
 DEFAULT_COOKIE_PATH = '/'
 SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
 
 class Session(object):
 
-    def __init__(self):
+    def __init__(self, request=None):
         self.sid = None
         self.key = None
         self.session = None
+        self.request = request
+        self.foundcookie = False
+        self.cookiename = COOKIE_NAME
         string_cookie = os.environ.get('HTTP_COOKIE', '')
         self.cookie = Cookie.SimpleCookie()
         self.cookie.load(string_cookie)
 
-        # check for existing cookie
+        # check for existing cookie or request parameter
         if self.cookie.get(COOKIE_NAME):
             self.sid = self.cookie[COOKIE_NAME].value
+            self.foundcookie = True
+        elif self.request != None :
+            self.sid = self.request.get(COOKIE_NAME)
+       
+        if self.sid != None and len(self.sid) < 1 : self.sid = None
+
+        if self.sid != None:
             self.key = "session-" + self.sid
 	    self.session = memcache.get(self.key)
             if self.session is None:
                logging.info("Invalidating session "+self.sid)
                self.sid = None
                self.key = None
+               self.foundcookie = False
 
         if self.session is None:
             self.sid = str(random.random())[5:]+str(random.random())[5:]
