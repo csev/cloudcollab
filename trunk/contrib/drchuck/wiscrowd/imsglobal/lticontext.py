@@ -405,7 +405,11 @@ class LTI_Context(Context):
 
     # Need to make an option to allow a 
     # simple return instead of redirect
+    # If we have a session attempt to store the key in the session
+    # If all goes well the session and request key will match and 
+    # urls will be keyword-free
     if doDirect:
+      if session != False: session['lti_launch_key'] = str(launch.key())
       web.redirect(url)
       dig.debug = self.dStr
       dig.put()
