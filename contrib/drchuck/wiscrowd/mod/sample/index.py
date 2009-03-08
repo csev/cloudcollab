@@ -18,7 +18,7 @@ def register():
    return tool.ToolRegistration(SampleHandler, "Sample Tool", 
      """This tool shows how to build a simple Learning Portlet which supports AJAX.""")
 
-class SampleHandler(portlet.Portlet):
+class SampleHandler(learningportlet.LearningPortlet):
 
   def doaction(self):
     return ( { 'infox': 'hello infox', 'thing': self.request.get('thing')  } )
