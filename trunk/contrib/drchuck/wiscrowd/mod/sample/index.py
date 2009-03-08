@@ -10,6 +10,7 @@ from util.sessions import Session
 from imsglobal.lticontext import LTI_Context
 from core import tool
 from core import learningportlet
+from core import portlet
 
 
 # Return our Registration
@@ -17,7 +18,7 @@ def register():
    return tool.ToolRegistration(SampleHandler, "Sample Tool", 
      """This tool shows how to build a simple Learning Portlet which supports AJAX.""")
 
-class SampleHandler(learningportlet.LearningPortlet):
+class SampleHandler(portlet.Portlet):
 
   def doaction(self):
     return ( { 'infox': 'hello infox', 'thing': self.request.get('thing')  } )
