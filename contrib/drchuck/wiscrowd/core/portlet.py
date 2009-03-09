@@ -2,6 +2,7 @@ import logging
 import urllib
 import os
 import pickle
+import inspect
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
@@ -285,3 +286,24 @@ document.getElementById('buttonbutton').style.display="inline";
 
   def getFormSubmit(self, text, attributes ={ } ) :
     return '<input type="submit" value="%s" %s>' % ( text, self.getAttributeString(attributes))
+
+  def doRender(self, tname = "index.htm", values = { }):
+    if tname.find("_") == 0: return None
+    # Read the stack to find the file for our caller
+    try:
+      callerfile = inspect.stack()[1][1]
+    except:
+      callerfile = __file__
+   
+    temp = os.path.join(os.path.dirname(callerfile),
+           'templates/' + tname)
+    if not os.path.isfile(temp):
+      return None
+  
+    # Make a copy of the dictionary and add the path and session
+    newval = dict(values)
+    newval['path'] = self.request.path
+  
+    outstr = template.render(temp, newval)
+    return outstr
+

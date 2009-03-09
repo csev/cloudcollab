@@ -1,16 +1,8 @@
 import logging
-import os
-import pickle
-import wsgiref.handlers
-from google.appengine.ext.webapp import template
-from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
-from util.sessions import Session
-from imsglobal.lticontext import LTI_Context
 from core import tool
 from core import learningportlet
-from core import portlet
 
 # Return our Registration
 def register():
@@ -28,20 +20,12 @@ class SampleHandler(learningportlet.LearningPortlet):
 
   # Don't asume POST data will be here - only info
   def getview(self, info):
-    ret = "Sample Output<br/>\n"
-    ret = ret + "Info %s<br/>\n" % info
-    if self.context != None:
-        ret = ret + "User: %s<br/>\n" % self.context.getUserName()
-    ret = ret + "Info %s<br/>\n" % info
-    ret = ret + "Path controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
-    ret = ret + self.getAnchorTag("Click Me", { 'class' : "selected" }, action="anchor" ) + '\n'
-    ret = ret + self.getFormTag({ 'class' : "selected" } , action="formtag" ) + '\n'
-    ret = ret + '<input type="text" name="thing" size="40">\n'
-    ret = ret + self.getFormButton("Cancel", { 'class' : "selected" }, action="formbutton" ) + '\n'
-    ret = ret + self.getFormSubmit("GO") + '\n'
-    ret = ret + "</form>\n";
-    ret = ret + "\n<pre>\n----   Debug Output ----\n"
-    ret = ret + self.getDebug()
-    ret = ret + "\n</pre>\n"
-    
-    return ret
+    pathinfo = "controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
+    rendervars = { 'info' : info, 'user': self.context.getUserName(), 
+                   'pathinfo': pathinfo, 
+		   'anchortag': self.getAnchorTag("Click Me", { 'class' : "selected" }, action="act-anchor" ),
+                   'formtag': self.getFormTag({ 'class' : "selected" } , action="act-post" ),
+                   'formcancel' : self.getFormButton("Cancel", { 'class' : "selected" }, action="act-cancel" ),
+    		   'formsubmit' : self.getFormSubmit('GO') }
+
+    return self.doRender('index.htm', rendervars)
