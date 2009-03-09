@@ -97,13 +97,13 @@ class MainHandler(webapp.RequestHandler):
 
   def get(self):
     self.isget = True
-    return self.process()
+    return self.service()
 
   def post(self):
-    self.isget = True
-    return self.process()
+    self.isget = False
+    return self.service()
 
-  def process(self):
+  def service(self):
     # LTI Can use any session that has dictionary semantics
     self.session = sessions.Session()
 
@@ -173,10 +173,13 @@ class MainHandler(webapp.RequestHandler):
          handler = tool.handler()  # make an instance to call
          handler.initialize(self.request, self.response)
          if controller == "sample":
-             if not handler.setup() : return
-             # tell the portlet to stay inside the div named "fred"
-             handler.setDiv('fred');
-             fragment = handler.getview(None)
+             if self.isget:
+                 handler.setDiv('fred');
+                 fragment = handler.handleget()
+             else:
+                 # If we are posting to /portal it must mean
+                 # Ajax is not working
+                 fragment = handler.handlepost()
          else:
              fragment = handler.markup()
 

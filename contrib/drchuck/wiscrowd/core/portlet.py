@@ -11,6 +11,8 @@ from util.sessions import Session
 # TODO: Add some debugging
 # Add try / except on get/post and put out a decent message
 # Come up with a way to do sessions without cookies
+
+# TODO: Preferences like JSR-168 ??? 
   
 class Portlet(webapp.RequestHandler):
 
@@ -21,6 +23,9 @@ class Portlet(webapp.RequestHandler):
     self.controller = False
     self.resource = False
     self.session = None
+    
+    # Set this to False to supppress reiret after post
+    self.redirectafterpost = True
 
     self.dStr = ""
 
@@ -39,7 +44,7 @@ class Portlet(webapp.RequestHandler):
     """Allows the div to be injected from above"""
     self.div = newdiv
     if self.javascript_allowed is False:
-      logging.info("Warning - Javascript if off and setting dov=%s" % newdiv)
+      logging.info("Warning - Javascript is off and setting div=%s" % newdiv)
 
   def requireSession(self):
     return True
@@ -58,38 +63,49 @@ class Portlet(webapp.RequestHandler):
       self.session = Session(self.request)
     else:
       self.session = None
-    logging.info("Session = %s" % self.session)
 
     # Set all of the path based variables
     self.parsePath()
     return True
 
   def get(self):
+    output = self.handleget()
+    if ( output != None ) : self.response.out.write(output)
+
+  def post(self):
+    output = self.handlepost()
+    if ( output != None ) : self.response.out.write(output)
+
+  def handleget(self):
     if not self.setup(): return
     info = self.session.get("_portlet_info", None)
     output = self.getview(info)
     self.session.delete("_portlet_info")
-    if ( output != None ) : self.response.out.write(output)
+    return output
 
-  def post(self):
+  def handlepost(self):
     if not self.setup(): return
     ( info ) = self.doaction()
-    # Do redirect unless this is an Ajax Post
-    # TODO: Also check content type...  Probably if this 
+
+    # TODO: Eventually check content type...  Probably if this 
     # is not HTML, we just return the output - hmmm.
-    if self.div is False:
+    # Or do we let the self.doaction tell us not to redirect
+    # somehow - not a bad idea
+
+    # Do redirect unless this is an Ajax Post or we have 
+    # redirect after POST turned off
+    if self.div is False and self.redirectafterpost is True:
       self.session["_portlet_info"]  = info 
-      logging.info("Redirected back to %s" % self.request.path)
-      self.redirect(self.request.path)
-      return 
+      logging.info("Redirect after POST %s" % self.request.uri)
+      self.redirect(self.request.uri)
+      return None
     else:
       info = pickle.dumps( info ) 
       info = pickle.loads( info )
       output = self.getview(info)
-      # Do something intelligent here in terms of producing output
-      if ( output != None ) : self.response.out.write(output)
 
     self.session.delete("_portlet_info")
+    return output
 
   # For now return the parameters all the time - even for the post
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
@@ -139,7 +155,7 @@ class Portlet(webapp.RequestHandler):
     if resource != False :
       newpath = newpath + resource + "/"
 
-    logging.info("self.div=%s ignoreajax=%s addajax=%s addportal=%s newpath=%s" % ( self.div, ignoreajax, addajax, addportal, newpath) )
+    # logging.info("self.div=%s ignoreajax=%s addajax=%s addportal=%s newpath=%s" % ( self.div, ignoreajax, addajax, addportal, newpath) )
     return newpath
 
 # This is some hard coded URL parsing
@@ -152,7 +168,7 @@ class Portlet(webapp.RequestHandler):
     '''Returns a tuple which is the controller, action and the rest of the path.
     The "rest of the path" does not start with a slash.'''
     str = self.request.path
-    self.debug("Parsing request path: "+self.request.path)
+    # self.debug("Parsing request path: "+self.request.path)
     xwords = str.split("/")
     words = list()
     for word in xwords:
@@ -177,7 +193,7 @@ class Portlet(webapp.RequestHandler):
        del words[0]
     if len(words) > 0 :
        self.resource = "/".join(words)
-    self.debug("Portal=%s div=%s controller=%s action=%s resource=%s" % (self.portal, self.div, self.controller, self.action, self.resource))
+    # self.debug("Portal=%s div=%s controller=%s action=%s resource=%s" % (self.portal, self.div, self.controller, self.action, self.resource))
 
   def debug(self, str):
     logging.info(str)
