@@ -28,4 +28,6 @@ class SampleHandler(learningportlet.LearningPortlet):
                    'formcancel' : self.getFormButton("Cancel", { 'class' : "selected" }, action="act-cancel" ),
     		   'formsubmit' : self.getFormSubmit('GO') }
 
+    logging.info(self.context.dump())
+
     return self.doRender('index.htm', rendervars)
