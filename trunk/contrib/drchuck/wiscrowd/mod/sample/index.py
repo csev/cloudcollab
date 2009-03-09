@@ -14,11 +14,10 @@ class SampleHandler(learningportlet.LearningPortlet):
   def establishContext(self):
     return True
 
-# getUserName
   def doaction(self):
     return ( { 'infox': 'hello', 'thing': self.request.get('thing')  } )
 
-  # Don't asume POST data will be here - only info
+  # Don't assume POST data will be here - only info
   def getview(self, info):
     pathinfo = "controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
     rendervars = { 'info' : info, 'user': self.context.getUserName(), 
@@ -28,6 +27,6 @@ class SampleHandler(learningportlet.LearningPortlet):
                    'formcancel' : self.getFormButton("Cancel", { 'class' : "selected" }, action="act-cancel" ),
     		   'formsubmit' : self.getFormSubmit('GO') }
 
-    logging.info(self.context.dump())
+    # logging.info(self.context.dump())
 
     return self.doRender('index.htm', rendervars)
