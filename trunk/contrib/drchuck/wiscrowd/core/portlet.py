@@ -28,13 +28,18 @@ class Portlet(webapp.RequestHandler):
     self.portlet_header = None
     self.portlet_ajax_prefix = 'portlet_ajax_'
 
-    self.javascript_allowed = False
-    self.cookies_allowed = True
-    self.session_allowed = True
+    # This is not a guarantee that the browser supports JavaScript
+    # If this is False, we will generate no JavaScript
+    self.javascript_allowed = True
+    # Hack for testing
+    # self.javascript_allowed = False
 
+  # Deal with Javascript turned off - warning
   def setDiv(self, newdiv) :
     """Allows the div to be injected from above"""
     self.div = newdiv
+    if self.javascript_allowed is False:
+      logging.info("Warning - Javascript if off and setting dov=%s" % newdiv)
 
   def requireSession(self):
     return True
@@ -61,19 +66,30 @@ class Portlet(webapp.RequestHandler):
 
   def get(self):
     if not self.setup(): return
-    output = self.getview(None)
+    info = self.session.get("_portlet_info", None)
+    output = self.getview(info)
+    self.session.delete("_portlet_info")
     if ( output != None ) : self.response.out.write(output)
 
   def post(self):
     if not self.setup(): return
     ( info ) = self.doaction()
-    # TODO: Do the redirect here.  Send query parameters but not post parameters
-    # Force a pickle round trip as a hack for now
-    info = pickle.dumps( info ) 
-    info = pickle.loads( info )
-    output = self.getview(info)
-    # Do something intelligent here in terms of producing output
-    if ( output != None ) : self.response.out.write(output)
+    # Do redirect unless this is an Ajax Post
+    # TODO: Also check content type...  Probably if this 
+    # is not HTML, we just return the output - hmmm.
+    if self.div is False:
+      self.session["_portlet_info"]  = info 
+      logging.info("Redirected back to %s" % self.request.path)
+      self.redirect(self.request.path)
+      return 
+    else:
+      info = pickle.dumps( info ) 
+      info = pickle.loads( info )
+      output = self.getview(info)
+      # Do something intelligent here in terms of producing output
+      if ( output != None ) : self.response.out.write(output)
+
+    self.session.delete("_portlet_info")
 
   # For now return the parameters all the time - even for the post
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
@@ -98,7 +114,6 @@ class Portlet(webapp.RequestHandler):
     # TODO: Get mad if action, controller, or resource have nasty characters - maybe use preg
     addajax = self.div != False and ignoreajax != True
     addportal = self.portal != False and direct != True and addajax == False
-    # print "addajax = %s addportal = %s " % ( addajax, addportal)
 
     newpath = "/"
     # We cannot both be the whole portal screen and told to be in a div - pick div
@@ -124,7 +139,7 @@ class Portlet(webapp.RequestHandler):
     if resource != False :
       newpath = newpath + resource + "/"
 
-    # self.debug("newpath="+newpath)
+    logging.info("self.div=%s ignoreajax=%s addajax=%s addportal=%s newpath=%s" % ( self.div, ignoreajax, addajax, addportal, newpath) )
     return newpath
 
 # This is some hard coded URL parsing
@@ -202,19 +217,19 @@ class Portlet(webapp.RequestHandler):
     return ret
     
   def getAnchorTag(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
-    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     if self.div == False or self.javascript_allowed == False:
       ret = '<a href="%s" %s>%s</a>' % (fullurl, self.getAttributeString(attributes), text)
     else :
+      url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
       ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (fullurl, self.div, url, self.getAttributeString(attributes), text)
     return ret
 
   def getFormTag(self, attributes = {},  params = {}, action=False, resource=False, controller=False):
-    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     ret = '<form action="%s" method="post" %s id="myform">' % (fullurl, self.getAttributeString(attributes))
     if self.div != False and self.javascript_allowed != False:
+      url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
       ret = ret + """
 <script type="text/javascript"> 
     $(document).ready(function() {
@@ -228,13 +243,13 @@ class Portlet(webapp.RequestHandler):
 
     fields = self.getFormFields()
     if len(fields) > 0 :
-        ret = ret + '\n' + self.getFormFields();
+        ret = ret + '\n' + self.getFormFields()
     return ret
 
   # TODO: What about if Javascript is turned off?  Maybe generate both href and button and when JS is on flip which is hidden
   def getFormButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
-    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
+    url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     ret = '<a href="%s" %s id="buttonhref">%s</a>' % (fullurl, self.getAttributeString(attributes), text)
     if self.javascript_allowed == False:
 	pass
