@@ -108,6 +108,13 @@ class Portlet(webapp.RequestHandler):
     self.session.delete("_portlet_info")
     return output
 
+  def doaction(self):
+    logging.info("Your portlet is missing a doaction() method")
+
+  def getview(self, info):
+    logging.info("Your portlet is missing a getview() method")
+    return "This portlet is missing a getview() method."
+
   # For now return the parameters all the time - even for the post
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
     return self.getGetPath(action, resource, { }, direct, controller, ignoreajax)
