@@ -172,7 +172,12 @@ class MainHandler(webapp.RequestHandler):
     if tool != None : 
          handler = tool.handler()  # make an instance to call
          handler.initialize(self.request, self.response)
-         if controller == "sample":
+         # Warning this might mask some errors - but hey 
+         # we need to convert these old apps to new style
+         # portlets
+         try:
+             fragment = handler.markup()
+         except:
              if self.isget:
                  handler.setDiv('fred');
                  fragment = handler.handleget()
@@ -180,8 +185,6 @@ class MainHandler(webapp.RequestHandler):
                  # If we are posting to /portal it must mean
                  # Ajax is not working
                  fragment = handler.handlepost()
-         else:
-             fragment = handler.markup()
 
          if fragment == None : return
          rendervars['fragment'] = fragment
