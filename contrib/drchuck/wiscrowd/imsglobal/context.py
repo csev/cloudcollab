@@ -21,8 +21,11 @@ class Context():
   def __init__(self, request, params, session = False):
     self.request = request
     self.complete = False
-    self.sessioncookie = False
     self.session = session
+    # If the session came from a cookie, our URLs can be simpler
+    self.sessioncookie = False
+    if not self.session is False:
+       self.sessioncookie = self.session.foundcookie
     self.buildlaunch(params)
 
   def setvars(self):
