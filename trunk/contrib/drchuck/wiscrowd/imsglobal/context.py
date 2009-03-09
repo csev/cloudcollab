@@ -27,6 +27,9 @@ class Context():
     if not self.session is False:
        self.sessioncookie = self.session.foundcookie
     self.buildlaunch(params)
+    if not self.session is False:
+       if not self.launch is None:
+	  self.session["lti_launch_key"] = str(self.launch.key())
 
   def setvars(self):
     self.user = None
