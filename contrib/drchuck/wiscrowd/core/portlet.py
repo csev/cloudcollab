@@ -3,6 +3,7 @@ import urllib
 import os
 import pickle
 import inspect
+import random
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
@@ -278,21 +279,24 @@ class Portlet(webapp.RequestHandler):
   def getFormButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
-    ret = '<a href="%s" %s id="buttonhref">%s</a>' % (fullurl, self.getAttributeString(attributes), text)
+    buttonid = "butt_" + str(int(random.random() * 1000000))
+    hrefid = "href_" + str(int(random.random() * 1000000))
+
+    ret = '<a href="%s" %s id="%s">%s</a>' % (fullurl, self.getAttributeString(attributes), hrefid, text)
     if self.javascript_allowed == False:
 	pass
     elif self.div == False:
-      ret = ret + '<button onclick="window.location=\'%s\'; return false;" %s id="buttonbutton" style="display:none;">%s</button>' % (url, self.getAttributeString(attributes), text)
+      ret = ret + '<button onclick="window.location=\'%s\'; return false;" %s id="%s" style="display:none;">%s</button>' % (url, self.getAttributeString(attributes), buttonid, text)
     else :
-      ret = ret + """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s id="buttonbutton" style="display:none;">%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), text)
+      ret = ret + """<button onclick="try{$('#%s').load('%s');return false;} catch(err){ window.location='%s'; return false; }" %s id="%s" style="display:none;">%s</button>""" % (self.div, url, fullurl, self.getAttributeString(attributes), buttonid, text)
     
     if self.javascript_allowed != False:
       ret = ret + """
 <script type="text/javascript"> 
-document.getElementById('buttonhref').style.display="none";
-document.getElementById('buttonbutton').style.display="inline";
+document.getElementById('%s').style.display="none";
+document.getElementById('%s').style.display="inline";
 </script>
-"""
+""" % (hrefid, buttonid)
     return ret
 
   def getFormSubmit(self, text, attributes={} ) :
