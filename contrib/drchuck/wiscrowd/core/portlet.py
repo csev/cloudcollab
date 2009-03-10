@@ -72,11 +72,22 @@ class Portlet(webapp.RequestHandler):
 
   def get(self):
     output = self.handleget()
-    if ( output != None ) : self.response.out.write(output)
+    self.writeoutput(output)
 
   def post(self):
     output = self.handlepost()
-    if ( output != None ) : self.response.out.write(output)
+    self.writeoutput(output)
+
+  def writeoutput(self,output):
+    if output is None : return
+    if self.div is False:
+       rendervars = dict()
+       rendervars['fragment'] = output
+       if self.portlet_title != None:
+          rendervars['title'] = self.portlet_title
+       newoutput = self.doRender('index.htm', rendervars)
+       output = newoutput
+    self.response.out.write(output)
 
   def handleget(self):
     if not self.setup(): return
