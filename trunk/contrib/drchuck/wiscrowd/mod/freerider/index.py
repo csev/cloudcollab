@@ -1,12 +1,8 @@
 import logging
-import os
 import pickle
-import wsgiref.handlers
-from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
-from util.sessions import Session
 from core.tool import ToolRegistration
 from core import learningportlet
 
@@ -75,21 +71,6 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
       rendervars['joinbutton'] = self.getFormButton('Join', action='join')
 
     return self.doRender('index.htm', rendervars)
-
-  # This method returns tool output as a string
-  def markup(self):
-    self.session = Session()
-    context = LTI_Context(self, self.session);
-    
-    if ( context.complete ) : return
-
-    # if we don't have a launch - we are not provisioned
-    if ( not context.launch ) :
-      temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
-      outstr = template.render(temp, { })
-      return outstr
-
-    return self.mainscreen(context)
 
   def action_reset(self) :
     if not self.context.isInstructor() :
