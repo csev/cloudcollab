@@ -7,7 +7,6 @@ from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
 from util.sessions import Session
-from imsglobal.lticontext import LTI_Context
 from core.tool import ToolRegistration
 from core import learningportlet
 
@@ -32,8 +31,8 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
   outStr = ""
 
-  def getmodel(self, context):
-    freekey = "FreeRider-"+str(context.course.key())
+  def getmodel(self):
+    freekey = "FreeRider-"+str(self.context.course.key())
     logging.info("Loading Free key="+freekey)
     freerider =  memcache.get(freekey)
     # If we changed the program ignore old things in the cache
@@ -42,21 +41,21 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
       memcache.add(freekey, freerider, 3600)
     return freerider
 
-  def putmodel(self, freerider, context):
-    freekey = "FreeRider-"+str(context.course.key())
+  def putmodel(self, freerider):
+    freekey = "FreeRider-"+str(self.context.course.key())
     logging.info("Storing Free key="+freekey)
     memcache.replace(freekey, freerider, 3600)
 
   # Called for form posts
   def doaction(self):
-    if self.action == "play" : return self.action_play(self.context)
+    if self.action == "play" : return self.action_play()
     return "Unknown doaction=%s" % self.action
 
   def getview(self, info):
     logging.info("getview Action=%s"%self.action)
 
-    if self.action == "join" : info = self.action_join(self.context)
-    if self.action == "reset" : info =  self.action_reset(self.context)
+    if self.action == "join" : info = self.action_join()
+    if self.action == "reset" : info =  self.action_reset()
 
     if self.action == 'messages': 
        return self.view_messages()
@@ -71,7 +70,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
     if self.context.isInstructor() : 
       rendervars['resetbutton'] = self.getFormButton('Reset', action='reset')
 
-    gm = self.getmodel(self.context)
+    gm = self.getmodel()
     if ( len(gm.players) < 4 ) :
       rendervars['joinbutton'] = self.getFormButton('Join', action='join')
 
@@ -92,26 +91,26 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
     return self.mainscreen(context)
 
-  def action_reset(self,context) :
-    if not context.isInstructor() :
+  def action_reset(self) :
+    if not self.context.isInstructor() :
       return "Only the instructor can reset!"
     gm = GameState()
-    self.putmodel(gm, context)
+    self.putmodel(gm)
     return "Game reset"
 
-  def action_join(self,context) :
-    gm = self.getmodel(context)
+  def action_join(self) :
+    gm = self.getmodel()
 
-    if not context.user.email or len(context.user.email) < 1:
+    if not self.context.user.email or len(self.context.user.email) < 1:
       return "You must have an E-Mail to play"
     
-    if context.user.email in gm.players:
+    if self.context.user.email in gm.players:
       return "You have already joined the game"
 
     if len(gm.players) >= gm.playercount: 
       return "The game is closed - you can play next time"
 
-    gm.players.append(context.user.email)
+    gm.players.append(self.context.user.email)
     gm.chips.append(20)
     gm.last.append( list () )
 
@@ -120,12 +119,12 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
        gm.turn = 1
        gm.current = 0
        
-    self.putmodel(gm, context)
+    self.putmodel(gm)
 
     return "Welcome to the game"
 
-  def action_play(self,context) :
-    gm = self.getmodel(context)
+  def action_play(self) :
+    gm = self.getmodel()
 
     if gm.turn < 1 or gm.turn > 4: 
       return "The game is not running!"
@@ -156,12 +155,12 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
         gm.chips[i] = gm.chips[i] + each
       gm.pot = 0
 
-    self.putmodel(gm, context)
+    self.putmodel(gm)
 
     return "Thanks for your contribution!"
 
   def view_messages(self) :
-    gm = self.getmodel(self.context)
+    gm = self.getmodel()
 
     me = None
     for i in range(len(gm.players)):
