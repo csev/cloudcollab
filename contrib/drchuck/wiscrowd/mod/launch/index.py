@@ -2,14 +2,9 @@ import logging
 import os
 import sys
 import pickle
-import wsgiref.handlers
-from google.appengine.ext.webapp import template
-from google.appengine.ext import webapp
-from google.appengine.ext import db
 
-from util.sessions import Session
-from imsglobal.lticontext import LTI_Context
 from core.tool import ToolRegistration
+from core import learningportlet
 
 import cgi
 from google.appengine.api import urlfetch
@@ -24,47 +19,33 @@ def register():
    return ToolRegistration(LaunchHandler, "LTI Launcher", 
           """This application allows you to launch other LTI Resources.""")
 
-class LaunchHandler(webapp.RequestHandler):
+class LaunchHandler(learningportlet.LearningPortlet):
 
-  outStr = ""
+  def doaction(self):
+    info = dict()
+    info['url'] = self.request.get('url')
+    info['secret'] = self.request.get('secret')
+    info['height'] = self.request.get('height')
+    info['tool_id'] = self.request.get('tool_id')
+    info['newwindow'] = self.request.get('newwindow')
+    return info
 
-  def get(self):
-    istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
-
-  def post(self):
-    istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
-
-  # This method returns tool output as a string
-  def markup(self):
-    self.session = Session()
-    context = LTI_Context(self, self.session);
-    
-    if ( context.complete ) : return
-
-    # if we don't have a launch - we are not provisioned
-    if ( not context.launch ) :
-      temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
-      outstr = template.render(temp, { })
-      return outstr
-
-    rendervars = { 'context' : context }
-
-    url = self.request.get('url')
-    secret = self.request.get('secret')
-    height = self.request.get('height')
-    tool_id = self.request.get('tool_id')
+  def getview(self, info):
+    rendervars = { 'context' : self.context }
+    if info is None:
+      return self.doRender('index.htm', {} )
+    url = info.get('url')
+    secret = info.get('secret')
+    height = info.get('height')
+    tool_id = info.get('tool_id')
     if len(tool_id) < 1 : tool_id = None
     try: height = int(height)
     except: height = 1200
     rendervars['height'] = height
-    newwindow = self.request.get('newwindow')
+    newwindow = info.get('newwindow')
     if newwindow and len(newwindow) > 0 : rendervars['newwindow'] = newwindow
     if not url or len(url) < 1 :
-      temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-      outstr = template.render(temp, { })
-      return outstr
+      return self.doRender('index.htm', {} )
 
     # Sending - Make a Simple TI TimeStamp
     tstime = datetime.utcnow()
@@ -76,7 +57,7 @@ class LaunchHandler(webapp.RequestHandler):
     sha1.update(presha1)
     x = sha1.digest()
     digest = base64.b64encode(x)
-    if context.isInstructor() :
+    if self.context.isInstructor() :
       role = "Instructor"
     else:
       role = "Student"
@@ -86,15 +67,15 @@ class LaunchHandler(webapp.RequestHandler):
         'sec_nonce': nonce,
         'sec_created': timestamp,
         'sec_digest': digest,
-        'user_id': str(context.user.key()),
+        'user_id': str(self.context.user.key()),
         'user_role': role,
-        'user_displayid': context.getUserName(),
-        'user_email': context.user.email,
-        'user_firstname': context.user.firstname,
-        'user_lastname': context.user.lastname,
-        'course_id': context.course.course_id,
-        'course_title': context.course.title,
-        'course_name': context.course.name,
+        'user_displayid': self.context.getUserName(),
+        'user_email': self.context.user.email,
+        'user_firstname': self.context.user.firstname,
+        'user_lastname': self.context.user.lastname,
+        'course_id': self.context.course.course_id,
+        'course_title': self.context.course.title,
+        'course_name': self.context.course.name,
         'launch_targets': "iframe",
         'launch_tool_id': tool_id } )
 
@@ -123,11 +104,10 @@ class LaunchHandler(webapp.RequestHandler):
 	     rurl = rurl + "forward=" + forward
 	     rurl = rurl + "&cs_forward=" + forward
 	     rurl = rurl + "&cs_course=" + course
-          logging.info("Launching email="+context.user.email+" key="+str(context.user.key())+" url="+rurl)
+          logging.info("Launching email="+self.context.user.email+" key="+str(self.context.user.key())+" url="+rurl)
           temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
           rendervars['launchurl'] = rurl
-          outstr = template.render(temp, rendervars)
-          return outstr
+          return self.doRender('index.htm', rendervars)
 
     data = "Failed web service call:\n" 
     data = data + "Launch URL:"+url+"\n"
@@ -140,9 +120,7 @@ class LaunchHandler(webapp.RequestHandler):
       for line in detail:
          data = data + str(line) + '\n'
 
-    temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
     rendervars['msg'] = 'Failed web service call'
     rendervars['data'] = data
-    outstr = template.render(temp, rendervars)
-    return outstr
+    return doRender('index.htm', rendervars)
 
