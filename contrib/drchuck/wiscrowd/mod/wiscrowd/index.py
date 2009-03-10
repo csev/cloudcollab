@@ -1,14 +1,9 @@
 import logging
-import os
 import pickle
-import wsgiref.handlers
-from google.appengine.ext.webapp import template
-from google.appengine.ext import webapp
 from google.appengine.ext import db
 
-from util.sessions import Session
-from imsglobal.lticontext import LTI_Context
 from core.tool import ToolRegistration
+from core import learningportlet
 
 class Wisdom(db.Model) :
    blob = db.BlobProperty()
@@ -21,39 +16,17 @@ where you are trying to determine something as
 a group by averaging many independent guesses.  
 It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 
-class WisHandler(webapp.RequestHandler):
+class WisHandler(learningportlet.LearningPortlet):
 
-  outStr = ""
-
-  def get(self):
-    istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
-
-  def post(self):
-    istr = self.markup()
-    if ( istr != None ) : self.response.out.write(istr)
-
-  # This method returns tool output as a string
-  def markup(self):
-    self.session = Session()
-    context = LTI_Context(self, self.session);
-    
-    if ( context.complete ) : return
-
-    # if we don't have a launch - we are not provisioned
-    if ( not context.launch ) :
-      temp = os.path.join(os.path.dirname(__file__), 'templates/nolti.htm')
-      outstr = template.render(temp, { })
-      return outstr
-
-    wisdom = Wisdom.get_or_insert("a", parent=context.course)
+  def doaction(self):
+    wisdom = Wisdom.get_or_insert("a", parent=self.context.course)
     if wisdom.blob == None : 
       wisdom.blob = pickle.dumps( dict() ) 
       wisdom.put()
 
     data = pickle.loads(wisdom.blob)
     name = self.request.get("name")
-    if len(name) < 1 : name = context.user.email
+    if len(name) < 1 : name = self.context.user.email
 
     guess = self.request.get("guess")
 
@@ -61,7 +34,7 @@ class WisHandler(webapp.RequestHandler):
     except: guess = -1
 
     msg = ""
-    if context.isInstructor() and name.lower() == "reset":
+    if self.context.isInstructor() and name.lower() == "reset":
        data = dict()
        wisdom.blob = pickle.dumps( data ) 
        wisdom.put()
@@ -80,10 +53,19 @@ class WisHandler(webapp.RequestHandler):
        else:
          msg = "Unable to store your guess please re-submit"
 
-    rendervars = {'context': context,
-                  'msg' : msg}
+    return msg
+
+  def getview(self, info):
+    wisdom = Wisdom.get_or_insert("a", parent=self.context.course)
+    if wisdom.blob == None : 
+      wisdom.blob = pickle.dumps( dict() ) 
+      wisdom.put()
+
+    data = pickle.loads(wisdom.blob)
+    rendervars = {'context': self.context,
+                  'msg' : info}
     
-    if context.isInstructor() and len(data) > 0 :
+    if self.context.isInstructor() and len(data) > 0 :
        text = ""
        total = 0
        for (key, val) in data.items(): 
@@ -96,9 +78,7 @@ class WisHandler(webapp.RequestHandler):
        rendervars["count"] = count
        rendervars["data"] = text
 
-    temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-    outstr = template.render(temp, rendervars)
-    return outstr
+    return self.doRender('index.htm', rendervars)
 
   def addname(self, key, name, guess):
     obj = db.get(key)

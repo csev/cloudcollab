@@ -1,6 +1,5 @@
 import logging
 import pickle
-from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
 from core.tool import ToolRegistration
@@ -23,24 +22,6 @@ class GameState():
      self.pot = 0
 
 class FreeRiderHandler(learningportlet.LearningPortlet):
-
-
-  outStr = ""
-
-  def getmodel(self):
-    freekey = "FreeRider-"+str(self.context.course.key())
-    logging.info("Loading Free key="+freekey)
-    freerider =  memcache.get(freekey)
-    # If we changed the program ignore old things in the cache
-    if freerider == None or not isinstance(freerider, GameState):
-      freerider = GameState()
-      memcache.add(freekey, freerider, 3600)
-    return freerider
-
-  def putmodel(self, freerider):
-    freekey = "FreeRider-"+str(self.context.course.key())
-    logging.info("Storing Free key="+freekey)
-    memcache.replace(freekey, freerider, 3600)
 
   # Called for form posts
   def doaction(self):
@@ -71,6 +52,21 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
       rendervars['joinbutton'] = self.getFormButton('Join', action='join')
 
     return self.doRender('index.htm', rendervars)
+
+  def getmodel(self):
+    freekey = "FreeRider-"+str(self.context.course.key())
+    logging.info("Loading Free key="+freekey)
+    freerider =  memcache.get(freekey)
+    # If we changed the program ignore old things in the cache
+    if freerider == None or not isinstance(freerider, GameState):
+      freerider = GameState()
+      memcache.add(freekey, freerider, 3600)
+    return freerider
+
+  def putmodel(self, freerider):
+    freekey = "FreeRider-"+str(self.context.course.key())
+    logging.info("Storing Free key="+freekey)
+    memcache.replace(freekey, freerider, 3600)
 
   def action_reset(self) :
     if not self.context.isInstructor() :
