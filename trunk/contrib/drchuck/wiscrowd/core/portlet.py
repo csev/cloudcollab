@@ -28,7 +28,7 @@ class Portlet(webapp.RequestHandler):
     # Set this to False to supppress reiret after post
     self.redirectafterpost = True
 
-    self.dStr = ""
+    self.dStr = ''
 
     self.portlet_title = None
     self.portlet_header = None
@@ -117,7 +117,10 @@ class Portlet(webapp.RequestHandler):
 
   # For now return the parameters all the time - even for the post
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
-    return self.getGetPath(action, resource, { }, direct, controller, ignoreajax)
+    return self.getGetPath(action=action, params={}, resource=resource, direct=direct, controller=controller, ignoreajax=ignoreajax)
+
+  def getAJAXPath(self, params={}, action=False, resource=False, controller=False):
+    return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True)
 
   def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False):
     newpath = self.getPath(action, resource, direct, controller, ignoreajax)
@@ -154,7 +157,8 @@ class Portlet(webapp.RequestHandler):
 
     if action != False :
       newpath = newpath + action + "/"
-    elif self.action != False : 
+    # Keep the old action if we have a resource
+    elif resource != False and self.action != False : 
       newpath = newpath + self.action + "/"
     # We need some action if they gave us a resource
     elif resource != False : 
@@ -240,8 +244,8 @@ class Portlet(webapp.RequestHandler):
       ret = ret + key + '="' + value + '"'
     return ret
     
-  def getAnchorTag(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
-    fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
+  def getAnchorTag(self, text, params={}, attributes={}, action=False, resource=False, controller=False):
+    fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
     if self.div == False or self.javascript_allowed == False:
       ret = '<a href="%s" %s>%s</a>' % (fullurl, self.getAttributeString(attributes), text)
     else :
@@ -249,8 +253,8 @@ class Portlet(webapp.RequestHandler):
       ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (fullurl, self.div, url, self.getAttributeString(attributes), text)
     return ret
 
-  def getFormTag(self, attributes = {},  params = {}, action=False, resource=False, controller=False):
-    fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
+  def getFormTag(self, params={}, attributes={}, action=False, resource=False, controller=False):
+    fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
     ret = '<form action="%s" method="post" %s id="myform">' % (fullurl, self.getAttributeString(attributes))
     if self.div != False and self.javascript_allowed != False:
       url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
@@ -291,11 +295,11 @@ document.getElementById('buttonbutton').style.display="inline";
 """
     return ret
 
-  def getFormSubmit(self, text, attributes ={ } ) :
+  def getFormSubmit(self, text, attributes={} ) :
     return '<input type="submit" value="%s" %s>' % ( text, self.getAttributeString(attributes))
 
-  def doRender(self, tname = "index.htm", values = { }):
-    if tname.find("_") == 0: return None
+  def doRender(self, tname = 'index.htm', values = { }):
+    if tname.find('_') == 0: return None
     # Read the stack to find the file for our caller
     try:
       callerfile = inspect.stack()[1][1]
@@ -305,6 +309,7 @@ document.getElementById('buttonbutton').style.display="inline";
     temp = os.path.join(os.path.dirname(callerfile),
            'templates/' + tname)
     if not os.path.isfile(temp):
+      logging.info("Warning could not find template %s" % temp)
       return None
   
     # Make a copy of the dictionary and add the path and session

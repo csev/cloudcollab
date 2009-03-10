@@ -6,8 +6,8 @@ from core import learningportlet
 
 # Return our Registration
 def register():
-   return tool.ToolRegistration(SampleHandler, "Sample Tool", 
-     """This tool shows how to build a simple Learning Portlet which supports AJAX.""")
+   return tool.ToolRegistration(SampleHandler, 'Sample Tool', 
+     '''This tool shows how to build a simple Learning Portlet which supports AJAX.''')
 
 class SampleHandler(learningportlet.LearningPortlet):
 
@@ -19,12 +19,12 @@ class SampleHandler(learningportlet.LearningPortlet):
 
   # Don't assume POST data will be here - only info
   def getview(self, info):
-    pathinfo = "controller=%s action=%s resource=%s<br/>\n" % (self.controller, self.action, self.resource)
+    pathinfo = 'controller=%s action=%s resource=%s<br/>\n' % (self.controller, self.action, self.resource)
     rendervars = { 'info' : info, 'user': self.context.getUserName(), 
                    'pathinfo': pathinfo, 
-		   'anchortag': self.getAnchorTag("Click Me", { 'class' : "selected" }, action="act-anchor" ),
-                   'formtag': self.getFormTag({ 'class' : "selected" } , action="act-post" ),
-                   'formcancel' : self.getFormButton("Cancel", { 'class' : "selected" }, action="act-cancel" ),
+		   'anchortag': self.getAnchorTag('Click Me', attributes={'class' : 'selected' }, action='act-anchor' ),
+                   'formtag': self.getFormTag(attributes={'class' : 'selected' } , action='act-post' ),
+                   'formcancel' : self.getFormButton('Cancel', attributes={'class' : 'selected' }, action='act-cancel' ),
     		   'formsubmit' : self.getFormSubmit('GO') }
 
     # logging.info(self.context.dump())
