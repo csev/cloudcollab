@@ -3,23 +3,22 @@
 (Instructor)
 {% endif %}
 from {{ context.getCourseName }}</p>
-{% if resetaction %}
-      <button onClick="window.location='{{ resetaction }}'; return false;">
-        Reset
-      </button>
+{% if notice %}
+  <p>{{ notice }}</p>
 {% endif %}
-{% if joinaction %}
-      <button onClick="window.location='{{ joinaction }}'; return false;">
-        Join
-      </button>
+{% if resetbutton %}
+ {{ resetbutton }}
+{% endif %}
+{% if joinbutton %}
+ {{ joinbutton }}
 {% endif %}
 {% if msg %}
 <p>{{ msg }}</p>
 {% endif %}
-{% if playaction %}
-<form method="post" action="{{ playaction }}">
+{% if playform %}
+{{ playform }}
 <p>Chips To Put in The Pot: <input type="text" name="chips"/></p>
-<p><input type="submit"></p>
+{{ playsubmit }}
 </form>
 {% endif %}
 <div id="messagescontent">
@@ -34,7 +33,7 @@ $.ajax({
     $("#messagescontent").html(html);
   }
  }); 
- setTimeout('updateMsg()', 4000); 
+ setTimeout('updateMsg()', 40000); 
 }
 updateMsg();
 </script>

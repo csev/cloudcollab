@@ -9,6 +9,7 @@ from google.appengine.api import memcache
 from util.sessions import Session
 from imsglobal.lticontext import LTI_Context
 from core.tool import ToolRegistration
+from core import learningportlet
 
 # Return our Registration
 def register():
@@ -26,7 +27,8 @@ class GameState():
      self.current = 0
      self.pot = 0
 
-class FreeRiderHandler(webapp.RequestHandler):
+class FreeRiderHandler(learningportlet.LearningPortlet):
+
 
   outStr = ""
 
@@ -45,35 +47,35 @@ class FreeRiderHandler(webapp.RequestHandler):
     logging.info("Storing Free key="+freekey)
     memcache.replace(freekey, freerider, 3600)
 
-  def get(self):
-    self.post()
+  # Called for form posts
+  def doaction(self):
+    if self.action == "play" : return self.action_play(self.context)
+    return "Unknown doaction=%s" % self.action
 
-  def post(self):
-    istr = self.markup()
-    if istr != None:
-      temp = os.path.join(os.path.dirname(__file__), 'templates/body.htm')
-      outstr = template.render(temp, {'output' : istr} )
-      self.response.out.write(outstr)
+  def getview(self, info):
+    logging.info("getview Action=%s"%self.action)
 
-  # All your base are belong to us!
-  def mainscreen(self, context, vars = { }):
-    rendervars = {'context': context,
-                  'messagesaction' : context.getGetPath("messages", direct=True), 
-                  'playaction' : context.getGetPath("play"), 
+    if self.action == "join" : info = self.action_join(self.context)
+    if self.action == "reset" : info =  self.action_reset(self.context)
+
+    if self.action == 'messages': 
+       return self.view_messages()
+
+    rendervars = {'context': self.context,
+                  'notice' : info,
+                  'messagesaction' : self.getAJAXPath(action='messages'),
+                  'playform' : self.getFormTag(action="play"),
+                  'playsubmit' : self.getFormSubmit('Play'),
                   'request': self.request}
 
-    rendervars.update(vars)
+    if self.context.isInstructor() : 
+      rendervars['resetbutton'] = self.getFormButton('Reset', action='reset')
 
-    if context.isInstructor() : 
-      rendervars['resetaction'] = context.getGetPath("reset")
-
-    gm = self.getmodel(context)
+    gm = self.getmodel(self.context)
     if ( len(gm.players) < 4 ) :
-      rendervars['joinaction'] = context.getGetPath("join")
+      rendervars['joinbutton'] = self.getFormButton('Join', action='join')
 
-    temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-    outstr = template.render(temp, rendervars)
-    return outstr
+    return self.doRender('index.htm', rendervars)
 
   # This method returns tool output as a string
   def markup(self):
@@ -88,37 +90,26 @@ class FreeRiderHandler(webapp.RequestHandler):
       outstr = template.render(temp, { })
       return outstr
 
-    (controller, action, resource) = context.parsePath()
-    if action == "messages" : return self.action_messages(context)
-    if action == "join" : return self.action_join(context)
-    if action == "reset" : return self.action_reset(context)
-    if action == "play" : return self.action_play(context)
-
     return self.mainscreen(context)
 
   def action_reset(self,context) :
     if not context.isInstructor() :
-      msg = "Only the instructor can reset!"
-      return self.mainscreen(context, {'msg' : msg})
+      return "Only the instructor can reset!"
     gm = GameState()
     self.putmodel(gm, context)
-    msg = "Game reset"
-    return self.mainscreen(context, {'msg' : msg})
+    return "Game reset"
 
   def action_join(self,context) :
     gm = self.getmodel(context)
 
     if not context.user.email or len(context.user.email) < 1:
-      msg = "You must have an E-Mail to play"
-      return self.mainscreen(context, {'msg' : msg})
+      return "You must have an E-Mail to play"
     
     if context.user.email in gm.players:
-      msg = "You have already joined the game"
-      return self.mainscreen(context, {'msg' : msg})
+      return "You have already joined the game"
 
     if len(gm.players) >= gm.playercount: 
-      msg = "The game is closed - you can play next time"
-      return self.mainscreen(context, {'msg' : msg})
+      return "The game is closed - you can play next time"
 
     gm.players.append(context.user.email)
     gm.chips.append(20)
@@ -131,21 +122,17 @@ class FreeRiderHandler(webapp.RequestHandler):
        
     self.putmodel(gm, context)
 
-    msg = "Welcome to the game"
-    return self.mainscreen(context, {'msg' : msg})
+    return "Welcome to the game"
 
   def action_play(self,context) :
     gm = self.getmodel(context)
 
     if gm.turn < 1 or gm.turn > 4: 
-      msg = "The game is not running!"
-      return self.mainscreen(context, {'msg' : msg})
+      return "The game is not running!"
     if not context.user.email in gm.players:
-      msg = "You are not currently playing!"
-      return self.mainscreen(context, {'msg' : msg})
+      return "You are not currently playing!"
     if not context.user.email == gm.players[gm.current] :
-      msg = "It is not your turn!"
-      return self.mainscreen(context, {'msg' : msg})
+      return "It is not your turn!"
 
     contrib = self.request.get('chips')
     try: contrib = int(contrib)
@@ -154,8 +141,7 @@ class FreeRiderHandler(webapp.RequestHandler):
     if contrib > gm.chips[gm.current] : contrib = gm.chips[gm.current]
 
     if contrib < 0 :
-      msg = "Please enter a real number"
-      return self.mainscreen(context, {'msg' : msg})
+      return "Please enter a real number"
 
     gm.pot = gm.pot + contrib
     gm.chips[gm.current] = gm.chips[gm.current] - contrib
@@ -172,20 +158,19 @@ class FreeRiderHandler(webapp.RequestHandler):
 
     self.putmodel(gm, context)
 
-    msg = "Thanks for your contribution!"
-    return self.mainscreen(context, {'msg' : msg})
+    return "Thanks for your contribution!"
 
-  def action_messages(self,context) :
-    gm = self.getmodel(context)
+  def view_messages(self) :
+    gm = self.getmodel(self.context)
 
     me = None
     for i in range(len(gm.players)):
-      if gm.players[i] == context.user.email : 
+      if gm.players[i] == self.context.user.email : 
          me = i
 
     r = "<pre>\n"
 
-    if gm.turn > 0 and gm.turn < 5 and context.user.email == gm.players[gm.current]:
+    if gm.turn > 0 and gm.turn < 5 and self.context.user.email == gm.players[gm.current]:
       r = r + '<font color="red">It is your turn</font>\n\n'
 
     if gm.turn < 1:
@@ -196,7 +181,7 @@ class FreeRiderHandler(webapp.RequestHandler):
       r = r + "GAME ON! Current turn: "+str(gm.turn)+"\n";
 
     r = r + "\n"
-    if context.user.email in gm.players and not context.isInstructor() :
+    if self.context.user.email in gm.players and not self.context.isInstructor() :
       r = r + "Your pot: "+str(gm.chips[me])+" Contribution History:"+str(gm.last[me])+"\n"
       r = r + "Players: "+str(len(gm.players))+"\n"
     else:
