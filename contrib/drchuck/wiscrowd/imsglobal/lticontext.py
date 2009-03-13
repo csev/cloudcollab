@@ -726,3 +726,23 @@ class LTI_Context(Context):
       if dig:
         dig.debug = self.dStr
         dig.put()
+
+
+'''  Note: Sample BB Launch
+tcbaseurl http://bb9-localdev1.blackboard.com:80
+tcrole INSTRUCTOR
+role COURSE:INSTRUCTOR
+userid _1_1
+returnurl /webapps/blackboard/course/course_button.jsp?course_id=_3_1&family=cou
+rse_tools_area
+nonce 175b3a3afbb748b0be0b81b6e3f739c3
+timestamp 1236953957784
+mac oBF4Pnfg8t7fRDdQ2IEiXg==
+ticket 1236953957784:189642b747614986927fd2091a68087e:_1_1:administrator:1236954
+257784:9005A8657E18A675DAE23C63B5A8A948:5E45AFF9F4D519043F8F95636913A164
+course_id _3_1
+direction ltr
+locale en_US
+samplesetting_course_georgekey georgevalue
+ourguid dbafedc0176c4bf2992ccb4001a80511
+'''
