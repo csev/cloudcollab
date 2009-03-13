@@ -48,6 +48,8 @@ class LTI_Context(Context):
     self.sessioncookie = False
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
+    self.handlebbproxy(web, session, options)
+    if ( self.complete ) : return
     self.handlelaunch(web, session, options)
     if ( self.complete ) : return
     self.handlesetup(web, session, options)
@@ -433,6 +435,205 @@ class LTI_Context(Context):
         web.response.out.write(self.dStr)
         web.response.out.write("\n</pre>\n")
 
+    dig.debug = self.dStr
+    dig.put()
+
+  def handlebbproxy(self, web, session, options):
+    # Check for sanity - silently return
+    action = web.request.get('tcbaseurl')
+    if ( len(action) < 1 ) : return
+
+    user_id = web.request.get('userid')
+    course_id = web.request.get("course_id")
+    digest = web.request.get("nonce")
+    org_id = "proxy.blackboard.com"
+    doDirect = True
+    doHtml = False
+    if user_id == None or course_id == None or digest is None:
+      logging.info("Error mossing useris, course_id, or nonce on bbproxy launch")
+      return
+
+    # parse ticket
+    ticket = web.request.get("ticket")
+    displayid = user_id
+    if not ticket is None:
+      wds = ticket.split(":")
+      if len(wds) > 3 : displayid = wds[3]
+
+    # Clean up the digest - Delete up to 100 2-day-old digests
+    nowtime = datetime.utcnow()
+    before = nowtime - options.get('digest_expire', timedelta(hours=23))
+    self.debug("Delete digests since "+before.isoformat())
+
+    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
+    results = q.fetch(options.get("digest_cleanup_count", 100))
+    db.delete(results)
+
+    # Validate the sec_digest 
+    dig = LTI_Digest.get_or_insert("key:"+digest)
+    reused = False
+    if dig.digest == None :
+      self.debug("Digest fresh")
+      dig.digest = digest
+    else:
+      self.debug("Digest reused")
+      reused = True
+
+    dig.request = self.requestdebug(web)
+    dig.put()
+
+    # Get critical if there is some unauthorized reuse
+    if reused and not options.get("allow_digest_reuse", False) :
+      self.launcherror(web, doHtml, doDirect, dig, "Digest Reused")
+      return
+
+    org = None
+    self.org = None
+    org_secret = "secret"
+    if len(org_id) > 0  :
+        org = LTI_Org.get_or_insert("key:"+org_id)
+        Model_Load(org, web.request, "org_")
+        if org_secret == None : org_secret = ""
+        org.secret = org_secret
+        org.put()
+
+    self.org = org
+
+    course = None
+    if course_id :
+        course = LTI_Course.get_or_insert("key:"+course_id)
+        course_secret = course.secret  # Can't change secret from the web
+        if course_secret == None :
+          course_secret = options.get("default_course_secret",None) 
+        Model_Load(course, web.request, "course_")
+        course.course_id = course_id
+	if course_secret == None : course_secret = ""
+        course.secret = course_secret
+        course.name = course_id
+        course.put()
+
+    # If we have a global org and a global course - add the link
+    if len(course_id) > 0 and course and org :
+      self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key()))
+      orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse.course = course
+      orgcourse.put()
+    # If we have a path_course_id that is good, we are done
+    # Just use that course
+    elif len(course_id) > 0 and course :
+      pass
+    # We only have a course_id from the post data
+    elif len(course_id) > 0 :
+      if options.get('auto_create_courses', False) :
+        course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        course_secret = course.secret  # Can't change secret from the web
+        Model_Load(course, web.request, "course_")
+	if course_secret == None : course_secret = ""
+        course.secret = course_secret
+        course.name = course_id
+        course.put()
+      else : 
+        course = LTI_Course.get_by_key_name("key:"+course_id, parent=org)
+        if course : 
+          course_secret = course.secret
+
+      if course_secret == "" : course_secret = None
+
+      if not course:
+        self.launcherror(web, doHtml, doDirect, dig, "Course not found:"+course_id)
+        return
+
+      if course_secret == None or len(course_secret) <= 0 :
+        course_secret = options.get("default_course_secret",None) 
+
+      # No courses without secrets - sorry
+      if not course_secret:
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret is not set:"+course_id)
+        return
+
+      self.debug("course.key()="+str(course.key()))
+      success = self.checknonce(nonce, timestamp, digest, course_secret, 
+         options.get('nonce_time', 10000000) ) 
+      if not success: 
+        self.launcherror(web, doHtml, doDirect, dig, "Course secret does not validate:"+course_id)
+        return
+
+    if ( not course ) :
+       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid course for a complete launch")
+       return
+
+    # Make the user and link to either then organization or the course
+    user = None
+    course_user = False
+    if ( len(user_id) > 0 ) :
+      if org:
+        user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+      else :
+        user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user.course = course
+        course_user = True
+      Model_Load(user, web.request, "user_")
+      if user.user_id == None : user.user_id = user_id
+      user.displayid = displayid
+      user.put()
+
+    memb = None
+    if ( not (user and course ) ) :
+       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
+       return
+
+    memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
+    role = web.request.get("tcrole")
+    if ( len(role) < 1 ) : role = "Student"
+    role = role.lower()
+    roleval = 1;
+    if ( role == "instructor") : roleval = 2
+    if ( role == "administrator") : roleval = 2
+    memb.role = roleval
+    memb.put()
+
+    # Clean up launches 
+    nowtime = datetime.utcnow()
+    before = nowtime - options.get('launch_expire', timedelta(days=2))
+    self.debug("Delete launches since "+before.isoformat())
+
+    q = db.GqlQuery("SELECT * FROM LTI_Launch WHERE created < :1", before)
+    results = q.fetch(options.get('launch_cleanup_count', 100))
+    db.delete(results)
+
+    launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
+    Model_Load(launch, web.request, "launch_")
+    launch.memb = memb
+    launch.org = org
+    launch.user = user
+
+    launch.course = course
+    launch.put()
+    self.debug("launch.key()="+str(launch.key()))
+
+    urlpath = web.request.path
+    url = web.request.application_url+urlpath
+
+    if ( url.find('?') >= 0 ) :
+      url = url + "?"
+    else :
+      url = url + "?"
+
+    url = url + urllib.urlencode({"lti_launch_key" : str(launch.key())})
+
+    self.debug("url = "+url)
+    url = url.replace("&", "&amp;")
+ 
+    # We have made it to the point where we have handled this request
+    self.complete = True
+    self.launch = launch
+    self.user = user
+    self.course = course
+    self.org = org
+    self.memb = memb
+
+    if session != False: session['lti_launch_key'] = str(launch.key())
+    web.redirect(url)
     dig.debug = self.dStr
     dig.put()
 
