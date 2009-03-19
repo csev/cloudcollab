@@ -1,0 +1,48 @@
+<a href="http://www.imsglobal.org/">
+<img src="images/ims-global-logo.jpg" align=right border=0/></a>
+<h1>IMS Simple Learning Tools Interoperability - Java Producer</h1>
+<p>
+This is a minimal reference implementation of the IMS Simple Learning 
+Tools Interoperability protocol as described at
+<a href=http://simplelti.appspot.com/>simplelti.appspot.com</a>.
+Simple LTI is not a formal standard - it is just an engineering specification
+to explore the architecure of IMS Learning Tools Interoperability and inform
+the formal standards process around that specification.
+</p>
+<p>
+This is distributed as a Java Web Application (war file) which can be dropped 
+into a servlet container.  The source code is included in the WEB-INF/classes
+folder so that it is self contained and self-deploying.  There is a README.txt
+in that folder describing developer issues.
+</p>
+<p>
+This software implements the <i>producer</i> aspects of IMS Simple LTI.  
+It does not include any database persistence - it simply includes the 
+code to comply with the SimpleLTI launch protocol.  This software is Copyright 
+2009, IMS Global Learning Consortium using the Apache License.  We 
+expect you to take bits of this software as example code and use it in your 
+environment.
+</p>
+<p>
+This web application must be launched from a SimpleLTI client.   We include a
+form with hard coded values for the launch.  You can use <a href="launchform.htm">this form</a> to log in to the system and test.  The actual launch point is
+at the <a href="launch">/simplelti/launch</a> where simplelti is 
+the servlet name.  When you do a launch - it will POST the Simple LTI data
+and you should end u pforwarded to  a page that looks like this:
+</p>
+<center>
+<img src=images/post-launch.png>
+</center>
+<p>
+The program also logs into the catalina.out file as it processes the request.
+<p>
+If you have any questions, do not hesitate to send a note to csev@umich.edu.
+</p>
+<p>
+Charles Severance (www.dr-chuck.com)
+Thu Mar 19 08:20:55 EDT 2009
+</p>
+<p class="footer">
+<a href=http://www.imsglobal.org/toolsinteroperability2.cfm>IMS Learning Tools Interoperability v2.0 Working Group</a> <br/>
+<a href=http://www.imsglobal.org/cc/alliance.html>IMS Common Cartridge Alliance</a> <br/>
+<a href="http:///www.imsglobal.org/" class="footerlink">&copy; 2008 IMS Global Learning Consortium, Inc.</a> All Rights Reserved.</p>
