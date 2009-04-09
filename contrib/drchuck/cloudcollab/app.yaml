@@ -19,5 +19,9 @@ handlers:
   static_files: static/canvas.html
   upload: static/canvas.html
 
+- url: /admin/.*
+  script: $PYTHON_LIB/google/appengine/ext/admin
+  login: admin
+
 - url: /.*
   script: index.py
