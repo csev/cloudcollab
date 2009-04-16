@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+   <title>
+      {% block title %}AppEngineLearn{% endblock %}
+   </title>
+   <link rel="alternate" type="application/atom+xml" title="Dr. Chuck's Blog" 
+     href="http://www.dr-chuck.com/csev-blog/index.rdf" />
+   <link href="/static/glike.css" rel="stylesheet"
+         type="text/css" />
+ </head>
+ <body>
+   <div id="header">
+      <h1><a href="index.htm">AppEngineLearn</a></h1>
+      <ul>
+<li><a href=http://oreilly.com/catalog/9780596800697/ target=_new>Book</a></li>
+<li><a href=http://www.dr-chuck.com/ target=_new>Instructor</a></li>
+<li><a href=http://www.pythonlearn.com/>Python</a></li>
+<li><a href=http://code.google.com/appengine/ target=_new>App Engine</a></li>
+      </ul>
+   </div>
+   <div id="bodycontent">
+      {% block bodycontent %}
+           Replace this
+      {% endblock %}
+   </div>
+<script type="text/javascript"
+  src="http://www.cloudsocial.org/code/ile-main.js">
+</script>
+<script type="text/javascript">
+    ile_init("ILE_APP_KEY");
+</script>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-423997-9");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+</html>
