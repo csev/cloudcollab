@@ -1,0 +1,89 @@
+.req {font-weight: bold} 
+body {
+  color: blue;
+  font-family: Arial, Helvetica, san-serif;
+  background-color: beige;
+}
+
+h1, h2, h3 {
+  color: white;
+  background-color: navy;
+  width: 100%
+}
+
+#header {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 40px;
+  width: 100%;
+}
+
+#navigation {
+  position: absolute;
+  top: 50px;
+  left: 0px;
+  width: 150px;
+  font-weight: bold;
+  color: black;
+}
+
+#bodycontent {
+  position: absolute;
+  top: 50px;
+  left: 150px;
+}
+
+#navigation li .selected {
+  background-color: grey;
+}
+
+a {
+  text-decoration: none;
+  color: black;
+}
+
+a:hover {
+  color: orange;
+}
+
+blockquote {
+  font-style: normal;
+  font-color: grey;
+}
+
+blockquote em {
+  font-style: italic;
+  text-decoration: underline;
+}
+
+.pointless {
+  font-style: italic;
+  text-decoration: underline;
+  color: red;
+  background-color: yellow;
+}
+
+/* From Page 231 */
+
+table {
+ border-collapse: collapse;
+ border: 1px solid black;
+}
+
+th {
+  text-align: left;
+  background: grey;
+  color: white;
+  padding: 0.2em;
+}
+
+td {
+  border: 1px solid black;
+  padding: 0.2em;
+}
+
+.notice {
+  color: red;
+}
+
