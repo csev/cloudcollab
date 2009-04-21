@@ -1,0 +1,37 @@
+<p>Welcome to the ReadList Tool!<br>
+Enter a new reading list item.</p>
+<hr>
+<p>Hello, {{ context.getUserName }}! <br>
+{% if context.isInstructor %}
+Looks like you're an instructor, and...
+{% endif %}
+You're from {{ context.getCourseName }}.<br>
+</p>
+{% if msg %}
+<p>{{ msg }}</p>
+{% endif %}
+<hr>
+<form method="post" action="{{ context.getPostPath }}">
+{{ context.getFormFields }}
+<p><strong>Enter Title:</strong> <input type="text" name="title"/></p>
+<p><strong>Enter URL:</strong> <input type="text" name="URL"/></p>
+<p><input type="submit"></p>
+</form>
+<hr>
+
+<table border="1">
+<tr>
+<th>Title</th>
+<th>URL</th>
+<th> Who Added It?</th>
+</tr>
+
+{% for x in datalist.items %}
+<tr>
+<td>{{ x.1 }} </td>
+<td>{{ x.0 }} </td>
+<td>{{ context.getUserName }} </td>
+</tr>
+{% endfor %}
+
+</table>
