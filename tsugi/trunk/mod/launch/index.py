@@ -122,5 +122,5 @@ class LaunchHandler(learningportlet.LearningPortlet):
 
     rendervars['msg'] = 'Failed web service call'
     rendervars['data'] = data
-    return doRender('index.htm', rendervars)
+    return self.doRender('index.htm', rendervars)
 
