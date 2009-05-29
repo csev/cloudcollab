@@ -65,7 +65,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
   def putmodel(self, freerider):
     freekey = "FreeRider-"+str(self.context.course.key())
-    logging.info("Storing Free key="+freekey)
+    logging.info("Store Free key="+freekey)
     memcache.replace(freekey, freerider, 3600)
 
   def action_reset(self) :

@@ -342,7 +342,7 @@ class LTI_Context(Context):
     role = web.request.get("user_role")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
-    roleval = 1;
+    roleval = 1
     if ( role == "instructor") : roleval = 2
     if ( role == "administrator") : roleval = 2
     memb.role = roleval
@@ -586,7 +586,7 @@ class LTI_Context(Context):
     role = web.request.get("tcrole")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
-    roleval = 1;
+    roleval = 1
     if ( role == "instructor") : roleval = 2
     if ( role == "administrator") : roleval = 2
     memb.role = roleval

@@ -23,7 +23,7 @@ def Model_Load(obj, req, prefix = None):
         setattr(obj,key,value)
         count = count + 1
 
-    logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
+    # logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
 
 def Model_Load2(obj, params, prefix = None):
     '''Loop through the request keys and see if they can be put 
@@ -45,7 +45,7 @@ def Model_Load2(obj, params, prefix = None):
         setattr(obj,key,value)
         count = count + 1
 
-    logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
+    # logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
 
 def Model_Type(obj, key):
     try:

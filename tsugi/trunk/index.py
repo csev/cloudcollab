@@ -13,7 +13,7 @@ import facebook
 
 bootstrap = {
   'user_locale': 'en_US',
-  'user_role': 'Instructor',
+  'user_role': 'Student',
   'course_code': 'Info 101',
   'course_id': '12345',
   'course_name': 'SI101',
@@ -114,6 +114,7 @@ class MainHandler(webapp.RequestHandler):
       bootstrap['user_displayid'] = user.nickname()
       bootstrap['user_email'] = user.email()
       bootstrap['user_id'] = user.email()
+      if users.is_current_user_admin() : bootstrap['user_role'] = "Instructor"
       context = Context(self.request, bootstrap, self.session)
     else:
       # Provision LTI.  This either (1) handles an incoming

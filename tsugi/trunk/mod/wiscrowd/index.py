@@ -1,12 +1,9 @@
 import logging
 import pickle
-from google.appengine.ext import db
+from google.appengine.api import memcache
 
 from core.tool import ToolRegistration
 from core import learningportlet
-
-class Wisdom(db.Model) :
-   blob = db.BlobProperty()
 
 # Return our Registration
 def register():
@@ -19,12 +16,10 @@ It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 class WisHandler(learningportlet.LearningPortlet):
 
   def doaction(self):
-    wisdom = Wisdom.get_or_insert("a", parent=self.context.course)
-    if wisdom.blob == None : 
-      wisdom.blob = pickle.dumps( dict() ) 
-      wisdom.put()
+    wiskey = "WisCrowd-"+str(self.context.course.key())
+    data = self.getmodel(wiskey)
+    logging.info("Loading Wis Key="+wiskey)
 
-    data = pickle.loads(wisdom.blob)
     name = self.request.get("name")
     if len(name) < 1 : name = self.context.user.email
 
@@ -36,8 +31,8 @@ class WisHandler(learningportlet.LearningPortlet):
     msg = ""
     if self.context.isInstructor() and name.lower() == "reset":
        data = dict()
-       wisdom.blob = pickle.dumps( data ) 
-       wisdom.put()
+       logging.info("Storing Wis Key="+wiskey)
+       memcache.set(wiskey, data, 3600)
        msg = "Data reset"
     elif guess < 1 :
        msg = "Please enter a valid, numeric guess"
@@ -45,10 +40,15 @@ class WisHandler(learningportlet.LearningPortlet):
        msg = "No Name Found"
     elif name in data : 
        msg = "You already have answered this"
+    elif len(data) > 1000 : 
+       msg = "Game only supports 1000 players."
     else:
-       ret = db.run_in_transaction(self.addname, wisdom.key(), name, guess)
-       if ret : 
-         data = ret
+       data[name] = guess
+       memcache.set(wiskey, data, 3600)
+       logging.info("Storing Wis Key="+wiskey)
+       # Retrieve and check to see if it was stored
+       data = self.getmodel(wiskey)
+       if data.get(name,None) == guess :
          msg = "Thank you for your guess"
        else:
          msg = "Unable to store your guess please re-submit"
@@ -56,12 +56,9 @@ class WisHandler(learningportlet.LearningPortlet):
     return msg
 
   def getview(self, info):
-    wisdom = Wisdom.get_or_insert("a", parent=self.context.course)
-    if wisdom.blob == None : 
-      wisdom.blob = pickle.dumps( dict() ) 
-      wisdom.put()
+    wiskey = "WisCrowd-"+str(self.context.course.key())
+    data = self.getmodel(wiskey)
 
-    data = pickle.loads(wisdom.blob)
     rendervars = {'context': self.context,
                   'msg' : info}
     
@@ -80,11 +77,9 @@ class WisHandler(learningportlet.LearningPortlet):
 
     return self.doRender('index.htm', rendervars)
 
-  def addname(self, key, name, guess):
-    obj = db.get(key)
-    data = pickle.loads(obj.blob)
-    if ( len(data) > 499 ) : return data
-    data[name] = guess
-    obj.blob = pickle.dumps(data)
-    obj.put()
+  def getmodel(self, wiskey):
+    data =  memcache.get(wiskey)
+    # If we changed the program ignore old things in the cache
+    if data == None or not isinstance(data, dict):
+      data = dict()
     return data
