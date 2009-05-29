@@ -52,6 +52,7 @@ class WisHandler(learningportlet.LearningPortlet):
          msg = "Thank you for your guess"
        else:
          msg = "Unable to store your guess please re-submit"
+         logging.warning("Failed to Store Wis Key="+wiskey)
 
     return msg
 
