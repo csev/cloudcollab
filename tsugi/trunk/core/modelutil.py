@@ -3,6 +3,22 @@ import logging
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
+def opt_get_or_insert(obj, key, parent=None):
+    logging.info("OPT key="+str(key))
+    if parent == None:
+        mod = obj.get_by_key_name(key)
+        if mod != None : 
+            logging.info("Optimistic no parent worked")
+            return mod
+        mod = obj.get_or_insert(key)
+    else:
+        mod = obj.get_by_key_name(key, parent=parent)
+        if mod != None : 
+            logging.info("Optimisic worked")
+            return mod
+        mod = obj.get_or_insert(key, parent=parent)
+    return mod
+
 def Model_Load(obj, req, prefix = None):
     '''Loop through the request keys and see if they can be put 
     into the model.   An optional prefix is used to append

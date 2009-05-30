@@ -157,7 +157,9 @@ class LTI_Context(Context):
     db.delete(results)
 
     # Validate the sec_digest 
-    dig = LTI_Digest.get_or_insert("key:"+digest)
+    # dig = LTI_Digest.get_or_insert("key:"+digest)
+    dig = opt_get_or_insert(LTI_Digest,"key:"+digest)
+
     reused = False
     if dig.digest == None :
       self.debug("Digest fresh")
@@ -176,7 +178,8 @@ class LTI_Context(Context):
 
     # Validate the sec_org_digest if it is different from sec_digest
     if len(org_digest) > 0 and not org_digest == digest :
-      orgdig = LTI_Digest.get_or_insert("key:"+org_digest)
+      # orgdig = LTI_Digest.get_or_insert("key:"+org_digest)
+      orgdig = opt_get_or_insert(LTI_Digest,"key:"+org_digest)
       reused = False
       if orgdig.digest == None :
         self.debug("Organizational digest fresh")
@@ -200,7 +203,8 @@ class LTI_Context(Context):
     self.org = None
     if len(org_id) > 0  and len(org_digest) > 0  :
       if options.get('auto_create_orgs', False) :
-        org = LTI_Org.get_or_insert("key:"+org_id)
+        # org = LTI_Org.get_or_insert("key:"+org_id)
+        org = opt_get_or_insert(LTI_Org,"key:"+org_id)
         org_secret = org.secret  # Can't change secret from the web
         Model_Load(org, web.request, "org_")
         if org_secret == None : org_secret = ""
@@ -238,7 +242,8 @@ class LTI_Context(Context):
     course = None
     if path_course_id :
       if options.get('auto_create_courses', False) :
-        course = LTI_Course.get_or_insert("key:"+path_course_id)
+        # course = LTI_Course.get_or_insert("key:"+path_course_id)
+        course = opt_get_or_insert(LTI_Course,"key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request, "course_")
         course.course_id = path_course_id
@@ -274,7 +279,8 @@ class LTI_Context(Context):
     # If we have a global org and a global course - add the link
     if len(course_id) > 0 and course and org :
       self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+path_course_id)
-      orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      # orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse = opt_get_or_insert(LTI_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
     # If we have a path_course_id that is good, we are done
@@ -284,7 +290,8 @@ class LTI_Context(Context):
     # We only have a course_id from the post data
     elif len(course_id) > 0 :
       if options.get('auto_create_courses', False) :
-        course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request, "course_")
 	if course_secret == None : course_secret = ""
@@ -325,9 +332,11 @@ class LTI_Context(Context):
     course_user = False
     if ( len(user_id) > 0 ) :
       if org:
-        user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+        # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+        user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
       else :
-        user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        # user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user = opt_get_or_insert(LTI_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
       Model_Load(user, web.request, "user_")
@@ -338,7 +347,8 @@ class LTI_Context(Context):
        self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
        return
 
-    memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
+    # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
+    memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
     role = web.request.get("user_role")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
@@ -354,7 +364,8 @@ class LTI_Context(Context):
  
     course_org = False
     if not org and len(org_id) > 0 :
-      org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
+      # org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
+      org = opt_get_or_insert(LTI_CourseOrg,"key:"+org_id, parent=course)
       Model_Load(org, web.request, "org_")
       org.course = course
       course_org = True
@@ -369,7 +380,8 @@ class LTI_Context(Context):
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
+    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
     Model_Load(launch, web.request, "launch_")
     launch.memb = memb
     if course_org:
@@ -470,7 +482,9 @@ class LTI_Context(Context):
     db.delete(results)
 
     # Validate the sec_digest 
-    dig = LTI_Digest.get_or_insert("key:"+digest)
+    # TODO: Think about this one - is it optimistic?
+    # dig = LTI_Digest.get_or_insert("key:"+digest)
+    dig = opt_get_or_insert(LTI_Digest,"key:"+digest)
     reused = False
     if dig.digest == None :
       self.debug("Digest fresh")
@@ -491,7 +505,8 @@ class LTI_Context(Context):
     self.org = None
     org_secret = "secret"
     if len(org_id) > 0  :
-        org = LTI_Org.get_or_insert("key:"+org_id)
+        # org = LTI_Org.get_or_insert("key:"+org_id)
+        org = opt_get_or_insert(LTI_Org,"key:"+org_id)
         Model_Load(org, web.request, "org_")
         if org_secret == None : org_secret = ""
         org.secret = org_secret
@@ -501,7 +516,8 @@ class LTI_Context(Context):
 
     course = None
     if course_id :
-        course = LTI_Course.get_or_insert("key:"+course_id)
+        # course = LTI_Course.get_or_insert("key:"+course_id)
+        course = opt_get_or_insert(LTI_Course,"key:"+course_id)
         course_secret = course.secret  # Can't change secret from the web
         if course_secret == None :
           course_secret = options.get("default_course_secret",None) 
@@ -515,7 +531,8 @@ class LTI_Context(Context):
     # If we have a global org and a global course - add the link
     if len(course_id) > 0 and course and org :
       self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key()))
-      orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      # orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse = opt_get_or_insert(LTI_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
     # If we have a path_course_id that is good, we are done
@@ -525,7 +542,8 @@ class LTI_Context(Context):
     # We only have a course_id from the post data
     elif len(course_id) > 0 :
       if options.get('auto_create_courses', False) :
-        course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
+        course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request, "course_")
 	if course_secret == None : course_secret = ""
@@ -567,9 +585,11 @@ class LTI_Context(Context):
     course_user = False
     if ( len(user_id) > 0 ) :
       if org:
-        user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+        # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
+        user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
       else :
-        user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        # user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user = opt_get_or_insert(LTI_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
       Model_Load(user, web.request, "user_")
@@ -582,7 +602,8 @@ class LTI_Context(Context):
        self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
        return
 
-    memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
+    # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
+    memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
     role = web.request.get("tcrole")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
@@ -601,7 +622,8 @@ class LTI_Context(Context):
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
+    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
     Model_Load(launch, web.request, "launch_")
     launch.memb = memb
     launch.org = org
