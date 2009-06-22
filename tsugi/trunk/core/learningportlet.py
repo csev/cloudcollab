@@ -6,7 +6,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from core import portlet
-from imsglobal.lticontext import LTI_Context
+from imsglobal.slticontext import SLTI_Context
 from util.sessions import Session
 
 class LearningPortlet(portlet.Portlet):
@@ -26,7 +26,7 @@ class LearningPortlet(portlet.Portlet):
     if self.establishContext() : 
       # Insist on a session
       if self.session is None: self.session = Session()
-      self.context = LTI_Context(self, self.session);
+      self.context = SLTI_Context(self, self.session);
       if ( self.context.complete ) : return False
 
     return True

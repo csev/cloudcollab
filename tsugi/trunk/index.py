@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
@@ -8,8 +9,10 @@ from google.appengine.api import memcache
 #from util.sessions import Session
 from util import sessions
 from imsglobal.context import Context
-from imsglobal.lticontext import LTI_Context
+from imsglobal.slticontext import SLTI_Context
 import facebook
+from core import oauth
+from core import oauth_store
 
 bootstrap = {
   'user_locale': 'en_US',
@@ -122,7 +125,7 @@ class MainHandler(webapp.RequestHandler):
       # comes back to us after launch, or (3) if we are just
       # cruising along we load the proper launch context using
       # a session value.
-      context = LTI_Context(self, self.session)
+      context = SLTI_Context(self, self.session)
     
       # If the LTI code already sent a response it sets "complete"
       # so we are done
@@ -300,11 +303,48 @@ Path controller=sample action=False resource=False<br/>
          reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
     return reqstr
 
+class OAuthHandler(webapp.RequestHandler):
+  def get(self):
+    self.response.out.write("<pre>\n"+self.requestdebug()+"</pre>")
+  def post(self):
+    self.response.out.write("<pre>\n"+self.requestdebug()+"</pre>")
+    self.oauth_server = oauth.OAuthServer(oauth_store.BasicOAuthDataStore())
+    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_PLAINTEXT())
+    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_HMAC_SHA1())
+
+    params = self.request.params
+
+    logging.info(self.request.url)
+    # construct the oauth request from the request parameters
+    oauth_request = oauth.OAuthRequest.from_request("POST", self.request.url, headers=self.request.headers, parameters=params)
+
+    # verify the request has been oauth authorized
+    try:
+        consumer, token, params = self.oauth_server.verify_request(oauth_request)
+        # send okay response
+        self.response.out.write("<p>YAY</p>");
+    except oauth.OAuthError, err:
+        logging.info(err)
+        self.response.out.write("<p>Boo "+err.message+"</p>");
+    return
+
+  def requestdebug(self):
+    # Drop in the request for debugging
+    reqstr = self.request.path + "\n"
+    for key in self.request.params.keys():
+      value = self.request.get(key)
+      if len(value) < 100:
+         reqstr = reqstr + key+':'+value+'\n'
+      else:
+         reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
+    return reqstr
+
 
 def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', LoginHandler),
             ('/facebook.*', FaceBookHandler),
+            ('/oauth.*', OAuthHandler),
             ('/logout', LogoutHandler)]
   routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )

@@ -6,7 +6,7 @@ from google.appengine.api import users
 from contextmodel import *
 from core.modelutil import *
 
-class Context():
+class AEContext():
   '''Build a launch from parameters.'''
   dStr = ''
   launch = None
@@ -99,50 +99,6 @@ class Context():
     self.course = course
     self.org = org
     self.memb = memb
-
-  # If we are going to forward back to ourselves, this handles
-  # The clever bits about establishing the key from the URL 
-  # or session - It is not used in this base class because
-  # setup is completely done from parms that come from elsewhere
-  # on each request
-  def handlesetup(self, web, session):
-    # get values form the request
-    key = web.request.get('lti_launch_key')
-    if ( len(key) <= 0 ) : key = None
-
-    sesskey = None
-    self.sessioncookie = False
-    if session != False:
-      sesskey = session.get('lti_launch_key', None)
-      if key and sesskey and key == sesskey:
-        self.sessioncookie = True
-        # logging.info("Session and URL Key Match cookies are working...")
-      elif sesskey and not key:
-        self.sessioncookie = True
-        key = sesskey
-        # logging.info("Taking key from session ...")
-
-    # On a normal request there are no parammeters - we just use session
-    if ( key ) :
-      # Need try/except in case Key() is unhappy with the string
-      try:
-        launch = LTI_Launch.get(db.Key(key))
-      except:
-        launch = None
-
-      if launch:
-        if session != False: session['lti_launch_key'] = key
-        # logging.info("Placing in session: %s" % key)
-      else:
-        logging.info("Session not found in store "+key)
-        if session != False and sesskey : del(session['lti_launch_key'])
-
-      self.launch = launch
-      self.setvars()
-      return
-
-    self.launch = None
-    self.setvars()
 
   def getUrlParms(self) :
     if self.launch and not self.sessioncookie :
