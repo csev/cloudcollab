@@ -6,7 +6,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from core import portlet
-from imsglobal.slticontext import SLTI_Context
+from context.slticontext import SLTI_Context
 from util.sessions import Session
 
 class LearningPortlet(portlet.Portlet):

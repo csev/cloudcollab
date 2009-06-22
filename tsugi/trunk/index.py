@@ -8,8 +8,8 @@ from google.appengine.api import users
 from google.appengine.api import memcache
 #from util.sessions import Session
 from util import sessions
-from imsglobal.aecontext import AE_Context
-from imsglobal.slticontext import SLTI_Context
+from context.aecontext import AE_Context
+from context.slticontext import SLTI_Context
 import facebook
 from core import oauth
 from core import oauth_store

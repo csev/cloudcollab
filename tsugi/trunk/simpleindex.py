@@ -1,9 +1,11 @@
+# This file is pretty broken and needs fixing - Chuck
+
 import logging
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from util.sessions import Session
-from imsglobal.lti import LTI
+from context.lti import LTI
 
 import dotest
 
