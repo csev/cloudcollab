@@ -211,12 +211,12 @@ class Context():
 
   def getUserName(self):
      if ( not ( self.launch and self.user ) ) : return "Anonymous"
-     if ( self.user.displayid and len(self.user.displayid) > 0) : return self.user.displayid
+     if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
      retval = ""
-     if ( self.user.firstname and self.user.lastname and len(self.user.firstname) > 0 and len(self.user.lastname) > 0) : 
-        return self.user.firstname + " " + self.user.lastname
-     elif ( self.user.firstname and len(self.user.firstname) > 0) : return self.user.firstname
-     elif ( self.user.lastname and len(self.user.lastname) > 0) : return self.user.lastname
+     if ( self.user.givenname and self.user.familyname and len(self.user.givenname) > 0 and len(self.user.familyname) > 0) : 
+        return self.user.givenname + " " + self.user.familyname
+     elif ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
+     elif ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
      if ( self.user.email and len(self.user.email) > 0) : return self.user.email
      return ""
 

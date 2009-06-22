@@ -20,7 +20,7 @@ class LTI_Context(Context):
   dStr = ""
   request = None
   complete = False
-  sessioncookie = False # Indicates if sookies are working
+  sessioncookie = False # Indicates if Cookies are working
   launch = None
   user = None
   course = None
