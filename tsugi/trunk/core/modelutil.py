@@ -19,43 +19,25 @@ def opt_get_or_insert(obj, key, parent=None):
         mod = obj.get_or_insert(key, parent=parent)
     return mod
 
-def Model_Load(obj, req, prefix = None):
+def Model_Load(obj, params, prefix = None, mapping = {} ):
     '''Loop through the request keys and see if they can be put 
     into the model.   An optional prefix is used to append
     to the request keys.'''
     count = 0
-    for key in req.params.keys(): 
-      value = req.get(key) 
+    for req_key in params.keys(): 
+      key = req_key
+      value = params[key]
+      # logging.info("handling "+key+" = "+str(value))
+      if key in mapping: 
+	# logging.info("Mapping %s to %s" % (key, mapping[key]) )
+        key = mapping[key]
       thetype = Model_Type(obj, key)
       if ( thetype == "none" and prefix != None ) :
-         if ( not key.startswith(prefix) ) : continue
-         key = key[len(prefix):]
-         thetype = Model_Type(obj, key)
+        if ( not key.startswith(prefix) ) : continue
+        key = key[len(prefix):]
+        thetype = Model_Type(obj, key)
 
       # logging.info("thetype = "+thetype)
-      # Don't do booleans automatically
-      if ( thetype == "string" or thetype == "int" ) : 
-        # logging.info("setting "+key+" = "+str(value))
-        setattr(obj,key,value)
-        count = count + 1
-
-    # logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
-
-def Model_Load2(obj, params, prefix = None):
-    '''Loop through the request keys and see if they can be put 
-    into the model.   An optional prefix is used to append
-    to the request keys.'''
-    count = 0
-    for key in params.keys(): 
-      value = params.get(key) 
-      thetype = Model_Type(obj, key)
-      if ( thetype == "none" and prefix != None ) :
-         if ( not key.startswith(prefix) ) : continue
-         key = key[len(prefix):]
-         thetype = Model_Type(obj, key)
-
-      # logging.info("thetype = "+thetype)
-      # Don't do booleans automatically
       if ( thetype == "string" or thetype == "int" ) : 
         # logging.info("setting "+key+" = "+str(value))
         setattr(obj,key,value)

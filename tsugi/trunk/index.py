@@ -8,7 +8,7 @@ from google.appengine.api import users
 from google.appengine.api import memcache
 #from util.sessions import Session
 from util import sessions
-from imsglobal.context import Context
+from imsglobal.aecontext import AE_Context
 from imsglobal.slticontext import SLTI_Context
 import facebook
 from core import oauth
@@ -118,7 +118,7 @@ class MainHandler(webapp.RequestHandler):
       bootstrap['user_email'] = user.email()
       bootstrap['user_id'] = user.email()
       if users.is_current_user_admin() : bootstrap['user_role'] = "Instructor"
-      context = Context(self.request, bootstrap, self.session)
+      context = AE_Context(self.request, bootstrap, self.session)
     else:
       # Provision LTI.  This either (1) handles an incoming
       # launch request, (2) handles the incoming GET that

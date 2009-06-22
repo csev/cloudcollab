@@ -26,6 +26,12 @@ class SLTI_Context(Context):
   course = None
   memb = None
   org = None
+  # Patches to the model mapping from request values to 
+  # model values
+  model_mapping = {
+    'user_firstname': 'givenname',
+    'user_lastname': 'familyname',
+    'user_eid': 'sourced_id'}
 
   # Option values
   Liberal = { 'nonce_time': 1000000, 
@@ -164,7 +170,7 @@ class SLTI_Context(Context):
         # org = LTI_Org.get_or_insert("key:"+org_id)
         org = opt_get_or_insert(LTI_Org,"key:"+org_id)
         org_secret = org.secret  # Can't change secret from the web
-        Model_Load(org, web.request, "org_")
+        Model_Load(org, web.request.params, "org_", self.model_mapping)
         if org_secret == None : org_secret = ""
         org.secret = org_secret
         org.put()
@@ -203,7 +209,7 @@ class SLTI_Context(Context):
         # course = LTI_Course.get_or_insert("key:"+path_course_id)
         course = opt_get_or_insert(LTI_Course,"key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
-        Model_Load(course, web.request, "course_")
+        Model_Load(course, web.request.params, "course_", self.model_mapping)
         course.course_id = path_course_id
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
@@ -251,7 +257,7 @@ class SLTI_Context(Context):
         # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
         course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
-        Model_Load(course, web.request, "course_")
+        Model_Load(course, web.request.params, "course_", self.model_mapping)
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
@@ -297,7 +303,7 @@ class SLTI_Context(Context):
         user = opt_get_or_insert(LTI_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
-      Model_Load(user, web.request, "user_")
+      Model_Load(user, web.request.params, "user_", self.model_mapping)
       user.put()
 
     memb = None
@@ -324,7 +330,7 @@ class SLTI_Context(Context):
     if not org and len(org_id) > 0 :
       # org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
       org = opt_get_or_insert(LTI_CourseOrg,"key:"+org_id, parent=course)
-      Model_Load(org, web.request, "org_")
+      Model_Load(org, web.request.params, "org_", self.model_mapping)
       org.course = course
       course_org = True
       org.put()
@@ -340,7 +346,7 @@ class SLTI_Context(Context):
 
     # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
     launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
-    Model_Load(launch, web.request, "launch_")
+    Model_Load(launch, web.request.params, "launch_", self.model_mapping)
     launch.memb = memb
     if course_org:
       launch.course_org = org

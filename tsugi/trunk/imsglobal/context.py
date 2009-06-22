@@ -7,7 +7,7 @@ from contextmodel import *
 from core.modelutil import *
 
 class Context():
-  '''Build a launch from parameters.'''
+  '''Extendable class with the common capabilities.'''
   dStr = ''
   launch = None
   sessioncookie = True
@@ -43,62 +43,6 @@ class Context():
       if self.launch.memb : self.memb = self.launch.memb
       if self.launch.course_org : self.org = self.launch.course_org
       if self.launch.org : self.org = self.launch.org
-
-  def buildlaunch(self, params):
-    course_id = params.get("course_id")
-    user_id = params.get("user_id")
-    org_id = params.get("org_id")
-    role = params.get("user_role")
-
-    org = None
-    course = None
-    user = None
-    if len(org_id) > 0 :
-      # org = LTI_Org.get_or_insert("key:"+org_id)
-      org = opt_get_or_insert(LTI_Org,"key:"+org_id)
-      Model_Load2(org, params, "org_")
-      org.put()
-
-    if len(course_id) > 0 and org :
-      # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
-      course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
-      Model_Load2(course, params, "course_")
-      course.put()
-
-    if ( len(user_id) > 0 ) and org :
-      # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
-      user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
-      Model_Load2(user, params, "user_")
-      user.put()
-
-    memb = None
-    if user and course :
-      # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
-      memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
-      if ( len(role) < 1 ) : role = "Student"
-      role = role.lower()
-      roleval = 1
-      if ( role == "instructor") : roleval = 2
-      if ( role == "administrator") : roleval = 2
-      memb.role = roleval
-      memb.put()
-
-    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
-    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
-    Model_Load2(launch, params, "launch_")
-    launch.memb = memb
-    launch.org = org
-    launch.user = user
-    launch.course = course
-    launch.put()
-    self.debug("launch.key()="+str(launch.key()))
-
-    self.complete = True
-    self.launch = launch
-    self.user = user
-    self.course = course
-    self.org = org
-    self.memb = memb
 
   # If we are going to forward back to ourselves, this handles
   # The clever bits about establishing the key from the URL 

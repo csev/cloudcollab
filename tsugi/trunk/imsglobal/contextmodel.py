@@ -2,6 +2,7 @@ from google.appengine.ext import db
 
 class LTI_Org(db.Model):
      org_id = db.StringProperty()
+     sourced_id = db.StringProperty()
      secret = db.StringProperty(default="")
      name = db.StringProperty()
      title = db.StringProperty()
@@ -12,7 +13,7 @@ class LTI_Org(db.Model):
 
 class LTI_User(db.Model):
      user_id = db.StringProperty()
-     eid = db.StringProperty()
+     sourced_id = db.StringProperty()
      password = db.StringProperty()
      givenname = db.StringProperty()
      familyname = db.StringProperty()
@@ -25,6 +26,7 @@ class LTI_User(db.Model):
 
 class LTI_Course(db.Model):
      course_id = db.StringProperty()
+     sourced_id = db.StringProperty()
      secret = db.StringProperty(default="")
      code = db.StringProperty()
      name = db.StringProperty()
@@ -38,6 +40,7 @@ class LTI_CourseOrg(db.Model):
      course = db.ReferenceProperty(LTI_Course, collection_name='orgs')
      # copied from LTI_Org
      org_id = db.StringProperty()
+     sourced_id = db.StringProperty()
      name = db.StringProperty()
      title = db.StringProperty()
      url = db.StringProperty()
@@ -51,7 +54,7 @@ class LTI_CourseUser(db.Model):
      course = db.ReferenceProperty(LTI_Course, collection_name='users')
      # Copied from LTI_User
      user_id = db.StringProperty()
-     eid = db.StringProperty()
+     sourced_id = db.StringProperty()
      password = db.StringProperty()
      givenname = db.StringProperty()
      familyname = db.StringProperty()
