@@ -4,17 +4,17 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 
 def opt_get_or_insert(obj, key, parent=None):
-    logging.info("OPT key="+str(key))
+    # logging.info("OPT key="+str(key))
     if parent == None:
         mod = obj.get_by_key_name(key)
         if mod != None : 
-            logging.info("Optimistic no parent worked")
+            # logging.info("Optimistic no parent worked")
             return mod
         mod = obj.get_or_insert(key)
     else:
         mod = obj.get_by_key_name(key, parent=parent)
         if mod != None : 
-            logging.info("Optimisic worked")
+            # logging.info("Optimisic worked")
             return mod
         mod = obj.get_or_insert(key, parent=parent)
     return mod

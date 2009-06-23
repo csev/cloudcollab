@@ -197,21 +197,29 @@ class Context():
       if users.is_current_user_admin(): return True
       return False
 
-  def getUserName(self):
-     if ( not ( self.launch and self.user ) ) : return "Anonymous"
-     if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
-     retval = ""
-     if ( self.user.givenname and self.user.familyname and len(self.user.givenname) > 0 and len(self.user.familyname) > 0) : 
-        return self.user.givenname + " " + self.user.familyname
-     elif ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
-     elif ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
-     if ( self.user.email and len(self.user.email) > 0) : return self.user.email
-     return ""
+  def getUserShortName(self):
+      if ( not ( self.launch and self.user ) ) : return "Anonymous"
+      if ( self.user.email and len(self.user.email) > 0) : return self.user.email
+      if ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
+      if ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
+      if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
+      return ""
 
+  def getUserName(self):
+      if ( not ( self.launch and self.user ) ) : return "Anonymous"
+      if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
+      retval = ""
+      if ( self.user.givenname and self.user.familyname and len(self.user.givenname) > 0 and len(self.user.familyname) > 0) : 
+          return self.user.givenname + " " + self.user.familyname
+      elif ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
+      elif ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
+      if ( self.user.email and len(self.user.email) > 0) : return self.user.email
+      return ""
+ 
   def getCourseName(self):
-     if ( not ( self.launch and self.course ) ) : return "None"
-     if ( self.course.name ) : return self.course.name
-     if ( self.course.title ) : return self.course.title
-     if ( self.course.code ) : return self.course.code
-     return ""
+      if ( not ( self.launch and self.course ) ) : return "None"
+      if ( self.course.name ) : return self.course.name
+      if ( self.course.title ) : return self.course.title
+      if ( self.course.code ) : return self.course.code
+      return ""
 

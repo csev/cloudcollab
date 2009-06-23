@@ -10,6 +10,7 @@ from google.appengine.ext import db
 from util import sessions
 from context.aecontext import AE_Context
 from context.slticontext import SLTI_Context
+from context.blticontext import BLTI_Context
 import facebook
 from core import oauth
 from core import oauth_store
@@ -125,7 +126,7 @@ class MainHandler(webapp.RequestHandler):
       # comes back to us after launch, or (3) if we are just
       # cruising along we load the proper launch context using
       # a session value.
-      context = SLTI_Context(self, self.session)
+      context = BLTI_Context(self, self.session)
     
       # If the LTI code already sent a response it sets "complete"
       # so we are done

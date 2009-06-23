@@ -14,6 +14,7 @@ from google.appengine.api import users
 
 from contextmodel import *
 from context import Context
+from core import oauth
 from core.modelutil import *
 
 class BLTI_Context(Context):
@@ -28,10 +29,18 @@ class BLTI_Context(Context):
   org = None
   # Patches to the model mapping from request values to 
   # model values
-  model_mapping = {
-    'user_firstname': 'givenname',
-    'user_lastname': 'familyname',
-    'user_eid': 'sourced_id'}
+  user_mapping = {
+    'lis_person_name_given': 'givenname',
+    'lis_person_name_family': 'familyname',
+    'lis_person_name_full': 'fullname',
+    'lis_person_contact_emailprimary': 'email',
+    'lis_person_sourced_id': 'sourced_id'}
+
+  org_mapping = {
+    'tool_consumer_instance_guid': 'org_id',
+    'tool_consumer_instance_name': 'name',
+    'tool_consumer_instance_description': 'title'}
+
 
   # Option values
   Liberal = { 'nonce_time': 1000000, 
@@ -60,185 +69,62 @@ class BLTI_Context(Context):
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return
-    action = web.request.get('action')
-    if ( len(action) < 1 ) : action = web.request.get("lti_action")
-    if ( len(action) < 1 ) : return
-    action = action.lower()
-    if action != 'launchresolve' and action != 'direct' and action != 'launchhtml' : return
+    version = web.request.get('lti_version')
+    if ( len(version) < 1 ) : return
 
-    nonce = web.request.get('sec_nonce')
-    timestamp = web.request.get('sec_created')
-    digest = web.request.get('sec_digest')
-    course_id = web.request.get("course_id")
+    course_id = web.request.get("context_id")
     user_id = web.request.get("user_id")
-    doHtml = action.lower() == "launchhtml"
-    doDirect = action.lower() == "direct"
-    targets = web.request.get('launch_targets')
+    oauth_key = web.request.get("oauth_consumer_key")
+    urlpath = web.request.path
 
-    if len(nonce) <= 0 or len(timestamp) <= 0 or len(digest) <= 0 or len(user_id) <= 0 or len(course_id) <= 0 : 
-      self.launcherror(web, doHtml, doDirect, None, "Missing one of sec_nonce, sec_created, sec_digest, course_id, user_id")
+    if len(oauth_key) <= 0 or len(user_id) <= 0 or len(course_id) <= 0 : 
+      self.launcherror(web, None, "Missing one of course_id, user_id, oauth_consumer_key")
       return
 
     self.debug("Running on " + web.request.application_url)
-    self.debug("Launch post action=" + action)
 
-    # Determine check the timestamp for validity
-    tock = self.parsetime(timestamp)
-    if not tock :
-      self.launcherror(web, doHtml, doDirect, None, "Error in format of TimeStamp")
-      return
+    # Do OAuth Here
+    self.oauth_server = oauth.OAuthServer(LTI_OAuthDataStore(web, options))
+    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_PLAINTEXT())
+    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_HMAC_SHA1())
 
-    org_digest = web.request.get('sec_org_digest')
+    params = self.request.params
 
-    self.debug("sec_digest=" + digest)
-    self.debug("sec_org_digest=" + org_digest)
+    logging.info(self.request.url)
+    # construct the oauth request from the request parameters
+    oauth_request = oauth.OAuthRequest.from_request("POST", self.request.url, headers=self.request.headers, parameters=params)
 
-    org_id = web.request.get("org_id")
+    # verify the request has been oauth authorized
+    try:
+        logging.debug(self.requestdebug(web))
+        consumer, token, params = self.oauth_server.verify_request(oauth_request)
+    except oauth.OAuthError, err:
+        logging.info(err)
+        logging.info("OAuth failed "+err.message)
+    	return
 
-    # Look in the URL for the course id
-    urlpath = web.request.path
-    trigger = "/lti_course_id/"
+    org_id = web.request.get("tool_consumer_instance_guid")
+    org_secret = False
     path_course_id = None
-    pos = urlpath.find(trigger)
-    if ( pos >= 0 ) :
-      path = urlpath[pos+len(trigger):]
-      if path.find("/") > 0 :
-        path = path[:path.find("/")]
-      if len(path) > 0 : 
-        path_course_id = path
-        urlpath = urlpath[:pos]
-        if len(urlpath) == 0 : urlpath = "/"
+    if len(org_id) > 0 and oauth_key.startswith("basiclti-lms:") :
+      org_secret = True
+    else:
+      logging.warn("Make oauth_key parsing smarter!")
+      course_id = oauth_key
 
     self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+urlpath)
-
-    # Clean up the digest - Delete up to 100 2-day-old digests
-    nowtime = datetime.utcnow()
-    before = nowtime - options.get('digest_expire', timedelta(hours=23))
-    self.debug("Delete digests since "+before.isoformat())
-
-    q = db.GqlQuery("SELECT * FROM LMS_Digest WHERE created < :1", before)
-    results = q.fetch(options.get("digest_cleanup_count", 100))
-    db.delete(results)
-
-    # Validate the sec_digest 
-    # dig = LMS_Digest.get_or_insert("key:"+digest)
-    dig = opt_get_or_insert(LMS_Digest,"key:"+digest)
-
-    reused = False
-    if dig.digest == None :
-      self.debug("Digest fresh")
-      dig.digest = digest
-    else:
-      self.debug("Digest reused")
-      reused = True
-
-    dig.request = self.requestdebug(web)
-    dig.put()
-
-    # Get critical if there is some unauthorized reuse
-    if reused and not options.get("allow_digest_reuse", False) :
-      self.launcherror(web, doHtml, doDirect, dig, "Digest Reused")
-      return
-
-    # Validate the sec_org_digest if it is different from sec_digest
-    if len(org_digest) > 0 and not org_digest == digest :
-      # orgdig = LMS_Digest.get_or_insert("key:"+org_digest)
-      orgdig = opt_get_or_insert(LMS_Digest,"key:"+org_digest)
-      reused = False
-      if orgdig.digest == None :
-        self.debug("Organizational digest fresh")
-        orgdig.digest = digest
-      else:
-        self.debug("Organizational digest reused")
-        reused = True
-  
-      orgdig.request = self.requestdebug(web)
-      orgdig.put()
-  
-      # Get critical if there is some unauthorized reuse
-      if reused and not options.get("allow_digest_reuse", False) :
-        self.launcherror(web, doHtml, doDirect, orgdig, "Organizational digest reused")
-        return
 
     # Lets check to see if we have an organizational id and organizational secret
     # and check to see if we are really hearing from the organization
     org = None
-    org_secret = None
-    self.org = None
-    if len(org_id) > 0  and len(org_digest) > 0  :
-      if options.get('auto_create_orgs', False) :
-        # org = LMS_Org.get_or_insert("key:"+org_id)
-        org = opt_get_or_insert(LMS_Org,"key:"+org_id)
-        org_secret = org.secret  # Can't change secret from the web
-        Model_Load(org, web.request.params, "org_", self.model_mapping)
-        if org_secret == None : org_secret = ""
-        org.secret = org_secret
-        org.put()
-      else : 
-        org = LMS_Org.get_by_key_name("key:"+org_id)
-        if org : 
-          org_secret = org.secret
-
-    if org_secret == "" : org_secret = None
-
-    if org and org_secret == None :
-      org_secret = options.get("default_org_secret",None) 
-
-    # No global orgs without secrets - sorry
-    if not org_secret:
-      org = None
-
-    # Failing the org secret is not a complete failure - it 
-    # simply means that the user_id and course_id and org data
-    # are scoped to the course - on failure set org to None
-    # and continue
-    if org and org_secret:
-      self.debug("org.key()="+str(org.key()))
-      success = self.checknonce(nonce, timestamp, org_digest, org_secret, 
-         options.get('nonce_time', 10000000) ) 
-      if not success: org = None
-
+    if org_secret and len(org_id) > 0 :
+      org = LMS_Org.get_by_key_name("key:"+org_id)
     self.org = org
 
     # If we have a path_course_id then the course is not owned
     # by the organization - it is a standalone course where 
     # potentially many organiational course_ids will be mapped to it.
-    course = None
-    if path_course_id :
-      if options.get('auto_create_courses', False) :
-        # course = LMS_Course.get_or_insert("key:"+path_course_id)
-        course = opt_get_or_insert(LMS_Course,"key:"+path_course_id)
-        course_secret = course.secret  # Can't change secret from the web
-        Model_Load(course, web.request.params, "course_", self.model_mapping)
-        course.course_id = path_course_id
-	if course_secret == None : course_secret = ""
-        course.secret = course_secret
-        course.put()
-      else : 
-        course = LMS_Course.get_by_key_name("key:"+course_id)
-        if course : 
-          course_secret = course.secret
-
-      if course_secret == "" : course_secret = None
-
-      if not course:
-        self.launcherror(web, doHtml, doDirect, dig, "Course not found:"+path_course_id)
-        return
-
-      if course_secret == None :
-        course_secret = options.get("default_course_secret",None) 
-
-      # No global courses without secrets - sorry
-      if not course_secret:
-        self.launcherror(web, doHtml, doDirect, dig, "Course secret is not set:"+path_course_id)
-        return
-
-      self.debug("course.key()="+str(course.key()))
-      success = self.checknonce(nonce, timestamp, digest, course_secret, 
-         options.get('nonce_time', 10000000) ) 
-      if not success: 
-        self.launcherror(web, doHtml, doDirect, dig, "Course secret does not validate:"+path_course_id)
-        return
+    course = LMS_Course.get_by_key_name("key:"+course_id)
 
     # If we have a global org and a global course - add the link
     if len(course_id) > 0 and course and org :
@@ -247,78 +133,32 @@ class BLTI_Context(Context):
       orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
-    # If we have a path_course_id that is good, we are done
-    # Just use that course
-    elif len(course_id) > 0 and course :
-      pass
-    # We only have a course_id from the post data
-    elif len(course_id) > 0 :
-      if options.get('auto_create_courses', False) :
-        # course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
-        course = opt_get_or_insert(LMS_Course,"key:"+course_id, parent=org)
-        course_secret = course.secret  # Can't change secret from the web
-        Model_Load(course, web.request.params, "course_", self.model_mapping)
-	if course_secret == None : course_secret = ""
-        course.secret = course_secret
-        course.put()
-      else : 
-        course = LMS_Course.get_by_key_name("key:"+course_id, parent=org)
-        if course : 
-          course_secret = course.secret
-
-      if course_secret == "" : course_secret = None
-
-      if not course:
-        self.launcherror(web, doHtml, doDirect, dig, "Course not found:"+course_id)
-        return
-
-      if course_secret == None or len(course_secret) <= 0 :
-        course_secret = options.get("default_course_secret",None) 
-
-      # No courses without secrets - sorry
-      if not course_secret:
-        self.launcherror(web, doHtml, doDirect, dig, "Course secret is not set:"+course_id)
-        return
-
-      self.debug("course.key()="+str(course.key()))
-      success = self.checknonce(nonce, timestamp, digest, course_secret, 
-         options.get('nonce_time', 10000000) ) 
-      if not success: 
-        self.launcherror(web, doHtml, doDirect, dig, "Course secret does not validate:"+course_id)
-        return
-
-    if ( not course ) :
-       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid course for a complete launch")
-       return
 
     # Make the user and link to either then organization or the course
     user = None
     course_user = False
     if ( len(user_id) > 0 ) :
       if org:
-        # user = LMS_User.get_or_insert("key:"+user_id, parent=org)
         user = opt_get_or_insert(LMS_User,"key:"+user_id, parent=org)
       else :
-        # user = LMS_CourseUser.get_or_insert("key:"+user_id, parent=course)
         user = opt_get_or_insert(LMS_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
-      Model_Load(user, web.request.params, "user_", self.model_mapping)
+      Model_Load(user, web.request.params, None, self.user_mapping)
       user.put()
 
     memb = None
     if ( not (user and course ) ) :
-       self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
+       self.launcherror(web, dig, "Must have a valid user for a complete launch")
        return
 
-    # memb = LMS_Membership.get_or_insert("key:"+user_id, parent=course)
     memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
-    role = web.request.get("user_role")
-    if ( len(role) < 1 ) : role = "Student"
-    role = role.lower()
+    roles = web.request.get("roles")
+    if ( len(roles) < 1 ) : roles = "Student"
+    roles = roles.lower()
     roleval = 1
-    if ( role == "instructor") : roleval = 2
-    if ( role == "administrator") : roleval = 2
+    if roles.find("instructor") >= 0 : roleval = 2
+    if roles.find("administrator") >=0  : roleval = 2
     memb.role = roleval
     memb.put()
 
@@ -330,7 +170,7 @@ class BLTI_Context(Context):
     if not org and len(org_id) > 0 :
       # org = LMS_CourseOrg.get_or_insert("key:"+org_id, parent=course)
       org = opt_get_or_insert(LMS_CourseOrg,"key:"+org_id, parent=course)
-      Model_Load(org, web.request.params, "org_", self.model_mapping)
+      Model_Load(org, web.request.params, None, self.org_mapping)
       org.course = course
       course_org = True
       org.put()
@@ -344,9 +184,8 @@ class BLTI_Context(Context):
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    # launch = LMS_Launch.get_or_insert("key:"+user_id, parent=course)
     launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
-    Model_Load(launch, web.request.params, "launch_", self.model_mapping)
+    Model_Load(launch, web.request.params, "launch_")
     launch.memb = memb
     if course_org:
       launch.course_org = org
@@ -381,125 +220,86 @@ class BLTI_Context(Context):
     self.org = org
     self.memb = memb
 
-    # Need to make an option to allow a 
-    # simple return instead of redirect
-    # If we have a session attempt to store the key in the session
-    # If all goes well the session and request key will match and 
-    # urls will be keyword-free
-    if doDirect:
-      if session != False: session['lti_launch_key'] = str(launch.key())
-      web.redirect(url)
-      dig.debug = self.dStr
-      dig.put()
-      return
-
-    if  success :
-        self.debug("****** MATCH ******")
-        respString = self.iframeResponse(url)
-    else:
-        self.debug("!!!!!! NO MATCH !!!!!!")
-        respString = self.errorResponse()
-
-    if doHtml:
-        web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
-        respString = cgi.escape(respString) 
-
-    web.response.out.write(respString)
-
-    if doHtml:
-        web.response.out.write("\n\nDebug Output:\n")
-        web.response.out.write(self.dStr)
-        web.response.out.write("\n</pre>\n")
-
-    dig.debug = self.dStr
-    dig.put()
-
-  def parsetime(self, timestamp) :
-    # Receiving - Parse a Simple TI TimeStamp
-    try:
-        tock = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-        self.debug("Parsed SimpleLTI TimeStamp "+tock.isoformat())
-        return tock
-    except:
-	self.debug("Error parsing timestamp format - expecting 2008-06-03T13:51:20Z")
-        return False
-    
-  def checknonce(self, nonce, timestamp, digest, secret = "secret", skew = 100000 ) :
-
-    if len(nonce) <= 0 or len(timestamp) <= 0 or len(secret) <= 0 or len(digest) <= 0 : return False
-
-    # Parse the timestamp
-    tock = self.parsetime(timestamp)
-    if not tock : return
-
-    # Check for time difference (either way)
-    nowtime = datetime.utcnow()
-    self.debug("Current time "+nowtime.isoformat())
-    diff = abs(nowtime - tock)
-
-    # Our tolerable margin
-    margin = timedelta(seconds=skew)
-    if ( diff >= margin ) :
-       self.debug("Time Mismatch Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
-       return False
-
-    # Compute the digest
-    presha1 = nonce + timestamp + secret
-    # self.debug("Presha1 " + presha1)
-    sha1 =  hashlib.sha1()
-    sha1.update(presha1)
-    x = sha1.digest()
-    y = base64.b64encode(x)
-    # self.debug("postsha1 "+y)
-    # self.debug("digest "+digest)
-    success = (digest == y)
-
-    self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
-    return success
-
-  def iframeResponse(self,url):
-    retval = '''<launchResponse>
-   <status>success</status>
-   <type>iFrame</type>
-   <launchUrl>LAUNCHURL</launchUrl>
-</launchResponse>
-'''
-    retval = retval.replace("LAUNCHURL",url)
-    return retval
-
-  def errorResponse(self, desc="The password digest was invalid"):
-    retval = '''<launchResponse>
-    <status>fail</status>
-    <code>BadPasswordDigest</code>
-    <description>DESC</description>
-</launchResponse>
-'''
-    retval = retval.replace("DESC",desc)
-    return retval
+    if session != False: session['lti_launch_key'] = str(launch.key())
+    web.redirect(url)
 
   # It sure would be nice to have an error url to redirect to 
-  def launcherror(self, web, doHtml, doDirect, dig, desc) :
+  def launcherror(self, web, dig, desc) :
       self.complete = True
-      if doDirect :
-        web.response.out.write("<p>\nIncorrect authentication data presented by the Learning Management System.\n</p>\n")
-        web.response.out.write("<p>\nError code:\n</p>\n")
-        web.response.out.write("<p>\n"+desc+"\n</p>\n")
-        web.response.out.write("<!--\n")
+      web.response.out.write("<p>\nIncorrect authentication data presented by the Learning Management System.\n</p>\n")
+      web.response.out.write("<p>\nError code:\n</p>\n")
+      web.response.out.write("<p>\n"+desc+"\n</p>\n")
+      web.response.out.write("<!--\n")
   
       respString = self.errorResponse(desc)
-      if doDirect or doHtml:
-        web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
-        respString = cgi.escape(respString) 
+      web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
+      respString = cgi.escape(respString) 
       web.response.out.write(respString)
-      if doDirect or doHtml:
-        web.response.out.write("\n\nDebug Log:\n")
-        web.response.out.write(self.dStr)
-        web.response.out.write("\nRequest Data:\n")
-        web.response.out.write(self.requestdebug(web))
-        web.response.out.write("\n</pre>\n")
-      if doDirect :
-        web.response.out.write("\n-->\n")
+      web.response.out.write("\n\nDebug Log:\n")
+      web.response.out.write(self.dStr)
+      web.response.out.write("\nRequest Data:\n")
+      web.response.out.write(self.requestdebug(web))
+      web.response.out.write("\n</pre>\n")
+      web.response.out.write("\n-->\n")
 
       if dig:
         dig.debug = self.dStr
         dig.put()
+
+
+class LTI_OAuthDataStore(oauth.OAuthDataStore):
+
+    def __init__(self, web, options):
+        self.consumer = oauth.OAuthConsumer('http://localhack:8083/wiscrowd', 'secret')
+        self.web = web
+        self.options = options
+
+    def lookup_consumer(self, key):
+        if key == self.consumer.key:
+            logging.info("Found hack, local consumer "+key)
+            return self.consumer
+
+        if key.startswith('basiclti-lms:') :
+            org_id = key[len('basiclti-lms:') :]
+            logging.info("lookup_consumer org_id="+org_id)
+	    raise NotDoneError
+	else :
+            course_id = key
+            logging.info("Loading course to check secret " + course_id)
+            course = LMS_Course.get_by_key_name("key:"+course_id)
+            if course :
+	        logging.info("Found course " + course_id)
+		return oauth.OAuthConsumer(course_id, course.secret)
+
+            default_secret = self.options.get("default_course_secret",False)
+            if default_secret and self.options.get('auto_create_courses', False) :
+                logging.warn("Creating course "+course_id+" with default secret")
+                course = LMS_Course.get_or_insert("key:"+course_id)
+                Model_Load(course, self.web.request.params, "context_")
+                course.course_id = course_id
+                course.secret = default_secret
+                course.put()
+		return oauth.OAuthConsumer(course_id, default_secret)
+
+        logging.info("Did not find consumer "+key)
+        return None
+
+    # We don't do request_tokens
+    def lookup_token(self, token_type, token):
+        return oauth.OAuthToken(None, None)
+
+    # Trust all nonces
+    def lookup_nonce(self, oauth_consumer, oauth_token, nonce):
+        return None
+
+    # We don't do request_tokens
+    def fetch_request_token(self, oauth_consumer):
+        return None
+
+    # We don't do request_tokens
+    def fetch_access_token(self, oauth_consumer, oauth_token):
+        return None
+
+    # We don't do request_tokens
+    def authorize_request_token(self, oauth_token, user):
+        return None

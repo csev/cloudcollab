@@ -21,7 +21,7 @@ class WisHandler(learningportlet.LearningPortlet):
     logging.info("Loading Wis Key="+wiskey)
 
     name = self.request.get("name")
-    if len(name) < 1 : name = self.context.user.email
+    if len(name) < 1 : name = self.context.getUserShortName()
 
     guess = self.request.get("guess")
 

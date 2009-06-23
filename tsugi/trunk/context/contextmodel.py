@@ -26,6 +26,7 @@ class LMS_User(db.Model):
 
 class LMS_Course(db.Model):
      course_id = db.StringProperty()
+     type = db.StringProperty()
      sourced_id = db.StringProperty()
      secret = db.StringProperty(default="")
      code = db.StringProperty()
