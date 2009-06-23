@@ -6,7 +6,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
 from google.appengine.api import memcache
-#from util.sessions import Session
+from google.appengine.ext import db
 from util import sessions
 from context.aecontext import AE_Context
 from context.slticontext import SLTI_Context
@@ -339,12 +339,29 @@ class OAuthHandler(webapp.RequestHandler):
          reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
     return reqstr
 
+class PurgeHandler(webapp.RequestHandler): 
+    def get(self): 
+        if not users.is_current_user_admin() : 
+            self.response.out.write('Must be admin.')
+            return
+        limit = self.request.get("limit") 
+        if not limit: 
+            limit = 10 
+        table = self.request.get('table') 
+        if not table: 
+            self.response.out.write('Must specify a table.')
+            return
+        q = db.GqlQuery("SELECT __key__ FROM "+table)
+	results = q.fetch(10)
+        self.response.out.write("%s records" % len(results))
+	db.delete(results)
 
 def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', LoginHandler),
             ('/facebook.*', FaceBookHandler),
             ('/oauth.*', OAuthHandler),
+            ('/purge.*', PurgeHandler),
             ('/logout', LogoutHandler)]
   routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )

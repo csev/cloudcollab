@@ -42,27 +42,27 @@ class AE_Context(Context):
     course = None
     user = None
     if len(org_id) > 0 :
-      # org = LTI_Org.get_or_insert("key:"+org_id)
-      org = opt_get_or_insert(LTI_Org,"key:"+org_id)
+      # org = LMS_Org.get_or_insert("key:"+org_id)
+      org = opt_get_or_insert(LMS_Org,"key:"+org_id)
       Model_Load(org, params, "org_")
       org.put()
 
     if len(course_id) > 0 and org :
-      # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
-      course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
+      # course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
+      course = opt_get_or_insert(LMS_Course,"key:"+course_id, parent=org)
       Model_Load(course, params, "course_")
       course.put()
 
     if ( len(user_id) > 0 ) and org :
-      # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
-      user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
+      # user = LMS_User.get_or_insert("key:"+user_id, parent=org)
+      user = opt_get_or_insert(LMS_User,"key:"+user_id, parent=org)
       Model_Load(user, params, "user_")
       user.put()
 
     memb = None
     if user and course :
-      # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
-      memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
+      # memb = LMS_Membership.get_or_insert("key:"+user_id, parent=course)
+      memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
       if ( len(role) < 1 ) : role = "Student"
       role = role.lower()
       roleval = 1
@@ -71,8 +71,8 @@ class AE_Context(Context):
       memb.role = roleval
       memb.put()
 
-    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
-    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
+    # launch = LMS_Launch.get_or_insert("key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
     Model_Load(launch, params, "launch_")
     launch.memb = memb
     launch.org = org

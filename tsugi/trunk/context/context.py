@@ -70,7 +70,7 @@ class Context():
     if ( key ) :
       # Need try/except in case Key() is unhappy with the string
       try:
-        launch = LTI_Launch.get(db.Key(key))
+        launch = LMS_Launch.get(db.Key(key))
       except:
         launch = None
 

@@ -79,14 +79,14 @@ class BB_Context(Context):
     before = nowtime - options.get('digest_expire', timedelta(hours=23))
     self.debug("Delete digests since "+before.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
+    q = db.GqlQuery("SELECT * FROM LMS_Digest WHERE created < :1", before)
     results = q.fetch(options.get("digest_cleanup_count", 100))
     db.delete(results)
 
     # Validate the sec_digest 
     # TODO: Think about this one - is it optimistic?
-    # dig = LTI_Digest.get_or_insert("key:"+digest)
-    dig = opt_get_or_insert(LTI_Digest,"key:"+digest)
+    # dig = LMS_Digest.get_or_insert("key:"+digest)
+    dig = opt_get_or_insert(LMS_Digest,"key:"+digest)
     reused = False
     if dig.digest == None :
       self.debug("Digest fresh")
@@ -107,8 +107,8 @@ class BB_Context(Context):
     self.org = None
     org_secret = "secret"
     if len(org_id) > 0  :
-        # org = LTI_Org.get_or_insert("key:"+org_id)
-        org = opt_get_or_insert(LTI_Org,"key:"+org_id)
+        # org = LMS_Org.get_or_insert("key:"+org_id)
+        org = opt_get_or_insert(LMS_Org,"key:"+org_id)
         Model_Load(org, web.request.params, "org_")
         if org_secret == None : org_secret = ""
         org.secret = org_secret
@@ -118,8 +118,8 @@ class BB_Context(Context):
 
     course = None
     if course_id :
-        # course = LTI_Course.get_or_insert("key:"+course_id)
-        course = opt_get_or_insert(LTI_Course,"key:"+course_id)
+        # course = LMS_Course.get_or_insert("key:"+course_id)
+        course = opt_get_or_insert(LMS_Course,"key:"+course_id)
         course_secret = course.secret  # Can't change secret from the web
         if course_secret == None :
           course_secret = options.get("default_course_secret",None) 
@@ -133,8 +133,8 @@ class BB_Context(Context):
     # If we have a global org and a global course - add the link
     if len(course_id) > 0 and course and org :
       self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key()))
-      # orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
-      orgcourse = opt_get_or_insert(LTI_OrgCourse,"key:"+course_id, parent=org)
+      # orgcourse = LMS_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
     # If we have a path_course_id that is good, we are done
@@ -144,8 +144,8 @@ class BB_Context(Context):
     # We only have a course_id from the post data
     elif len(course_id) > 0 :
       if options.get('auto_create_courses', False) :
-        # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
-        course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
+        # course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
+        course = opt_get_or_insert(LMS_Course,"key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request.params, "course_")
 	if course_secret == None : course_secret = ""
@@ -153,7 +153,7 @@ class BB_Context(Context):
         course.name = course_id
         course.put()
       else : 
-        course = LTI_Course.get_by_key_name("key:"+course_id, parent=org)
+        course = LMS_Course.get_by_key_name("key:"+course_id, parent=org)
         if course : 
           course_secret = course.secret
 
@@ -187,11 +187,11 @@ class BB_Context(Context):
     course_user = False
     if ( len(user_id) > 0 ) :
       if org:
-        # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
-        user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
+        # user = LMS_User.get_or_insert("key:"+user_id, parent=org)
+        user = opt_get_or_insert(LMS_User,"key:"+user_id, parent=org)
       else :
-        # user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
-        user = opt_get_or_insert(LTI_CourseUser,"key:"+user_id, parent=course)
+        # user = LMS_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user = opt_get_or_insert(LMS_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
       Model_Load(user, web.request.params, "user_")
@@ -204,8 +204,8 @@ class BB_Context(Context):
        self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
        return
 
-    # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
-    memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
+    # memb = LMS_Membership.get_or_insert("key:"+user_id, parent=course)
+    memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
     role = web.request.get("tcrole")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
@@ -220,12 +220,12 @@ class BB_Context(Context):
     before = nowtime - options.get('launch_expire', timedelta(days=2))
     self.debug("Delete launches since "+before.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Launch WHERE created < :1", before)
+    q = db.GqlQuery("SELECT * FROM LMS_Launch WHERE created < :1", before)
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
-    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
+    # launch = LMS_Launch.get_or_insert("key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
     Model_Load(launch, web.request.params, "launch_")
     launch.memb = memb
     launch.org = org

@@ -116,13 +116,13 @@ class SLTI_Context(Context):
     before = nowtime - options.get('digest_expire', timedelta(hours=23))
     self.debug("Delete digests since "+before.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Digest WHERE created < :1", before)
+    q = db.GqlQuery("SELECT * FROM LMS_Digest WHERE created < :1", before)
     results = q.fetch(options.get("digest_cleanup_count", 100))
     db.delete(results)
 
     # Validate the sec_digest 
-    # dig = LTI_Digest.get_or_insert("key:"+digest)
-    dig = opt_get_or_insert(LTI_Digest,"key:"+digest)
+    # dig = LMS_Digest.get_or_insert("key:"+digest)
+    dig = opt_get_or_insert(LMS_Digest,"key:"+digest)
 
     reused = False
     if dig.digest == None :
@@ -142,8 +142,8 @@ class SLTI_Context(Context):
 
     # Validate the sec_org_digest if it is different from sec_digest
     if len(org_digest) > 0 and not org_digest == digest :
-      # orgdig = LTI_Digest.get_or_insert("key:"+org_digest)
-      orgdig = opt_get_or_insert(LTI_Digest,"key:"+org_digest)
+      # orgdig = LMS_Digest.get_or_insert("key:"+org_digest)
+      orgdig = opt_get_or_insert(LMS_Digest,"key:"+org_digest)
       reused = False
       if orgdig.digest == None :
         self.debug("Organizational digest fresh")
@@ -167,15 +167,15 @@ class SLTI_Context(Context):
     self.org = None
     if len(org_id) > 0  and len(org_digest) > 0  :
       if options.get('auto_create_orgs', False) :
-        # org = LTI_Org.get_or_insert("key:"+org_id)
-        org = opt_get_or_insert(LTI_Org,"key:"+org_id)
+        # org = LMS_Org.get_or_insert("key:"+org_id)
+        org = opt_get_or_insert(LMS_Org,"key:"+org_id)
         org_secret = org.secret  # Can't change secret from the web
         Model_Load(org, web.request.params, "org_", self.model_mapping)
         if org_secret == None : org_secret = ""
         org.secret = org_secret
         org.put()
       else : 
-        org = LTI_Org.get_by_key_name("key:"+org_id)
+        org = LMS_Org.get_by_key_name("key:"+org_id)
         if org : 
           org_secret = org.secret
 
@@ -206,8 +206,8 @@ class SLTI_Context(Context):
     course = None
     if path_course_id :
       if options.get('auto_create_courses', False) :
-        # course = LTI_Course.get_or_insert("key:"+path_course_id)
-        course = opt_get_or_insert(LTI_Course,"key:"+path_course_id)
+        # course = LMS_Course.get_or_insert("key:"+path_course_id)
+        course = opt_get_or_insert(LMS_Course,"key:"+path_course_id)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request.params, "course_", self.model_mapping)
         course.course_id = path_course_id
@@ -215,7 +215,7 @@ class SLTI_Context(Context):
         course.secret = course_secret
         course.put()
       else : 
-        course = LTI_Course.get_by_key_name("key:"+course_id)
+        course = LMS_Course.get_by_key_name("key:"+course_id)
         if course : 
           course_secret = course.secret
 
@@ -243,8 +243,8 @@ class SLTI_Context(Context):
     # If we have a global org and a global course - add the link
     if len(course_id) > 0 and course and org :
       self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+path_course_id)
-      # orgcourse = LTI_OrgCourse.get_or_insert("key:"+course_id, parent=org)
-      orgcourse = opt_get_or_insert(LTI_OrgCourse,"key:"+course_id, parent=org)
+      # orgcourse = LMS_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+      orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
     # If we have a path_course_id that is good, we are done
@@ -254,15 +254,15 @@ class SLTI_Context(Context):
     # We only have a course_id from the post data
     elif len(course_id) > 0 :
       if options.get('auto_create_courses', False) :
-        # course = LTI_Course.get_or_insert("key:"+course_id, parent=org)
-        course = opt_get_or_insert(LTI_Course,"key:"+course_id, parent=org)
+        # course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
+        course = opt_get_or_insert(LMS_Course,"key:"+course_id, parent=org)
         course_secret = course.secret  # Can't change secret from the web
         Model_Load(course, web.request.params, "course_", self.model_mapping)
 	if course_secret == None : course_secret = ""
         course.secret = course_secret
         course.put()
       else : 
-        course = LTI_Course.get_by_key_name("key:"+course_id, parent=org)
+        course = LMS_Course.get_by_key_name("key:"+course_id, parent=org)
         if course : 
           course_secret = course.secret
 
@@ -296,11 +296,11 @@ class SLTI_Context(Context):
     course_user = False
     if ( len(user_id) > 0 ) :
       if org:
-        # user = LTI_User.get_or_insert("key:"+user_id, parent=org)
-        user = opt_get_or_insert(LTI_User,"key:"+user_id, parent=org)
+        # user = LMS_User.get_or_insert("key:"+user_id, parent=org)
+        user = opt_get_or_insert(LMS_User,"key:"+user_id, parent=org)
       else :
-        # user = LTI_CourseUser.get_or_insert("key:"+user_id, parent=course)
-        user = opt_get_or_insert(LTI_CourseUser,"key:"+user_id, parent=course)
+        # user = LMS_CourseUser.get_or_insert("key:"+user_id, parent=course)
+        user = opt_get_or_insert(LMS_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
       Model_Load(user, web.request.params, "user_", self.model_mapping)
@@ -311,8 +311,8 @@ class SLTI_Context(Context):
        self.launcherror(web, doHtml, doDirect, dig, "Must have a valid user for a complete launch")
        return
 
-    # memb = LTI_Membership.get_or_insert("key:"+user_id, parent=course)
-    memb = opt_get_or_insert(LTI_Membership,"key:"+user_id, parent=course)
+    # memb = LMS_Membership.get_or_insert("key:"+user_id, parent=course)
+    memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
     role = web.request.get("user_role")
     if ( len(role) < 1 ) : role = "Student"
     role = role.lower()
@@ -328,8 +328,8 @@ class SLTI_Context(Context):
  
     course_org = False
     if not org and len(org_id) > 0 :
-      # org = LTI_CourseOrg.get_or_insert("key:"+org_id, parent=course)
-      org = opt_get_or_insert(LTI_CourseOrg,"key:"+org_id, parent=course)
+      # org = LMS_CourseOrg.get_or_insert("key:"+org_id, parent=course)
+      org = opt_get_or_insert(LMS_CourseOrg,"key:"+org_id, parent=course)
       Model_Load(org, web.request.params, "org_", self.model_mapping)
       org.course = course
       course_org = True
@@ -340,12 +340,12 @@ class SLTI_Context(Context):
     before = nowtime - options.get('launch_expire', timedelta(days=2))
     self.debug("Delete launches since "+before.isoformat())
 
-    q = db.GqlQuery("SELECT * FROM LTI_Launch WHERE created < :1", before)
+    q = db.GqlQuery("SELECT * FROM LMS_Launch WHERE created < :1", before)
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    # launch = LTI_Launch.get_or_insert("key:"+user_id, parent=course)
-    launch = opt_get_or_insert(LTI_Launch,"key:"+user_id, parent=course)
+    # launch = LMS_Launch.get_or_insert("key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
     Model_Load(launch, web.request.params, "launch_", self.model_mapping)
     launch.memb = memb
     if course_org:
