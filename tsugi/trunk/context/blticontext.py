@@ -13,11 +13,11 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 
 from contextmodel import *
-from context import Context
+from basecontext import BaseContext
 from core import oauth
 from core.modelutil import *
 
-class BLTI_Context(Context):
+class BLTI_Context(BaseContext):
   dStr = ""
   request = None
   complete = False
@@ -61,11 +61,11 @@ class BLTI_Context(Context):
     self.request = web.request
     self.launch = None
     self.sessioncookie = False
+    self.handlesetup(web, session)
+    if self.launch != None : return
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
     self.handlelaunch(web, session, options)
-    if ( self.complete ) : return
-    self.handlesetup(web, session)
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return

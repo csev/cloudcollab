@@ -13,7 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 
 from contextmodel import *
-from context import Context
+from basecontext import BaseContext
 from core.modelutil import *
 
 class BB_Context(Context):

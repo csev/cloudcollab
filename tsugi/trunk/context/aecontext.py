@@ -4,10 +4,10 @@ from google.appengine.ext import db
 from google.appengine.api import users
 
 from contextmodel import *
-from context import Context
+from basecontext import BaseContext
 from core.modelutil import *
 
-class AE_Context(Context):
+class AE_Context(BaseContext):
   '''Build a launch from parameters.'''
   dStr = ''
   launch = None
