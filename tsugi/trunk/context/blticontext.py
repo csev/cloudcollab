@@ -61,11 +61,11 @@ class BLTI_Context(BaseContext):
     self.request = web.request
     self.launch = None
     self.sessioncookie = False
-    self.handlesetup(web, session)
-    if self.launch != None : return
     # Later set this to conservative
     if len(options) < 1 : self.options = self.Liberal
     self.handlelaunch(web, session, self.options)
+    if self.complete or self.launch != None : return
+    self.handlesetup(web, session)
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return
@@ -275,15 +275,10 @@ class BLTI_Context(BaseContext):
 class LTI_OAuthDataStore(oauth.OAuthDataStore):
 
     def __init__(self, web, options):
-        self.consumer = oauth.OAuthConsumer('http://localhost:8083/wiscrowd', 'secret')
         self.web = web
         self.options = options
 
     def lookup_consumer(self, key):
-        if key == self.consumer.key:
-            logging.info("Found hack, local consumer "+key)
-            return self.consumer
-
         if key.startswith('basiclti-lms:') :
             org_id = key[len('basiclti-lms:') :]
             logging.info("lookup_consumer org_id="+org_id)

@@ -52,11 +52,11 @@ class SLTI_Context(BaseContext):
     self.request = web.request
     self.launch = None
     self.sessioncookie = False
-    self.handlesetup(web, session)
-    if self.launch != None : return
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
     self.handlelaunch(web, session, options)
+    if self.complete or self.launch != None : return
+    self.handlesetup(web, session)
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return
