@@ -24,6 +24,7 @@ def Model_Load(obj, params, prefix = None, mapping = {} ):
     into the model.   An optional prefix is used to append
     to the request keys.'''
     count = 0
+    changed = False
     for req_key in params.keys(): 
       key = req_key
       value = params[key]
@@ -39,11 +40,16 @@ def Model_Load(obj, params, prefix = None, mapping = {} ):
 
       # logging.info("thetype = "+thetype)
       if ( thetype == "string" or thetype == "int" ) : 
-        # logging.info("setting "+key+" = "+str(value))
-        setattr(obj,key,value)
-        count = count + 1
+        oldval = getattr(obj,key)
+        # logging.info("oldval   "+key+" = "+str(oldval))
+        if ( oldval != value ) :
+          # logging.info("setting "+key+" = "+str(value))
+          changed = True
+          setattr(obj,key,value)
+          count = count + 1
 
     # logging.info("MODEL LOAD "+str(obj.__class__)+" loaded "+str(count)+" keys")
+    return changed
 
 def Model_Type(obj, key):
     try:

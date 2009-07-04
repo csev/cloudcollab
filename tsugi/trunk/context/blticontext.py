@@ -122,6 +122,9 @@ class BLTI_Context(BaseContext):
       if not org :
         self.launcherror(web, None, "Could not find organization:"+org_id)
         return
+      # Check to see if we got any new data from the organization
+      if Model_Load(org, web.request.params, None, self.org_mapping) :
+        org.put()
 
     self.org = org
 
@@ -136,10 +139,11 @@ class BLTI_Context(BaseContext):
     if org and (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
       logging.warn("Creating course "+course_id+" in organization "+org_id+" with default secret")
       course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
-      Model_Load(course, self.web.request.params, "context_")
-      course.course_id = course_id
-      course.secret = default_secret
-      course.put()
+      if Model_Load(course, self.web.request.params, "context_") :
+        course.course_id = course_id
+        course.secret = default_secret
+        course.put()
+
       self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+str(path_course_id))
       orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
@@ -147,9 +151,9 @@ class BLTI_Context(BaseContext):
     elif course :
       # TODO: Teach Model Load to deal with Changed
       secret = course.secret  # Save
-      Model_Load(course, self.web.request.params, "context_")
-      course.secret = secret
-      course.put()
+      if Model_Load(course, self.web.request.params, "context_") :
+        course.secret = secret
+        course.put()
 
     if not course:
        self.launcherror(web, None, "Unable to load course: "+course_id);
@@ -165,8 +169,9 @@ class BLTI_Context(BaseContext):
         user = opt_get_or_insert(LMS_CourseUser,"key:"+user_id, parent=course)
         user.course = course
         course_user = True
-      Model_Load(user, web.request.params, None, self.user_mapping)
-      user.put()
+
+      if Model_Load(user, web.request.params, None, self.user_mapping) :
+        user.put()
 
     memb = None
     if ( not (user and course ) ) :
@@ -191,10 +196,10 @@ class BLTI_Context(BaseContext):
     if not org and len(org_id) > 0 :
       # org = LMS_CourseOrg.get_or_insert("key:"+org_id, parent=course)
       org = opt_get_or_insert(LMS_CourseOrg,"key:"+org_id, parent=course)
-      Model_Load(org, web.request.params, None, self.org_mapping)
       org.course = course
       course_org = True
-      org.put()
+      if Model_Load(org, web.request.params, None, self.org_mapping) :
+        org.put()
 
     # Clean up launches 
     nowtime = datetime.utcnow()
