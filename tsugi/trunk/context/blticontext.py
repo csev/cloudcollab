@@ -103,6 +103,7 @@ class BLTI_Context(BaseContext):
         logging.info("OAuth failed "+err.message)
     	return
 
+    logging.info("OAuth validated!")
     org_id = web.request.get("tool_consumer_instance_guid")
     org_secret = False
     path_course_id = None
@@ -250,7 +251,7 @@ class BLTI_Context(BaseContext):
 class LTI_OAuthDataStore(oauth.OAuthDataStore):
 
     def __init__(self, web, options):
-        self.consumer = oauth.OAuthConsumer('http://localhack:8083/wiscrowd', 'secret')
+        self.consumer = oauth.OAuthConsumer('http://localhost:8083/wiscrowd', 'secret')
         self.web = web
         self.options = options
 
@@ -262,7 +263,7 @@ class LTI_OAuthDataStore(oauth.OAuthDataStore):
         if key.startswith('basiclti-lms:') :
             org_id = key[len('basiclti-lms:') :]
             logging.info("lookup_consumer org_id="+org_id)
-	    raise NotDoneError
+            if org_id == "umich.edu" : return oauth.OAuthConsumer(key, "secret");
 	else :
             course_id = key
             logging.info("Loading course to check secret " + course_id)

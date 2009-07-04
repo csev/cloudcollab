@@ -143,6 +143,7 @@ class OAuthRequest(object):
         try:
             return self.parameters[parameter]
         except:
+            if parameter == "oauth_token" : return None
             raise OAuthError('Parameter not found: %s' % parameter)
 
     def _get_timestamp_nonce(self):
