@@ -64,8 +64,8 @@ class BLTI_Context(BaseContext):
     self.handlesetup(web, session)
     if self.launch != None : return
     # Later set this to conservative
-    if len(options) < 1 : options = self.Liberal
-    self.handlelaunch(web, session, options)
+    if len(options) < 1 : self.options = self.Liberal
+    self.handlelaunch(web, session, self.options)
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return
@@ -100,10 +100,9 @@ class BLTI_Context(BaseContext):
         consumer, token, params = self.oauth_server.verify_request(oauth_request)
     except oauth.OAuthError, err:
         logging.info(err)
-        logging.info("OAuth failed "+err.message)
+        self.launcherror(web, None, "OAuth Security Validation failed:"+err.message)
     	return
 
-    logging.info("OAuth validated!")
     org_id = web.request.get("tool_consumer_instance_guid")
     org_secret = False
     path_course_id = None
@@ -120,22 +119,43 @@ class BLTI_Context(BaseContext):
     org = None
     if org_secret and len(org_id) > 0 :
       org = LMS_Org.get_by_key_name("key:"+org_id)
+      if not org :
+        self.launcherror(web, None, "Could not find organization:"+org_id)
+        return
+
     self.org = org
 
-    # If we have a path_course_id then the course is not owned
-    # by the organization - it is a standalone course where 
-    # potentially many organiational course_ids will be mapped to it.
-    course = LMS_Course.get_by_key_name("key:"+course_id)
+    # Retrieve the organization's course or standalone course
+    if org and org_secret :
+      course = LMS_Course.get_by_key_name("key:"+course_id, parent=org)
+    else:
+      course = LMS_Course.get_by_key_name("key:"+course_id)
 
-    # If we have a global org and a global course - add the link
-    if len(course_id) > 0 and course and org :
-      self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+path_course_id)
-      # orgcourse = LMS_OrgCourse.get_or_insert("key:"+course_id, parent=org)
+    # Create new course for an approved organization if configured
+    default_secret = options.get('default_course_secret', None)
+    if org and (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
+      logging.warn("Creating course "+course_id+" in organization "+org_id+" with default secret")
+      course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
+      Model_Load(course, self.web.request.params, "context_")
+      course.course_id = course_id
+      course.secret = default_secret
+      course.put()
+      self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+str(path_course_id))
       orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
+    elif course :
+      # TODO: Teach Model Load to deal with Changed
+      secret = course.secret  # Save
+      Model_Load(course, self.web.request.params, "context_")
+      course.secret = secret
+      course.put()
 
-    # Make the user and link to either then organization or the course
+    if not course:
+       self.launcherror(web, None, "Unable to load course: "+course_id);
+       return
+
+    # Retrieve or make the user and link to either then organization or the course
     user = None
     course_user = False
     if ( len(user_id) > 0 ) :
@@ -150,7 +170,7 @@ class BLTI_Context(BaseContext):
 
     memb = None
     if ( not (user and course ) ) :
-       self.launcherror(web, dig, "Must have a valid user for a complete launch")
+       self.launcherror(web, None, "Must have a valid user for a complete launch")
        return
 
     memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
@@ -232,10 +252,9 @@ class BLTI_Context(BaseContext):
       web.response.out.write("<p>\n"+desc+"\n</p>\n")
       web.response.out.write("<!--\n")
   
-      respString = self.errorResponse(desc)
       web.response.out.write("<pre>\nHTML Formatted Output(Test):\n\n")
-      respString = cgi.escape(respString) 
-      web.response.out.write(respString)
+      desc = cgi.escape(desc) 
+      web.response.out.write(desc)
       web.response.out.write("\n\nDebug Log:\n")
       web.response.out.write(self.dStr)
       web.response.out.write("\nRequest Data:\n")

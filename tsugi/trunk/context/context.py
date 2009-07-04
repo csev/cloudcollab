@@ -19,7 +19,7 @@ from blticontext import BLTI_Context
 from core.modelutil import *
 
 def Get_Context(web, session = False, options = {}):
-      context = BLTI_Context(web, session, options)
-      if ( context.complete or context.launch != None ) : return context
-      context = SLTI_Context(web, session, options)
-      return context
+    context = BLTI_Context(web, session, options)
+    if ( context.complete or context.launch != None ) : return context
+    context = SLTI_Context(web, session, options)
+    return context

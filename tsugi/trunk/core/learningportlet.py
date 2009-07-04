@@ -6,8 +6,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from core import portlet
-from context.slticontext import SLTI_Context
-from context.blticontext import BLTI_Context
+from context.context import Get_Context
 from util.sessions import Session
 
 class LearningPortlet(portlet.Portlet):
@@ -27,8 +26,14 @@ class LearningPortlet(portlet.Portlet):
     if self.establishContext() : 
       # Insist on a session
       if self.session is None: self.session = Session()
-      self.context = BLTI_Context(self, self.session);
+      self.context = Get_Context(self, self.session);
       if ( self.context.complete ) : return False
+      # In case there is no context and the context filters
+      # did not complete the request (i.e. issue an error)
+      if ( self.context.launch == None ) : 
+        self.response.out.write("Unable to establish context - Error in LMS Authentication data\n");
+        self.context.complete = True
+        return False
 
     return True
 

@@ -22,6 +22,7 @@ class BaseContext():
     self.request = request
     self.complete = False
     self.session = session
+    self.errormsg = None
     # If the session came from a cookie, our URLs can be simpler
     self.sessioncookie = False
     if not self.session is False:
