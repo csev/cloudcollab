@@ -1,23 +1,17 @@
 import logging
 import cgi
 import wsgiref.handlers
-import logging
-import hashlib
-import base64
-import uuid
-import urllib
 from datetime import datetime, timedelta
-from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.ext import webapp
-from google.appengine.api import users
+from google.appengine.api import memcache
 
 from contextmodel import *
 from basecontext import BaseContext
-from core import oauth
+import facebook
 from core.modelutil import *
 
-class Google_Context(BaseContext):
+class Facebook_Context(BaseContext):
   dStr = ""
   request = None
   complete = False
@@ -41,70 +35,96 @@ class Google_Context(BaseContext):
               'default_course_secret' : "secret"
             } 
 
-  # We have several scenarios to handle
   def __init__(self, web, session = False, options = {}):
-    logging.info("Going for Google Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
+    logging.info("Going for Facebook Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
     self.web = web
     self.request = web.request
     self.launch = None
     self.complete = False
     self.sessioncookie = False
-    google_user = users.get_current_user()
-    if not google_user: return
 
-    # Later set this to conservative
-    if len(options) < 1 : self.options = self.Liberal
-    self.handlelaunch(web, False, google_user, self.options)
-
-  def handlelaunch(self, web, session, google_user, options):
-
+    # Must have path based course id
     if web.context_id == False : return
     course_id = web.context_id
-    org_id = "appengine.google.com";
+    org_id = "facebook.com";
 
-    self.debug("course_id="+course_id+" org_id="+org_id);
+    # No API Key - No Facebook
+    api_key = memcache.get("facebook_api_key")
+    secret_key = memcache.get("facebook_api_secret")
+    if api_key == None or secret_key == None : return
+    logging.info("Facebook Key found...");
+
+    # Initialize the Facebook Object.
+    self.facebookapi = facebook.Facebook(api_key, secret_key)
+    logging.info("Facebook API..."+str(self.facebookapi));
+
+    # Checks to make sure that the user is logged into Facebook.
+    if self.facebookapi.check_session(self.request):
+      pass
+    else:
+      # If not redirect them to your application add page.
+      ## url = self.facebookapi.get_add_url()
+      ## web.response.out.write('<fb:redirect url="' + url + '" />')
+      ## self.complete = True
+      # For now if you are not logged in...  We do not care
+      return
+
+    logging.info("Facebook Session found...");
+
+   # Checks to make sure the user has added your application.
+    if self.facebookapi.added:
+      pass
+    else:
+      # If not redirect them to your application add page.
+      url = self.facebookapi.get_add_url()
+      web.response.out.write('<fb:redirect url="' + url + '" />')
+      self.complete = True
+      return
+
+    logging.info("Facebook has been added found...");
+
+    # Get the information about the user.
+    facebook_user = self.facebookapi.users.getInfo( [self.facebookapi.uid], ['uid', 'name', 'birthday', 'relationship_status'])[0]
+
+    # Display a welcome message to the user along with all the greetings.
+    logging.info('Hello %s,<br>' % facebook_user['name'])
+
+    # logging.info("<pre>\n"+self.requestdebug()+"</pre>")
+
+    logging.info("Facebook course_id="+course_id+" org_id="+org_id);
 
     # Lets check to see if we have an organizational id and organizational secret
     # and check to see if we are really hearing from the organization
     org = LMS_Org.get_by_key_name("key:"+org_id)
     if not org :
-      logging.info("Inserting Google Organization")
+      logging.info("Inserting Facebook Organization")
       org = opt_get_or_insert(LMS_Org,"key:"+org_id)
-      org.name = "Google Accounts"
-      org.title = "Google Accounts"
-      org.url = "http://www.google.com/"
+      org.name = "Facebook Accounts"
+      org.title = "Facebook Accounts"
+      org.url = "http://www.facebook.com/"
       org.put()
 
     self.org = org
 
-    # Retrieve the standalone course
+    # Retrieve the standalone course - No creation until we know which
+    # Facebook Users are admins or have site.new
     course = LMS_Course.get_by_key_name("key:"+course_id)
-
-    # Create new course if this is an admin user
-    default_secret = options.get('default_course_secret', None)
-    if users.is_current_user_admin() and (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
-      logging.warn("Creating course "+course_id+" with default secret")
-      course = LMS_Course.get_or_insert("key:"+course_id)
-      course.course_id = course_id
-      course.secret = default_secret
-      course.put()
-
     if not course:
        self.launcherror(web, None, "Unable to load course: "+course_id);
        return
 
     # Retrieve or make the user and link to either then organization or the course
     user = None
-    user_id = google_user.email()
+    user_id = self.facebookapi.uid
+    user_name = facebook_user['name'] + ' (Facebook)'
+    logging.info("Facebook userid = "+user_id)
+    logging.info("Facebook name="+user_name)
     if ( len(user_id) > 0 ) :
-      user = opt_get_or_insert(LMS_User,"google:"+user_id)
+      user = opt_get_or_insert(LMS_User,"facebook:"+user_id)
       changed = False
-      if user.email != google_user.email() :
+      if user.fullname != user_name :
         changed = True
-        user.email = google_user.email() 
-      if user.fullname != google_user.nickname() :
-        changed = True
-        user.fullname = google_user.nickname() 
+        user.fullname = user_name
 
       if changed : user.put()
 
@@ -115,7 +135,6 @@ class Google_Context(BaseContext):
 
     memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
     roleval = 1
-    if users.is_current_user_admin() : roleval = 2
     if memb.role != roleval :
       memb.role = roleval
       memb.put()
@@ -130,12 +149,12 @@ class Google_Context(BaseContext):
     db.delete(results)
 
     # TODO: Think about efficiency here
-    launch = opt_get_or_insert(LMS_Launch,"google:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"facebook:"+user_id, parent=course)
     launch.memb = memb
     launch.org = org
     launch.user = user
     launch.course = course
-    launch.launch_type = "google"
+    launch.launch_type = "facebook"
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
  

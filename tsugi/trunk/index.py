@@ -108,6 +108,8 @@ class MainHandler(webapp.RequestHandler):
   def service(self):
     # LTI Can use any session that has dictionary semantics
     self.session = sessions.Session()
+    # TODO: Fix this
+    self.context_id = "global"
     context = Get_Context(self, self.session)
     user = users.get_current_user()
     
@@ -338,7 +340,7 @@ class PurgeHandler(webapp.RequestHandler):
 def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', LoginHandler),
-            ('/facebook.*', FaceBookHandler),
+            ('/facetest.*', FaceBookHandler),
             ('/oauth.*', OAuthHandler),
             ('/purge.*', PurgeHandler),
             ('/logout', LogoutHandler)]

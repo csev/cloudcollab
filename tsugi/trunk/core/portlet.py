@@ -21,11 +21,13 @@ class Portlet(webapp.RequestHandler):
   def __init__(self) :
     self.context_id = False
     self.div = False
+    self.renderfragment = False
     self.portal = False
     self.action = False
     self.controller = False
     self.resource = False
     self.session = None
+    self.proxyurl = None
     
     # Set this to False to supppress rediret after post
     self.redirectafterpost = True
@@ -81,7 +83,7 @@ class Portlet(webapp.RequestHandler):
 
   def writeoutput(self,output):
     if output is None : return
-    if self.div is False:
+    if self.div is False and self.renderfragment is False:
        rendervars = dict()
        rendervars['fragment'] = output
        if self.portlet_title != None:
@@ -155,15 +157,19 @@ class Portlet(webapp.RequestHandler):
     addajax = self.div != False and ignoreajax != True
     addportal = self.portal != False and direct != True and addajax == False
 
-    newpath = "/"
-    # We cannot both be the whole portal screen and told to be in a div - pick div
-    if addportal:
-      newpath = "/portal/"
+    # If we have a proxyurl, it is to the controller level
+    if isinstance(self.proxyurl, str) :
+      newpath = self.proxyurl
+    else:
+      newpath = "/"
+      # We cannot both be the whole portal screen and told to be in a div - pick div
+      if addportal:
+        newpath = "/portal/"
 
-    if controller != False:
-      newpath = newpath + controller + "/"
-    elif self.controller != False :
-      newpath = newpath + self.controller + "/"
+      if controller != False:
+        newpath = newpath + controller + "/"
+      elif self.controller != False :
+        newpath = newpath + self.controller + "/"
 
     if isinstance(context_id, str) :
       newpath = newpath + context_id + "/"

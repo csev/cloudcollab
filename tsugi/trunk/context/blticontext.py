@@ -207,7 +207,7 @@ class BLTI_Context(BaseContext):
     results = q.fetch(options.get('launch_cleanup_count', 100))
     db.delete(results)
 
-    launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"basiclti:"+user_id, parent=course)
     Model_Load(launch, web.request.params, "launch_")
     launch.memb = memb
     if course_org:
@@ -220,7 +220,7 @@ class BLTI_Context(BaseContext):
       launch.user = user
 
     launch.course = course
-    launch.type = "basiclti"
+    launch.launch_type = "basiclti"
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
 

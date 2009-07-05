@@ -333,7 +333,7 @@ class SLTI_Context(BaseContext):
     db.delete(results)
 
     # launch = LMS_Launch.get_or_insert("key:"+user_id, parent=course)
-    launch = opt_get_or_insert(LMS_Launch,"key:"+user_id, parent=course)
+    launch = opt_get_or_insert(LMS_Launch,"simplelti:"+user_id, parent=course)
     Model_Load(launch, web.request.params, "launch_", self.model_mapping)
     launch.memb = memb
     if course_org:
@@ -346,7 +346,7 @@ class SLTI_Context(BaseContext):
       launch.user = user
 
     launch.course = course
-    launch.type = "simplelti"
+    launch.launch_type = "simplelti"
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
 

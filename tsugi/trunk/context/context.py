@@ -17,6 +17,7 @@ from basecontext import BaseContext
 from slticontext import SLTI_Context
 from blticontext import BLTI_Context
 from googlecontext import Google_Context
+from facebookcontext import Facebook_Context
 from core.modelutil import *
 
 # We completely ignore session all the time to force the
@@ -39,12 +40,22 @@ def Get_Context(web, session = False, options = {}):
         logging.info("SimpleLTI Context complete="+str(context.complete));
         return context
 
+    # Facebook Looks for a particular signature so it is pretty safe
+    context = Facebook_Context(web, False, options)
+    if ( context.complete or context.launch != None ) : 
+        logging.info("Facebook Context complete="+str(context.complete));
+        web.redirectafterpost = False
+        web.renderfragment = True
+        web.proxyurl = "http://apps.facebook.com/wisdom-of-crowds/"
+        return context
+
     # Intercept requests with lti_launch_key
     context = BaseContext(web, False)
     if ( context.complete ) : 
         return context
 
     if ( context.launch != None ) : 
+        logging.info("Base context, type="+str(context.launch.launch_type)+" launch.course_id="+context.launch.course.course_id+" wci="+str(web.context_id))
         if web.context_id == False : 
             # logging.info("NO path context id")
             return context
@@ -52,7 +63,6 @@ def Get_Context(web, session = False, options = {}):
             # logging.info("Context ID's match")
             return context
         logging.info("Mismatch between launch course and path course...")
-        logging.info("Base context, type="+str(context.launch.launch_type)+" launch.course_id="+context.launch.course.course_id+" wci="+web.context_id)
 
     # If we are logged in through Google
     context = Google_Context(web, False, options)
