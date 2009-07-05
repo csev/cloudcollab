@@ -82,7 +82,8 @@ class Google_Context(BaseContext):
 
     # Create new course if this is an admin user
     default_secret = options.get('default_course_secret', None)
-    if users.is_current_user_admin() and (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
+    # if users.is_current_user_admin() 
+    if (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
       logging.warn("Creating course "+course_id+" with default secret")
       course = LMS_Course.get_or_insert("key:"+course_id)
       course.course_id = course_id
