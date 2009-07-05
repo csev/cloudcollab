@@ -9,7 +9,7 @@ from {{ context.getCourseName }}</p>
 {{ formtag }}
 <p>Enter Guess: <input type="text" name="guess"/></p>
 <p>Enter Name (opt): <input type="text" name="name"/></p>
-<p>{{submitbutton}}{{resetbutton}}</p>
+<p>{{formsubmit}}{{resetbutton}}</p>
 </form>
 {% if ave %}
 <p>Average: {{ ave }} Count: {{count}} </p>
