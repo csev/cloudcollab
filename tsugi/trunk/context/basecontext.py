@@ -101,7 +101,7 @@ class BaseContext():
     else : 
       return ' '
 
-  def XXgetPath(self, action="", resource=False, direct=False, controller=False):
+  def XXgetPath(self, action="", resource=False, direct=False, controller=False, context_id=False):
     '''Retrieve the raw path to a controller/action pair.   Does not handle 
     when parameters are needed when cookies are not set.  Do not use
     directly from tool code.'''
@@ -116,16 +116,18 @@ class BaseContext():
     elif pathcontroller :
       newpath = newpath + pathcontroller + "/"
 
+    if isinstance(context_id, str) :
+      newpath = newpath + context_id + "/"
     if action and len(action) > 0 : 
       newpath = newpath + action + "/"
     return newpath
 
   # For now return the parameters all the time - even for the post
-  def XXgetPostPath(self, action="", resource=False, direct=False, controller=False):
-    return self.XXgetGetPath(action, resource, { }, direct, controller)
+  def XXgetPostPath(self, action="", resource=False, direct=False, controller=False, context_id=False):
+    return self.XXgetGetPath(action, resource, { }, direct, controller, context_id)
 
-  def XXgetGetPath(self, action="", resource=False, params = {}, direct=False, controller=False):
-    newpath = self.XXgetPath(action, resource, direct, controller)
+  def XXgetGetPath(self, action="", resource=False, params = {}, direct=False, controller=False, context_id=False):
+    newpath = self.XXgetPath(action, resource, direct, controller, context_id)
     p = self.XXgetUrlParms()
     p.update(params)
     if len(p) > 0 : 

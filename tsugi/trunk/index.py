@@ -13,18 +13,6 @@ import facebook
 from core import oauth
 from core import oauth_store
 
-bootstrap = {
-  'user_locale': 'en_US',
-  'user_role': 'Student',
-  'course_code': 'Info 101',
-  'course_id': '12345',
-  'course_name': 'SI101',
-  'course_title': 'Introductory Informatics',
-  'org_name': 'SO: Self Organization',
-  'org_id': 'localhost',
-  'org_title': 'The self-organizing organization.',
-  'org_url': 'http://www.cloudcolab.com'}
-
 # Register all the tools - add new tools here
 tools = list()
 
@@ -183,8 +171,8 @@ class MainHandler(webapp.RequestHandler):
     for tool in tools:
        if tool.controller.find("_") >= 0 : continue
        toolz.append(tool)
-       tool.portalpath = context.XXgetGetPath(controller=tool.controller)
-       tool.directpath = context.XXgetGetPath(direct=True,controller=tool.controller)
+       tool.portalpath = context.XXgetGetPath(controller=tool.controller,context_id="12345") 
+       tool.directpath = context.XXgetGetPath(direct=True,controller=tool.controller,context_id="12345") 
        # print "C=",tool.controller,"P=",tool.portalpath,"D=",tool.directpath
 
     rendervars['tools'] = toolz
