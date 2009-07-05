@@ -37,14 +37,16 @@ class Facebook_Context(BaseContext):
 
   def __init__(self, web, session = False, options = {}):
     logging.info("Going for Facebook Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
+    # logging.info(web.requestdebug(web))
     self.web = web
     self.request = web.request
     self.launch = None
     self.complete = False
     self.sessioncookie = False
 
-    # Must have path based course id
-    if web.context_id == False : return
+    # Look for a signature
+    if len(web.request.get("fb_sig_api_key")) < 1 or len(web.request.get("fb_sig_app_id")) < 1: return
+
     course_id = web.context_id
     org_id = "facebook.com";
 
@@ -63,10 +65,9 @@ class Facebook_Context(BaseContext):
       pass
     else:
       # If not redirect them to your application add page.
-      ## url = self.facebookapi.get_add_url()
-      ## web.response.out.write('<fb:redirect url="' + url + '" />')
-      ## self.complete = True
-      # For now if you are not logged in...  We do not care
+      url = self.facebookapi.get_add_url()
+      web.response.out.write('<fb:redirect url="' + url + '" />')
+      self.complete = True
       return
 
     logging.info("Facebook Session found...");
@@ -89,9 +90,7 @@ class Facebook_Context(BaseContext):
     # Display a welcome message to the user along with all the greetings.
     logging.info('Hello %s,<br>' % facebook_user['name'])
 
-    # logging.info("<pre>\n"+self.requestdebug()+"</pre>")
-
-    logging.info("Facebook course_id="+course_id+" org_id="+org_id);
+    logging.info("Facebook course_id="+str(course_id)+" org_id="+org_id);
 
     # Lets check to see if we have an organizational id and organizational secret
     # and check to see if we are really hearing from the organization
@@ -106,11 +105,26 @@ class Facebook_Context(BaseContext):
 
     self.org = org
 
+    # TODO: someday we will have a way to pick courses from a list
+    # Special hack for FACEBOOK when you first add the application
+    if course_id is False : 
+      logging.info("Hacking Facebook bootstrap!")
+      web.course_id = "12345"
+      course_id = "12345"
+
     # Retrieve the standalone course - No creation until we know which
     # Facebook Users are admins or have site.new
     course = LMS_Course.get_by_key_name("key:"+course_id)
+    default_secret = options.get('default_course_secret', None)
+    if (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
+      logging.warn("Creating course "+course_id+" with default secret (Facebook)")
+      course = LMS_Course.get_or_insert("key:"+course_id)
+      course.course_id = course_id
+      course.secret = default_secret
+      course.put()
+
     if not course:
-       self.launcherror(web, None, "Unable to load course: "+course_id);
+       self.launcherror(web, None, "Course does not yet exist so you cannot join it: "+course_id);
        return
 
     # Retrieve or make the user and link to either then organization or the course
@@ -176,7 +190,7 @@ class Facebook_Context(BaseContext):
       web.response.out.write("\n\nDebug Log:\n")
       web.response.out.write(self.dStr)
       web.response.out.write("\nRequest Data:\n")
-      web.response.out.write(self.requestdebug(web))
+      web.response.out.write(web.requestdebug(web))
       web.response.out.write("\n</pre>\n")
       web.response.out.write("\n-->\n")
 
