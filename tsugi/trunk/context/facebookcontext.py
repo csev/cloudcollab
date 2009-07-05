@@ -130,7 +130,7 @@ class Facebook_Context(BaseContext):
     # Retrieve or make the user and link to either then organization or the course
     user = None
     user_id = self.facebookapi.uid
-    user_name = facebook_user['name'] + ' (Facebook)'
+    user_name = facebook_user['name'] 
     logging.info("Facebook userid = "+user_id)
     logging.info("Facebook name="+user_name)
     if ( len(user_id) > 0 ) :

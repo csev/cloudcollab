@@ -2,7 +2,13 @@
 {% if context.isInstructor %}
 (Instructor)
 {% endif %}
-from {{ context.getCourseName }}</p>
+{% if context.getCourseName %}
+from {{ context.getCourseName }}
+{% endif %}
+{% if context.launch.launch_type %}
+via {{ context.launch.launch_type }}
+{% endif %}
+</p>
 {% if msg %}
 <p>{{ msg }}</p>
 {% endif %}
