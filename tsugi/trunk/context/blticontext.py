@@ -72,6 +72,10 @@ class BLTI_Context(BaseContext):
     if ( len(version) < 1 ) : return
 
     course_id = web.request.get("context_id")
+    if isinstance(web.context_id, str) :
+      logging.info("BasicLTI taking course_id from context_id");
+      course_id = web.context_id
+
     user_id = web.request.get("user_id")
     oauth_key = web.request.get("oauth_consumer_key")
     urlpath = web.request.path
@@ -104,14 +108,8 @@ class BLTI_Context(BaseContext):
 
     org_id = web.request.get("tool_consumer_instance_guid")
     org_secret = False
-    path_course_id = None
     if len(org_id) > 0 and oauth_key.startswith("basiclti-lms:") :
       org_secret = True
-    else:
-      logging.warn("Make oauth_key parsing smarter!")
-      course_id = oauth_key
-
-    self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+urlpath)
 
     # Lets check to see if we have an organizational id and organizational secret
     # and check to see if we are really hearing from the organization
@@ -143,7 +141,7 @@ class BLTI_Context(BaseContext):
         course.secret = default_secret
         course.put()
 
-      self.debug("Linking OrgCourse="+course_id+" from org="+str(org.key())+" to path_course_id="+str(path_course_id))
+      self.debug("Linking OrgCourse="+course_id+" to org="+str(org.key()))
       orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
       orgcourse.course = course
       orgcourse.put()
@@ -222,6 +220,7 @@ class BLTI_Context(BaseContext):
       launch.user = user
 
     launch.course = course
+    launch.type = "basiclti"
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
 

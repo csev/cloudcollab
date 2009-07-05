@@ -19,6 +19,7 @@ from util.sessions import Session
 class Portlet(webapp.RequestHandler):
 
   def __init__(self) :
+    self.context_id = False
     self.div = False
     self.portal = False
     self.action = False
@@ -26,7 +27,7 @@ class Portlet(webapp.RequestHandler):
     self.resource = False
     self.session = None
     
-    # Set this to False to supppress reiret after post
+    # Set this to False to supppress rediret after post
     self.redirectafterpost = True
 
     self.dStr = ''
@@ -128,14 +129,14 @@ class Portlet(webapp.RequestHandler):
     return "This portlet is missing a getview() method."
 
   # For now return the parameters all the time - even for the post
-  def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
-    return self.getGetPath(action=action, params={}, resource=resource, direct=direct, controller=controller, ignoreajax=ignoreajax)
+  def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False, context_id=False):
+    return self.getGetPath(action=action, params={}, resource=resource, direct=direct, controller=controller, ignoreajax=ignoreajax, context_id=context_id)
 
-  def getAJAXPath(self, params={}, action=False, resource=False, controller=False):
-    return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True)
+  def getAJAXPath(self, params={}, action=False, resource=False, controller=False, context_id=False):
+    return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True, context_id=context_id)
 
-  def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False):
-    newpath = self.getPath(action, resource, direct, controller, ignoreajax)
+  def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False, context_id=False):
+    newpath = self.getPath(action, resource, direct, controller, ignoreajax, context_id)
     p = self.getUrlParms()
     p.update(params)
     if len(p) > 0 : 
@@ -145,7 +146,7 @@ class Portlet(webapp.RequestHandler):
   # Reconstruct the path, changing the action, controller
   # direct means do not use the portal (i.e. make a servlet like URL)
   # ignoreajax means - even if we are in a div, generate the non-div URL
-  def getPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False):
+  def getPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False, context_id=False):
     '''Retrieve the raw path to a controller/action pair.   Does not handle 
     when parameters are needed when cookies are not set.  Do not use
     directly from tool code.'''
@@ -163,6 +164,11 @@ class Portlet(webapp.RequestHandler):
       newpath = newpath + controller + "/"
     elif self.controller != False :
       newpath = newpath + self.controller + "/"
+
+    if isinstance(context_id, str) :
+      newpath = newpath + context_id + "/"
+    elif isinstance(self.context_id, str) :
+      newpath = newpath + self.context_id + "/"
 
     if addajax:
       newpath = newpath + self.portlet_ajax_prefix + self.div + "/"
@@ -187,12 +193,14 @@ class Portlet(webapp.RequestHandler):
 # /controller/action/resource
 # /controller/portlet_ajax_divname/action/resource
 # /portal/controller/action/resource
+# /controller/1234567/action/resource
+# /portal/controller/1234567/action/resource
 
   def parsePath(self):
     '''Returns a tuple which is the controller, action and the rest of the path.
     The "rest of the path" does not start with a slash.'''
     str = self.request.path
-    # self.debug("Parsing request path: "+self.request.path)
+    # logging.info("Parsing request path: "+self.request.path)
     xwords = str.split("/")
     words = list()
     for word in xwords:
@@ -204,6 +212,10 @@ class Portlet(webapp.RequestHandler):
 
     if len(words) > 0 :
        self.controller = words[0]
+       del words[0]
+
+    if len(words) > 0 and len(words[0]) > 1 and words[0][1] >= "0" and words[0][1] <= "9" :
+       self.context_id = words[0]
        del words[0]
 
     if len(words) > 0 and words[0].startswith(self.portlet_ajax_prefix) : 

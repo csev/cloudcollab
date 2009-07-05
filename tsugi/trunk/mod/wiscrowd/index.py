@@ -61,6 +61,7 @@ class WisHandler(learningportlet.LearningPortlet):
     data = self.getmodel(wiskey)
 
     rendervars = {'context': self.context,
+                  'self': self,
                   'msg' : info}
     
     if self.context.isInstructor() and len(data) > 0 :

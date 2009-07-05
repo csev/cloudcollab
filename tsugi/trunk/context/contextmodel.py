@@ -92,6 +92,7 @@ class LMS_Launch(db.Model):
      # For course scoped org and user
      course_user = db.ReferenceProperty(LMS_CourseUser)
      course_org = db.ReferenceProperty(LMS_CourseOrg)
+     launch_type = db.StringProperty()
      resource_id = db.StringProperty()
      targets = db.StringProperty()
      resource_url = db.StringProperty()

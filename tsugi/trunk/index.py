@@ -111,7 +111,7 @@ class MainHandler(webapp.RequestHandler):
     context = Get_Context(self, self.session)
     user = users.get_current_user()
     
-    (controller, action, resource) = context.parsePath()
+    (controller, action, resource) = context.XXparsePath()
     # print "POST", context.getPostPath()
     # print "GET", context.getGetPath()
 
@@ -130,7 +130,7 @@ class MainHandler(webapp.RequestHandler):
         rendervars['role'] = "student"
       rendervars['dump'] = context.dump()
 
-    rendervars['portalpath'] = context.getGetPath(direct=True,controller="portal")
+    rendervars['portalpath'] = context.XXgetGetPath(direct=True,controller="portal")
 
     # Check to see if the path is a portal path and handle
     # If so get the fragment and render
@@ -181,8 +181,8 @@ class MainHandler(webapp.RequestHandler):
     for tool in tools:
        if tool.controller.find("_") >= 0 : continue
        toolz.append(tool)
-       tool.portalpath = context.getGetPath(controller=tool.controller)
-       tool.directpath = context.getGetPath(direct=True,controller=tool.controller)
+       tool.portalpath = context.XXgetGetPath(controller=tool.controller)
+       tool.directpath = context.XXgetGetPath(direct=True,controller=tool.controller)
        # print "C=",tool.controller,"P=",tool.portalpath,"D=",tool.directpath
 
     rendervars['tools'] = toolz

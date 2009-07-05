@@ -95,20 +95,9 @@ class SLTI_Context(BaseContext):
     org_id = web.request.get("org_id")
 
     # Look in the URL for the course id
-    urlpath = web.request.path
-    trigger = "/lti_course_id/"
-    path_course_id = None
-    pos = urlpath.find(trigger)
-    if ( pos >= 0 ) :
-      path = urlpath[pos+len(trigger):]
-      if path.find("/") > 0 :
-        path = path[:path.find("/")]
-      if len(path) > 0 : 
-        path_course_id = path
-        urlpath = urlpath[:pos]
-        if len(urlpath) == 0 : urlpath = "/"
+    if isinstance(web.context_id, str) : path_course_id = web.context_id
 
-    self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+urlpath)
+    self.debug("course_id="+course_id+" path_course_id="+str(path_course_id)+" path="+web.request.path)
 
     # Clean up the digest - Delete up to 100 2-day-old digests
     nowtime = datetime.utcnow()
@@ -357,10 +346,11 @@ class SLTI_Context(BaseContext):
       launch.user = user
 
     launch.course = course
+    launch.type = "simplelti"
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
 
-    url = web.request.application_url+urlpath
+    url = web.request.application_url+web.request.path
 
     if ( url.find('?') >= 0 ) :
       url = url + "?"

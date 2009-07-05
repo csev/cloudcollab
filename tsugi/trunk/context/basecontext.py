@@ -89,19 +89,19 @@ class BaseContext():
     self.launch = None
     self.setvars()
 
-  def getUrlParms(self) :
+  def XXgetUrlParms(self) :
     if self.launch and not self.sessioncookie :
       return { 'lti_launch_key': self.launch.key() }
     else : 
       return { }
 
-  def getFormFields(self) : 
+  def XXgetFormFields(self) : 
     if self.launch and not self.sessioncookie :
       return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
     else : 
       return ' '
 
-  def getPath(self, action="", resource=False, direct=False, controller=False):
+  def XXgetPath(self, action="", resource=False, direct=False, controller=False):
     '''Retrieve the raw path to a controller/action pair.   Does not handle 
     when parameters are needed when cookies are not set.  Do not use
     directly from tool code.'''
@@ -109,7 +109,7 @@ class BaseContext():
     if not direct and ( self.request.path.startswith("/portal") or self.request.path == "/" ):
       newpath = "/portal/"
 
-    (pathcontroller, oldact, resource) = self.parsePath()
+    (pathcontroller, oldact, resource) = self.XXparsePath()
 
     if controller:
       newpath = newpath + controller + "/"
@@ -121,18 +121,18 @@ class BaseContext():
     return newpath
 
   # For now return the parameters all the time - even for the post
-  def getPostPath(self, action="", resource=False, direct=False, controller=False):
-    return self.getGetPath(action, resource, { }, direct, controller)
+  def XXgetPostPath(self, action="", resource=False, direct=False, controller=False):
+    return self.XXgetGetPath(action, resource, { }, direct, controller)
 
-  def getGetPath(self, action="", resource=False, params = {}, direct=False, controller=False):
-    newpath = self.getPath(action, resource, direct, controller)
-    p = self.getUrlParms()
+  def XXgetGetPath(self, action="", resource=False, params = {}, direct=False, controller=False):
+    newpath = self.XXgetPath(action, resource, direct, controller)
+    p = self.XXgetUrlParms()
     p.update(params)
     if len(p) > 0 : 
        newpath = newpath + '?' + urllib.urlencode(p)
     return newpath
 
-  def parsePath(self):
+  def XXparsePath(self):
     '''Returns a tuple which is the controller, action and the rest of the path.
     The "rest of the path" does not start with a slash.'''
     action = False
