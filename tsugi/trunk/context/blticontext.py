@@ -60,12 +60,11 @@ class BLTI_Context(BaseContext):
     self.web = web
     self.request = web.request
     self.launch = None
+    self.complete = False
     self.sessioncookie = False
     # Later set this to conservative
     if len(options) < 1 : self.options = self.Liberal
     self.handlelaunch(web, session, self.options)
-    if self.complete or self.launch != None : return
-    self.handlesetup(web, session)
 
   def handlelaunch(self, web, session, options):
     # Check for sanity - silently return

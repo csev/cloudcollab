@@ -8,10 +8,7 @@ from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from util import sessions
-from context.aecontext import AE_Context
 from context.context import Get_Context
-# from context.slticontext import SLTI_Context
-# from context.blticontext import BLTI_Context
 import facebook
 from core import oauth
 from core import oauth_store
@@ -111,32 +108,12 @@ class MainHandler(webapp.RequestHandler):
   def service(self):
     # LTI Can use any session that has dictionary semantics
     self.session = sessions.Session()
-
-    # If the user is logged in, we construct a launch, if not, we 
-    # try to provision via LTI
+    context = Get_Context(self, self.session)
     user = users.get_current_user()
-    if user:
-      bootstrap['user_displayid'] = user.nickname()
-      bootstrap['user_email'] = user.email()
-      bootstrap['user_id'] = user.email()
-      if users.is_current_user_admin() : bootstrap['user_role'] = "Instructor"
-      context = AE_Context(self.request, bootstrap, self.session)
-    else:
-      # Provision LTI.  This either (1) handles an incoming
-      # launch request, (2) handles the incoming GET that
-      # comes back to us after launch, or (3) if we are just
-      # cruising along we load the proper launch context using
-      # a session value.
-      context = Get_Context(self, self.session)
     
-      # If the LTI code already sent a response it sets "complete"
-      # so we are done
-      if ( context.complete ) : return
-
     (controller, action, resource) = context.parsePath()
     # print "POST", context.getPostPath()
     # print "GET", context.getGetPath()
-
 
     rendervars = { 'user' : user, 'path': self.request.path, 
                    'context' : context,

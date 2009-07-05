@@ -18,8 +18,8 @@ class BaseContext():
   request = None
   complete = False
 
-  def __init__(self, request, params, session = False):
-    self.request = request
+  def __init__(self, web, session = False):
+    self.request = web.request
     self.complete = False
     self.session = session
     self.errormsg = None
@@ -27,10 +27,10 @@ class BaseContext():
     self.sessioncookie = False
     if not self.session is False:
        self.sessioncookie = self.session.foundcookie
-    self.buildlaunch(params)
     if not self.session is False:
        if not self.launch is None:
 	  self.session["lti_launch_key"] = str(self.launch.key())
+    self.handlesetup(web, session)
 
   def setvars(self):
     self.user = None
