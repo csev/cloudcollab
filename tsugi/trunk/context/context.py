@@ -45,14 +45,14 @@ def Get_Context(web, session = False, options = {}):
         return context
 
     if ( context.launch != None ) : 
-        logging.info("Base context, type="+str(context.launch.launch_type)+" launch.course_id="+context.launch.course.course_id+" wci="+web.context_id)
         if web.context_id == False : 
-            logging.info("NO path context id")
+            # logging.info("NO path context id")
             return context
         if context.launch.course and context.launch.course.course_id == web.context_id :
-            logging.info("Context id's match!")
+            # logging.info("Context ID's match")
             return context
         logging.info("Mismatch between launch course and path course...")
+        logging.info("Base context, type="+str(context.launch.launch_type)+" launch.course_id="+context.launch.course.course_id+" wci="+web.context_id)
 
     # If we are logged in through Google
     context = Google_Context(web, False, options)
