@@ -18,7 +18,7 @@ class WisHandler(learningportlet.LearningPortlet):
   def doaction(self):
     wiskey = "WisCrowd-"+str(self.context.course.key())
     data = self.getmodel(wiskey)
-    logging.info("Loading Wis Key="+wiskey)
+    logging.info("WisHandler.doaction Loading Wis Key="+wiskey)
 
     name = self.request.get("name")
     if len(name) < 1 : name = self.context.getUserShortName()
@@ -29,12 +29,7 @@ class WisHandler(learningportlet.LearningPortlet):
     except: guess = -1
 
     msg = ""
-    if self.context.isInstructor() and name.lower() == "reset":
-       data = dict()
-       logging.info("Storing Wis Key="+wiskey)
-       memcache.set(wiskey, data, 3600)
-       msg = "Data reset"
-    elif guess < 1 :
+    if guess < 1 :
        msg = "Please enter a valid, numeric guess"
     elif  len(name) < 1 : 
        msg = "No Name Found"
@@ -58,11 +53,26 @@ class WisHandler(learningportlet.LearningPortlet):
 
   def getview(self, info):
     wiskey = "WisCrowd-"+str(self.context.course.key())
+    logging.info("WisHandler.getview Loading Wis Key="+wiskey)
+
+    logging.info("action="+str(self.action))
+    if self.context.isInstructor() and self.action == "reset":
+       data = dict()
+       logging.info("Resetting Wis Key="+wiskey)
+       memcache.set(wiskey, data, 3600)
+       msg = "Data reset"
+
     data = self.getmodel(wiskey)
 
+    submitbutton = self.getFormSubmit('Guess')
     rendervars = {'context': self.context,
-                  'self': self,
+                  'formtag' : self.getFormTag(action="play"),
+                  'submitbutton' : self.getFormSubmit('Guess'),
                   'msg' : info}
+
+    if self.context.isInstructor() :
+      rendervars['resetbutton'] = self.getFormButton('Reset Game Data', action='reset')
+
     
     if self.context.isInstructor() and len(data) > 0 :
        text = ""
