@@ -97,7 +97,7 @@ class MainHandler(webapp.RequestHandler):
     # LTI Can use any session that has dictionary semantics
     self.session = sessions.Session()
     # TODO: Fix this
-    self.context_id = "global"
+    self.context_id = "12345"
     context = Get_Context(self, self.session)
     user = users.get_current_user()
     
