@@ -20,6 +20,13 @@ class WisHandler(learningportlet.LearningPortlet):
     data = self.getmodel(wiskey)
     logging.info("WisHandler.doaction Loading Wis Key="+wiskey)
 
+    logging.info("action="+str(self.action))
+    if self.context.isInstructor() and self.action == "reset":
+       data = dict()
+       logging.info("Resetting Wis Key="+wiskey)
+       memcache.set(wiskey, data, 3600)
+       return "Data reset"
+
     name = self.request.get("name")
     if len(name) < 1 : name = self.context.getUserShortName()
 
@@ -54,13 +61,6 @@ class WisHandler(learningportlet.LearningPortlet):
   def getview(self, info):
     wiskey = "WisCrowd-"+str(self.context.course.key())
     logging.info("WisHandler.getview Loading Wis Key="+wiskey)
-
-    logging.info("action="+str(self.action))
-    if self.context.isInstructor() and self.action == "reset":
-       data = dict()
-       logging.info("Resetting Wis Key="+wiskey)
-       memcache.set(wiskey, data, 3600)
-       msg = "Data reset"
 
     data = self.getmodel(wiskey)
 
