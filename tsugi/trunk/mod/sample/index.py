@@ -24,7 +24,7 @@ class SampleHandler(learningportlet.LearningPortlet):
                    'pathinfo': pathinfo, 
 		   'anchortag': self.getAnchorTag('Click Me', attributes={'class' : 'selected' }, action='act-anchor' ),
                    'formtag': self.getFormTag(attributes={'class' : 'selected' } , action='act-post' ),
-                   'formcancel' : self.getFormButton('Cancel', attributes={'class' : 'selected' }, action='act-cancel' ),
+                   'formcancel' : self.getButton('Cancel', attributes={'class' : 'selected' }, action='act-cancel' ),
     		   'formsubmit' : self.getFormSubmit('GO') }
 
     # logging.info(self.context.dump())

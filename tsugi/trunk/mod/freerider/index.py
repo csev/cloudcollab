@@ -45,11 +45,11 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
                   'request': self.request}
 
     if self.context.isInstructor() : 
-      rendervars['resetbutton'] = self.getFormButton('Reset', action='reset')
+      rendervars['resetbutton'] = self.getButton('Reset', action='reset')
 
     gm = self.getmodel()
     if ( len(gm.players) < 4 ) :
-      rendervars['joinbutton'] = self.getFormButton('Join', action='join')
+      rendervars['joinbutton'] = self.getButton('Join', action='join')
 
     return self.doRender('index.htm', rendervars)
 

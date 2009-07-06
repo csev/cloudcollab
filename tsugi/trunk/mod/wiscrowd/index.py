@@ -71,7 +71,7 @@ class WisHandler(learningportlet.LearningPortlet):
                   'msg' : info}
 
     if self.context.isInstructor() :
-      rendervars['resetbutton'] = self.getFormButton('Reset Game Data', action='reset')
+      rendervars['resetbutton'] = self.getButton('Reset Game Data', action='reset')
 
     
     if self.context.isInstructor() and len(data) > 0 :

@@ -97,13 +97,15 @@ class Portlet(webapp.RequestHandler):
     portlet_info = "_portlet_info"  
     if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
     logging.info("handleget action=%s" % self.action)
-    if self.action != None and self.action != "view":
-      ( info ) = self.doaction()
+    if not isinstance(self.action, str) : self.action = "view"
+    if self.action == "view":
+      info = self.session.get(portlet_info, None)
+    else:  
+      info = self.doaction()
       info = pickle.dumps( info ) 
       info = pickle.loads( info )
       self.action = "view"
-    else:  
-      info = self.session.get(portlet_info, None)
+
     self.session.delete_item(portlet_info)
     output = self.getview(info)
     return output
@@ -118,8 +120,8 @@ class Portlet(webapp.RequestHandler):
     if not self.setup(): return
     portlet_info = "_portlet_info"  
     if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
-    ( info ) = self.doaction()
-    if self.div is False and self.redirectafterpost is True:
+    info = self.doaction()
+    if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       self.session[portlet_info]  = info 
       redirecturl = self.getGetUrl(action="view")
       logging.info("Redirect after POST %s" % redirecturl)
@@ -314,8 +316,8 @@ class Portlet(webapp.RequestHandler):
         ret = ret + '\n' + self.getFormFields()
     return ret
 
-  # TODO: What about if Javascript is turned off?  Maybe generate both href and button and when JS is on flip which is hidden
-  def getFormButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
+  # Get clever button tolerant of JavasSript being turned off!
+  def getButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     buttonid = "butt_" + str(int(random.random() * 1000000))
