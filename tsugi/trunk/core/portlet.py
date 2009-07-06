@@ -94,33 +94,43 @@ class Portlet(webapp.RequestHandler):
 
   def handleget(self):
     if not self.setup(): return
-    info = self.session.get("_portlet_info", None)
+    portlet_info = "_portlet_info"  
+    if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
+    logging.info("handleget action=%s" % self.action)
+    if self.action != None and self.action != "view":
+      ( info ) = self.doaction()
+      info = pickle.dumps( info ) 
+      info = pickle.loads( info )
+      self.action = "view"
+    else:  
+      info = self.session.get(portlet_info, None)
+    self.session.delete(portlet_info)
     output = self.getview(info)
-    self.session.delete("_portlet_info")
     return output
+
+
+  # TODO: Eventually check content type...  Probably if this 
+  # is not HTML, we just return the output - hmmm.
+  # Or do we let the self.doaction tell us not to redirect
+  # somehow - not a bad idea
 
   def handlepost(self):
     if not self.setup(): return
+    portlet_info = "_portlet_info"  
+    if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
     ( info ) = self.doaction()
-
-    # TODO: Eventually check content type...  Probably if this 
-    # is not HTML, we just return the output - hmmm.
-    # Or do we let the self.doaction tell us not to redirect
-    # somehow - not a bad idea
-
-    # Do redirect unless this is an Ajax Post or we have 
-    # redirect after POST turned off
     if self.div is False and self.redirectafterpost is True:
-      self.session["_portlet_info"]  = info 
-      logging.info("Redirect after POST %s" % self.request.uri)
-      self.redirect(self.request.uri)
+      self.session[portlet_info]  = info 
+      redirecturl = self.getGetUrl(action="view")
+      logging.info("Redirect after POST %s" % redirecturl)
+      self.redirect(redirecturl)
       return None
     else:
       info = pickle.dumps( info ) 
       info = pickle.loads( info )
       output = self.getview(info)
 
-    self.session.delete("_portlet_info")
+    self.session.delete(portlet_info)
     return output
 
   def doaction(self):
