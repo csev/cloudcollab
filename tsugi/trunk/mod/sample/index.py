@@ -15,11 +15,11 @@ class SampleHandler(learningportlet.LearningPortlet):
     return True
 
   def doaction(self):
-    return ( { 'infox': 'hello', 'thing': self.request.get('thing')  } )
+    return ( { 'hello': 'world', 'doaction' : self.action, 'thing': self.request.get('thing')  } )
 
   # Don't assume POST data will be here - only info
   def getview(self, info):
-    pathinfo = 'controller=%s action=%s resource=%s<br/>\n' % (self.controller, self.action, self.resource)
+    pathinfo = 'controller=%s doview.action=%s resource=%s<br/>\n' % (self.controller, self.action, self.resource)
     rendervars = { 'info' : info, 'user': self.context.getUserName(), 
                    'pathinfo': pathinfo, 
 		   'anchortag': self.getAnchorTag('Click Me', attributes={'class' : 'selected' }, action='act-anchor' ),
