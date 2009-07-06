@@ -104,7 +104,7 @@ class Portlet(webapp.RequestHandler):
       self.action = "view"
     else:  
       info = self.session.get(portlet_info, None)
-    self.session.delete(portlet_info)
+    self.session.delete_item(portlet_info)
     output = self.getview(info)
     return output
 
@@ -130,7 +130,7 @@ class Portlet(webapp.RequestHandler):
       info = pickle.loads( info )
       output = self.getview(info)
 
-    self.session.delete(portlet_info)
+    self.session.delete_item(portlet_info)
     return output
 
   def doaction(self):

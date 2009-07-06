@@ -61,7 +61,7 @@ class Session(object):
         return default
 
     # Delete with no error
-    def delete(self, keyname):
+    def delete_item(self, keyname):
         if keyname in self.session:
             del self.session[keyname]
             self._update_cache()
