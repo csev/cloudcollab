@@ -123,7 +123,7 @@ class Portlet(webapp.RequestHandler):
     info = self.doaction()
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       self.session[portlet_info]  = info 
-      redirecturl = self.getGetUrl(action="view")
+      redirecturl = self.getGetPath(action="view")
       logging.info("Redirect after POST %s" % redirecturl)
       self.redirect(redirecturl)
       return None
