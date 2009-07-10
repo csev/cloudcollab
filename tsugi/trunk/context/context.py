@@ -18,6 +18,7 @@ from slticontext import SLTI_Context
 from blticontext import BLTI_Context
 from googlecontext import Google_Context
 from facebookcontext import Facebook_Context
+from bbcontext import Blackboard_Context
 from core.modelutil import *
 
 # We completely ignore session all the time to force the
@@ -28,6 +29,13 @@ from core.modelutil import *
 # TODO: Deal with performance impact of many re-launches without a session
 
 def Get_Context(web, session = False, options = {}):
+
+    # BLTI Looks for a particular signature so it is pretty safe
+    context = Blackboard_Context(web, False, options)
+    if ( context.complete or context.launch != None ) : 
+        logging.info("Blackboard  Context complete="+str(context.complete));
+        return context
+
     # BLTI Looks for a particular signature so it is pretty safe
     context = BLTI_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 

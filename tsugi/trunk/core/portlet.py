@@ -97,19 +97,16 @@ class Portlet(webapp.RequestHandler):
     portlet_info = "_portlet_info"  
     if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
     logging.info("handleget action=%s" % self.action)
-    if not isinstance(self.action, str) : self.action = "view"
-    if self.action == "view":
+    if self.action == "post-redirect":
       info = self.session.get(portlet_info, None)
     else:  
       info = self.doaction()
       info = pickle.dumps( info ) 
       info = pickle.loads( info )
-      self.action = "view"
 
     self.session.delete_item(portlet_info)
     output = self.getview(info)
     return output
-
 
   # TODO: Eventually check content type...  Probably if this 
   # is not HTML, we just return the output - hmmm.
@@ -123,13 +120,15 @@ class Portlet(webapp.RequestHandler):
     info = self.doaction()
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       self.session[portlet_info]  = info 
-      redirecturl = self.getGetPath(action="view")
+      redirecturl = self.getGetPath(action="post-redirect")
       logging.info("Redirect after POST %s" % redirecturl)
       self.redirect(redirecturl)
       return None
     else:
       info = pickle.dumps( info ) 
       info = pickle.loads( info )
+      # Would be nice to remove the POST data from the 
+      # Request at this point
       output = self.getview(info)
 
     self.session.delete_item(portlet_info)

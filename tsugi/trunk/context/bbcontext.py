@@ -16,7 +16,7 @@ from contextmodel import *
 from basecontext import BaseContext
 from core.modelutil import *
 
-class BB_Context(Context):
+class Blackboard_Context(BaseContext):
   dStr = ""
   request = None
   complete = False
@@ -49,13 +49,14 @@ class BB_Context(Context):
     # Later set this to conservative
     if len(options) < 1 : options = self.Liberal
     self.handlebbproxy(web, session, options)
-    if ( self.complete ) : return
-    self.handlesetup(web, session, options)
 
   def handlebbproxy(self, web, session, options):
     # Check for sanity - silently return
+    logging.info("Checking for Blackboard... ");
     action = web.request.get('tcbaseurl')
     if ( len(action) < 1 ) : return
+
+    logging.info("We have a Blackboard... ");
 
     user_id = web.request.get('userid')
     course_id = web.request.get("course_id")
@@ -64,7 +65,7 @@ class BB_Context(Context):
     doDirect = True
     doHtml = False
     if user_id == None or course_id == None or digest is None:
-      logging.info("Error mossing useris, course_id, or nonce on bbproxy launch")
+      logging.info("Error missing userid, course_id, or nonce on bbproxy launch")
       return
 
     # parse ticket
