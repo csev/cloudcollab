@@ -1,11 +1,11 @@
-Tue Nov 18 09:51:32 EST 2008
+Thu Apr 30 18:19:24 EDT 2009
 
 Installing and using the sessions.py code for the Google Application
 Engine.
 
 This code should be available from:
 
-http://www.appenginelearn.com/downloads/util.zip
+http://www.appenginelearn.com/static/util.zip
 
 This file should be unzipped and placed in a sub-directory of your 
 application named "util".  It should look as follows.
@@ -46,9 +46,9 @@ generally treat it like a Python dictionary:
 
     y = self.session.get('shoppingcart',None)
 
-    self.session.delete('username')
+    self.session.delete_item('username')
 
-The last delete() is a convienence method that does not raise 
+The last delete_item() is a convienence method that does not raise 
 an error when the key is not found in the session.
 
 Note: This should only be used for development or servers intended
@@ -58,4 +58,10 @@ find a session implementation that is more suitable for scalable
 production applications such as:
 
    http://code.google.com/p/gaeutilities/
+
+Note: As of GAE Utilities 1.2.2 the delete_item() method is supported.
+As such, you should be able to drop in GAE utilities 1.2.2 or later as
+a replacement for this session. 
+
+Earlier versions of this code used the delete() convienence method.
 
