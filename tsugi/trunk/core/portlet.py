@@ -369,6 +369,7 @@ document.getElementById('%s').style.display="inline";
     epy_macros = { "link_to" : "getAnchorTag",
        "form_tag" : "self.getFormTag",
        "form_button" : "self.getButton",
+       "ajax_url" : "self.getAJAXPath",
        "submit_tag" : "self.getFormSubmit" }
     state = 0
     output = ""
