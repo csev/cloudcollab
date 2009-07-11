@@ -392,7 +392,7 @@ document.getElementById('%s').style.display="inline";
         epy = epy + "!"
         state = 2
       elif state == 3 and ch == "}":
-        logging.info("FOUND EPY"+ epy)
+        # logging.info("FOUND EPY"+ epy)
         if ( len(epy) > 2 ) :
           # epy = epy[:-2].strip()
           for (macro, text) in epy_macros.items():
