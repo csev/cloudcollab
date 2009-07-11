@@ -145,7 +145,7 @@ class Portlet(webapp.RequestHandler):
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False, context_id=False):
     return self.getGetPath(action=action, params={}, resource=resource, direct=direct, controller=controller, ignoreajax=ignoreajax, context_id=context_id)
 
-  def getAJAXPath(self, params={}, action=False, resource=False, controller=False, context_id=False):
+  def ajax_url(self, params={}, action=False, resource=False, controller=False, context_id=False):
     return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True, context_id=context_id)
 
   def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False, context_id=False):
@@ -285,7 +285,7 @@ class Portlet(webapp.RequestHandler):
       ret = ret + key + '="' + value + '"'
     return ret
     
-  def getAnchorTag(self, text, params={}, attributes={}, action=False, resource=False, controller=False):
+  def link_to(self, text, params={}, attributes={}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
     if self.div == False or self.javascript_allowed == False:
       ret = '<a href="%s" %s>%s</a>' % (fullurl, self.getAttributeString(attributes), text)
@@ -294,7 +294,7 @@ class Portlet(webapp.RequestHandler):
       ret = '<a href="%s" onclick="$(\'#%s\').load(\'%s\');return false;" %s>%s</a>' % (fullurl, self.div, url, self.getAttributeString(attributes), text)
     return ret
 
-  def getFormTag(self, params={}, attributes={}, action=False, resource=False, controller=False):
+  def form_tag(self, params={}, attributes={}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
     ret = '<form action="%s" method="post" %s id="myform">' % (fullurl, self.getAttributeString(attributes))
     if self.div != False and self.javascript_allowed != False:
@@ -316,7 +316,7 @@ class Portlet(webapp.RequestHandler):
     return ret
 
   # Get clever button tolerant of JavasSript being turned off!
-  def getButton(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
+  def form_button(self, text, attributes = {},  params = {}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, resource=resource, params=params, controller=controller, ignoreajax=True)
     url = self.getGetPath(action=action, resource=resource, params=params, controller=controller)
     buttonid = "butt_" + str(int(random.random() * 1000000))
@@ -339,7 +339,7 @@ document.getElementById('%s').style.display="inline";
 """ % (hrefid, buttonid)
     return ret
 
-  def getFormSubmit(self, text, attributes={} ) :
+  def form_submit(self, text="Submit", attributes={} ) :
     return '<input type="submit" value="%s" %s>' % ( text, self.getAttributeString(attributes))
 
   def doRender(self, tname = 'index.htm', values = { }):
@@ -366,11 +366,12 @@ document.getElementById('%s').style.display="inline";
 
   # Processes EMbedded Python structures {! form_tag(action="view") !}
   def epy(self, text):
-    epy_macros = { "link_to" : "getAnchorTag",
-       "form_tag" : "self.getFormTag",
-       "form_button" : "self.getButton",
-       "ajax_url" : "self.getAJAXPath",
-       "submit_tag" : "self.getFormSubmit" }
+    epy_macros = { 
+       "form_tag" : "self.form_tag",
+       "form_submit" : "self.form_submit" ,
+       "form_button" : "self.form_button",
+       "link_to" : "self.link_to",
+       "ajax_url" : "self.ajax_url" }
     state = 0
     output = ""
     epy = ""
@@ -393,16 +394,19 @@ document.getElementById('%s').style.display="inline";
         epy = epy + "!"
         state = 2
       elif state == 3 and ch == "}":
-        # logging.info("FOUND EPY"+ epy)
+        epy = epy.strip()
+        logging.info("FOUND EPY"+ epy)
         if ( len(epy) > 2 ) :
-          # epy = epy[:-2].strip()
           for (macro, text) in epy_macros.items():
+             if epy == macro:
+               epy = text+"()"
+               break
              if epy.startswith(macro):
                epy = epy.replace(macro, text)
                break
-          # logging.info("DERIVED EPY"+ epy)
+          logging.info("DERIVED EPY"+ epy)
           epy = str(eval(epy))
-	  # logging.info("Evaluated EPY "+ epy)
+	  logging.info("Evaluated EPY "+ epy)
         output = output + epy 
         epy = ""
         state = 0

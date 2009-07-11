@@ -25,6 +25,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
   # Called for form posts
   def doaction(self):
+    logging.info('doaction Action=%s'%self.action)
     if self.action == 'play' : return self.action_play()
     if self.action == 'join' : return self.action_join()
     if self.action == 'reset' : return  self.action_reset()
@@ -40,17 +41,11 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
     rendervars = {'context': self.context,
                   'notice' : info,
-                  'messagesaction' : self.getAJAXPath(action='messages'),
-                  'playform' : self.getFormTag(action='play'),
-                  'playsubmit' : self.getFormSubmit('Play'),
                   'request': self.request}
-
-    if self.context.isInstructor() : 
-      rendervars['resetbutton'] = self.getButton('Reset', action='reset')
 
     gm = self.getmodel()
     if ( len(gm.players) < 4 ) :
-      rendervars['joinbutton'] = self.getButton('Join', action='join')
+      rendervars['joinbutton'] = self.form_button('Join', action='join')
 
     return self.doRender('index.htm', rendervars)
 

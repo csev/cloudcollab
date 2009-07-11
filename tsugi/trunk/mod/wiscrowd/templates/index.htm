@@ -16,7 +16,7 @@ via {{ context.launch.launch_type }}
 <p>Enter Guess: <input type="text" name="guess"/></p>
 <p>Enter Name (opt): <input type="text" name="name"/></p>
 <p>
-{! submit_tag('Guess') !}
+{! form_submit('Guess') !}
 {% if context.isInstructor %}
 {! form_button('Reset Game Data', action='reset') !}
 {% endif %}

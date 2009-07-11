@@ -64,7 +64,6 @@ class WisHandler(learningportlet.LearningPortlet):
 
     data = self.getmodel(wiskey)
 
-    submitbutton = self.getFormSubmit('Guess')
     rendervars = {'context': self.context,
                   'msg' : info}
 

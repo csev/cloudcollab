@@ -6,8 +6,8 @@ from {{ context.getCourseName }}</p>
 {% if notice %}
   <p>{{ notice }}</p>
 {% endif %}
-{% if resetbutton %}
- {{ resetbutton }}
+{% if context.isInstructor %}
+  {! form_button('Reset', action='reset') !}
 {% endif %}
 {% if joinbutton %}
  {{ joinbutton }}
@@ -15,19 +15,17 @@ from {{ context.getCourseName }}</p>
 {% if msg %}
 <p>{{ msg }}</p>
 {% endif %}
-{% if playform %}
-{{ playform }}
+{! form_tag(action='play') !}
 <p>Chips To Put in The Pot: <input type="text" name="chips"/></p>
-{{ playsubmit }}
+{! form_submit('Play') !}
 </form>
-{% endif %}
 <div id="messagescontent">
           Loading...
 </div>
 <script>
 function updateMsg() { 
 $.ajax({
-  url: "{{ messagesaction }}",
+  url: "{! ajax_url(action='messages') !}",
   cache: false,
   success: function(html){
     $("#messagescontent").html(html);

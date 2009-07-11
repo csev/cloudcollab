@@ -11,11 +11,10 @@ You're from {{ context.getCourseName }}.<br>
 <p>{{ msg }}</p>
 {% endif %}
 <hr>
-<form method="post" action="{{ context.getPostPath }}">
-{{ context.getFormFields }}
+{! form_tag('Add') !}
 <p><strong>Enter Title:</strong> <input type="text" name="title"/></p>
 <p><strong>Enter URL:</strong> <input type="text" name="URL"/></p>
-<p><input type="submit"></p>
+<p>{! form_submit !} </p>
 </form>
 <hr>
 
