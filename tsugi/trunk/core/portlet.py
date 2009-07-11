@@ -361,5 +361,53 @@ document.getElementById('%s').style.display="inline";
     newval['path'] = self.request.path
   
     outstr = template.render(temp, newval)
+    outstr = self.epy(outstr)
     return outstr
 
+  # Processes EMbedded Python structures {! form_tag(action="view") !}
+  def epy(self, text):
+    epy_macros = { "link_to" : "getAnchorTag",
+       "form_tag" : "self.getFormTag",
+       "form_button" : "self.getButton",
+       "submit_tag" : "self.getFormSubmit" }
+    state = 0
+    output = ""
+    epy = ""
+    for ch in text:
+      # print ch, state
+      if ch == "{" and state == 0:
+        state = 1
+      elif state == 1 and ch == "!":
+        state = 2
+        epy = ""
+        continue
+      elif state == 1 and ch != "!":
+        output = output + "{"
+        state = 0
+      elif state == 2 and ch == " " and epy == "":
+        continue
+      elif state == 2 and ch == "!":
+        state = 3
+      elif state == 3 and ch != "}":
+        epy = epy + "!"
+        state = 2
+      elif state == 3 and ch == "}":
+        logging.info("FOUND EPY"+ epy)
+        if ( len(epy) > 2 ) :
+          # epy = epy[:-2].strip()
+          for (macro, text) in epy_macros.items():
+             if epy.startswith(macro):
+               epy = epy.replace(macro, text)
+               break
+          # logging.info("DERIVED EPY"+ epy)
+          epy = str(eval(epy))
+	  # logging.info("Evaluated EPY "+ epy)
+        output = output + epy 
+        epy = ""
+        state = 0
+        continue
+      
+      if state == 0 : output = output + ch
+      if state == 2 : epy = epy + ch
+    
+    return output

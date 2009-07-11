@@ -12,10 +12,15 @@ via {{ context.launch.launch_type }}
 {% if msg %}
 <p>{{ msg }}</p>
 {% endif %}
-{{ formtag }}
+{! form_tag(action="play") !}
 <p>Enter Guess: <input type="text" name="guess"/></p>
 <p>Enter Name (opt): <input type="text" name="name"/></p>
-<p>{{formsubmit}}{{resetbutton}}</p>
+<p>
+{! submit_tag('Guess') !}
+{% if context.isInstructor %}
+{! form_button('Reset Game Data', action='reset') !}
+{% endif %}
+</p>
 </form>
 {% if ave %}
 <p>Average: {{ ave }} Count: {{count}} </p>

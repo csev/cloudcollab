@@ -66,14 +66,9 @@ class WisHandler(learningportlet.LearningPortlet):
 
     submitbutton = self.getFormSubmit('Guess')
     rendervars = {'context': self.context,
-                  'formtag' : self.getFormTag(action="play"),
-                  'formsubmit' : self.getFormSubmit('Guess'),
                   'msg' : info}
 
-    if self.context.isInstructor() :
-      rendervars['resetbutton'] = self.getButton('Reset Game Data', action='reset')
-
-    
+    # Show the instructor the current data and average
     if self.context.isInstructor() and len(data) > 0 :
        text = ""
        total = 0
