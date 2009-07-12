@@ -1,3 +1,6 @@
+import logging
+import facebook
+from google.appengine.api import memcache
 from core.tool import ToolRegistration
 from core import learningportlet
 
@@ -8,6 +11,61 @@ def register():
 
 class AdminHandler(learningportlet.LearningPortlet):
 
+  def doaction(self):
+    logging.info("doaction="+str(self.action))
+    if not self.context.isAdmin() : return "Must be admin to use this tool"
+    if self.action is False : return
+    if self.action == "facebook" : return self.facebook_action()
+    if self.action == "purge" : return self.purge_action()
+    return "Action not found " + str(self.action)
+    
   def getview(self, info):
-    if self.context.isAdmin() : return "HELLO MASTER"
-    else: return "YOU ARE NOT ADMIN"
+    logging.info("getview="+str(self.action))
+    if not self.context.isAdmin() : return "Must be admin to use this tool"
+    output = ""
+    if self.action is False : output = "No action"
+    if self.action == "facebook" : output =  self.facebook_view(info)
+    elif self.action == "purge" : output =  self.purge_view(info)
+    else: output = "Unknown action:" + str(self.action)
+    return output
+
+  def facebook_action(self):
+  # Both these keys are provided to you when you create a Facebook Application.
+    api_key = self.request.get("facebook_api_key")
+    api_secret = self.request.get("facebook_api_secret")
+    if len(api_key) > 0 and len(api_secret) > 0:
+       memcache.add("facebook_api_key", api_key)
+       memcache.replace("facebook_api_key", api_key)
+       memcache.add("facebook_api_secret", api_secret)
+       memcache.replace("facebook_api_secret", api_secret)
+       return "Facebook API Keys stored in memcache"
+    else:
+       return "Facebook API Keys not stored"
+       return
+
+  def facebook_view(self, info):
+      api_key = memcache.get("facebook_api_key")
+      secret_key = memcache.get("facebook_api_secret")
+      if api_key :
+          api_key = api_key[:2]
+      if secret_key :
+          secret_key = secret_key[:2]
+
+      str = "Key=%s secret=%s" % ( api_key, secret_key)
+      return self.doRender('facebook.htm' , { 'str': str } )
+
+  def purge_action(self): 
+        if not users.is_current_user_admin() : 
+            self.response.out.write('Must be admin.')
+            return
+        limit = self.request.get("limit") 
+        if not limit: 
+            limit = 10 
+        table = self.request.get('table') 
+        if not table: 
+            self.response.out.write('Must specify a table.')
+            return
+        q = db.GqlQuery("SELECT __key__ FROM "+table)
+	results = q.fetch(10)
+        self.response.out.write("%s records" % len(results))
+	db.delete(results)
