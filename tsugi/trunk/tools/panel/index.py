@@ -55,9 +55,6 @@ class AdminHandler(learningportlet.LearningPortlet):
       return self.doRender('facebook.htm' , { 'str': str } )
 
   def purge_action(self): 
-        if not users.is_current_user_admin() : 
-            self.response.out.write('Must be admin.')
-            return
         limit = self.request.get("limit") 
         if not limit: 
             limit = 10 
@@ -67,5 +64,8 @@ class AdminHandler(learningportlet.LearningPortlet):
             return
         q = db.GqlQuery("SELECT __key__ FROM "+table)
 	results = q.fetch(10)
-        self.response.out.write("%s records" % len(results))
+        return "%s records" % len(results)
 	db.delete(results)
+
+  def purge_view(self, info):
+      return info
