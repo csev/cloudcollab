@@ -1,5 +1,5 @@
-{{ info }} <br/>
-{{ str }} <br/>
+{% if info %}{{ info }} <br/> {% endif %}
+{% if str %}{{ str }} <br/> {% endif %}
 {! form_tag(action='facebook') !}
 Enter your Face book API information here:<br/>
 Facebook API Key: <input type="text" size="60" name="facebook_api_key"><br/>

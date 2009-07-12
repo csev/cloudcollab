@@ -23,7 +23,7 @@ class AdminHandler(learningportlet.LearningPortlet):
         logging.info("getview="+str(self.action))
         if not self.context.isAdmin() : return "Must be admin to use this tool"
         output = ""
-        if self.action is False : output = "No action"
+        if self.action is False : output = "Please select a panel.."
         if self.action == "facebook" : output =  self.facebook_view(info)
         elif self.action == "purge" : output =  self.purge_view(info)
 
@@ -40,8 +40,6 @@ class AdminHandler(learningportlet.LearningPortlet):
             memcache.add("facebook_api_secret", api_secret)
             memcache.replace("facebook_api_secret", api_secret)
             return "Facebook API Keys stored in memcache"
-        else:
-            return "Facebook API Keys not stored"
 
     def facebook_view(self, info):
         api_key = memcache.get("facebook_api_key")
