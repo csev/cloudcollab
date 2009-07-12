@@ -16,10 +16,10 @@ from core import oauth_store
 # Register all the tools - add new tools here
 tools = list()
 
-# Register the admin tool
-X = __import__("tools.admin.index", globals(), locals(), [''])
+# Register the panel tool
+X = __import__("tools.panel.index", globals(), locals(), [''])
 Y = X.register() 
-Y.setcontroller("admin")
+Y.setcontroller("panel")
 tools.append( Y )
 
 # Register the lti_test
@@ -187,81 +187,6 @@ class MainHandler(webapp.RequestHandler):
     outstr = template.render(temp, rendervars)
     self.response.out.write(outstr)
 
-# http://dollarmani-facebook.blogspot.com/2008/09/using-facebook-api-in-python.html
-class FaceBookHandler(webapp.RequestHandler):
-  def get(self):
-    api_key = memcache.get("facebook_api_key")
-    secret_key = memcache.get("facebook_api_secret")
-    if api_key :
-      api_key = api_key[:2]
-    if secret_key :
-      secret_key = secret_key[:2]
-
-    str = "Key=%s secret=%s" % ( api_key, secret_key)
-    doRender(self, '/facebook.htm' , { 'str': str } )
-
-  def post(self):
-  # Both these keys are provided to you when you create a Facebook Application.
-    api_key = self.request.get("facebook_api_key")
-    api_secret = self.request.get("facebook_api_secret")
-    if len(api_key) > 0 and len(api_secret) > 0:
-       memcache.add("facebook_api_key", api_key)
-       memcache.replace("facebook_api_key", api_key)
-       memcache.add("facebook_api_secret", api_secret)
-       memcache.replace("facebook_api_secret", api_secret)
-       self.response.out.write("Facebook API Keys stored in memcache")
-       self.get()
-       return
-
-    api_key = memcache.get("facebook_api_key")
-    secret_key = memcache.get("facebook_api_secret")
-
-    if api_secret == None or api_key == None:
-       self.get()
-       return
-
-    # Initialize the Facebook Object.
-    self.facebookapi = facebook.Facebook(api_key, secret_key)
-
-    # Checks to make sure that the user is logged into Facebook.
-    if self.facebookapi.check_session(self.request):
-      pass
-    else:
-      # If not redirect them to your application add page.
-      url = self.facebookapi.get_add_url()
-      self.response.out.write('<fb:redirect url="' + url + '" />')
-      return
-
-    # Checks to make sure the user has added your application.
-    if self.facebookapi.added:
-      pass
-    else:
-      # If not redirect them to your application add page.
-      url = self.facebookapi.get_add_url()
-      self.response.out.write('<fb:redirect url="' + url + '" />')
-      return
-
-    # Get the information about the user.
-    user = self.facebookapi.users.getInfo( [self.facebookapi.uid], ['uid', 'name', 'birthday', 'relationship_status'])[0]
-
-    # Display a welcome message to the user along with all the greetings.
-    self.response.out.write('Hello %s,<br>' % user['name'])
-    self.response.out.write('Welcome to wiscrowd in facebook running in the cloudcollab framework.<br>')
-    self.response.out.write('URL: '+self.request.path+"<br>\n")
-
-    self.response.out.write("""
-Sample Output<br/>
-Info None<br/>
-Path controller=sample action=False resource=False<br/>
-<a href="http://apps.facebook.com/wisdom-of-crowds/sample/anchor/" class="selected">Click Me</a>
-<form action="http://apps.facebook.com/wisdom-of-crowds/sample/formtag/" method="post" class="selected" id="myform">
-<input type="text" name="thing" size="40">
-<input type="submit" value="GO" >
-</form>
-""")
-     
-    self.response.out.write("<pre>\n"+self.requestdebug()+"</pre>")
-
   def requestdebug(self):
     # Drop in the request for debugging
     reqstr = self.request.path + "\n"
@@ -272,66 +197,10 @@ Path controller=sample action=False resource=False<br/>
       else:
          reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
     return reqstr
-
-class OAuthHandler(webapp.RequestHandler):
-  def get(self):
-    self.response.out.write("<pre>\n"+self.requestdebug()+"</pre>")
-  def post(self):
-    self.response.out.write("<pre>\n"+self.requestdebug()+"</pre>")
-    self.oauth_server = oauth.OAuthServer(oauth_store.BasicOAuthDataStore())
-    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_PLAINTEXT())
-    self.oauth_server.add_signature_method(oauth.OAuthSignatureMethod_HMAC_SHA1())
-
-    params = self.request.params
-
-    logging.info(self.request.url)
-    # construct the oauth request from the request parameters
-    oauth_request = oauth.OAuthRequest.from_request("POST", self.request.url, headers=self.request.headers, parameters=params)
-
-    # verify the request has been oauth authorized
-    try:
-        consumer, token, params = self.oauth_server.verify_request(oauth_request)
-        # send okay response
-        self.response.out.write("<p>YAY</p>");
-    except oauth.OAuthError, err:
-        logging.info(err)
-        self.response.out.write("<p>Boo "+err.message+"</p>");
-    return
-
-  def requestdebug(self):
-    # Drop in the request for debugging
-    reqstr = self.request.path + "\n"
-    for key in self.request.params.keys():
-      value = self.request.get(key)
-      if len(value) < 100:
-         reqstr = reqstr + key+':'+value+'\n'
-      else:
-         reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
-    return reqstr
-
-class PurgeHandler(webapp.RequestHandler): 
-    def get(self): 
-        if not users.is_current_user_admin() : 
-            self.response.out.write('Must be admin.')
-            return
-        limit = self.request.get("limit") 
-        if not limit: 
-            limit = 10 
-        table = self.request.get('table') 
-        if not table: 
-            self.response.out.write('Must specify a table.')
-            return
-        q = db.GqlQuery("SELECT __key__ FROM "+table)
-	results = q.fetch(10)
-        self.response.out.write("%s records" % len(results))
-	db.delete(results)
 
 def main():
   # Compute the routes and add routes for the tools
   routes = [ ('/login', LoginHandler),
-            ('/facetest.*', FaceBookHandler),
-            ('/oauth.*', OAuthHandler),
-            ('/purge.*', PurgeHandler),
             ('/logout', LogoutHandler)]
   routes = routes + [ ("/"+x.controller+".*", x.handler) for x in tools ]
   routes.append( ('/.*', MainHandler) )

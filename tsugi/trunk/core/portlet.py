@@ -114,10 +114,13 @@ class Portlet(webapp.RequestHandler):
   # somehow - not a bad idea
 
   def handlepost(self):
+    logging.info("HHndlepost ="+str(self.div))
     if not self.setup(): return
     portlet_info = "_portlet_info"  
     if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
+    logging.info("Handlepost ="+str(self.div))
     info = self.doaction()
+    logging.info("handlepost ="+str(self.div))
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       self.session[portlet_info]  = info 
       redirecturl = self.getGetPath(action="post-redirect")
@@ -353,8 +356,7 @@ document.getElementById('%s').style.display="inline";
     temp = os.path.join(os.path.dirname(callerfile),
            'templates/' + tname)
     if not os.path.isfile(temp):
-      logging.info("Warning could not find template %s" % temp)
-      return None
+      raise NameError("Warning could not find template %s" % temp)
   
     # Make a copy of the dictionary and add the path and session
     newval = dict(values)
