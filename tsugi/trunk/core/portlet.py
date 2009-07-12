@@ -288,6 +288,9 @@ class Portlet(webapp.RequestHandler):
       ret = ret + key + '="' + value + '"'
     return ret
     
+  def url_for(self, params={}, attributes={}, action=False, resource=False, controller=False):
+    return self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
+
   def link_to(self, text, params={}, attributes={}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
     if self.div == False or self.javascript_allowed == False:
@@ -369,6 +372,7 @@ document.getElementById('%s').style.display="inline";
   # Processes EMbedded Python structures {! form_tag(action="view") !}
   def epy(self, text):
     epy_macros = { 
+       "url_for" : "self.url_for",
        "form_tag" : "self.form_tag",
        "form_submit" : "self.form_submit" ,
        "form_button" : "self.form_button",

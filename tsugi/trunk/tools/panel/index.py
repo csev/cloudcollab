@@ -26,7 +26,8 @@ class AdminHandler(learningportlet.LearningPortlet):
     if self.action is False : output = "No action"
     if self.action == "facebook" : output =  self.facebook_view(info)
     elif self.action == "purge" : output =  self.purge_view(info)
-    else: output = "Unknown action:" + str(self.action)
+
+    output = self.doRender('index.htm', {'output' : output, 'action' : self.action})
     return output
 
   def facebook_action(self):
@@ -41,7 +42,6 @@ class AdminHandler(learningportlet.LearningPortlet):
        return "Facebook API Keys stored in memcache"
     else:
        return "Facebook API Keys not stored"
-       return
 
   def facebook_view(self, info):
       api_key = memcache.get("facebook_api_key")
@@ -60,8 +60,7 @@ class AdminHandler(learningportlet.LearningPortlet):
             limit = 10 
         table = self.request.get('table') 
         if not table: 
-            self.response.out.write('Must specify a table.')
-            return
+            return 'Must specify a table.'
         q = db.GqlQuery("SELECT __key__ FROM "+table)
 	results = q.fetch(10)
         return "%s records" % len(results)
