@@ -114,13 +114,10 @@ class Portlet(webapp.RequestHandler):
   # somehow - not a bad idea
 
   def handlepost(self):
-    logging.info("HHndlepost ="+str(self.div))
     if not self.setup(): return
     portlet_info = "_portlet_info"  
     if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
-    logging.info("Handlepost ="+str(self.div))
     info = self.doaction()
-    logging.info("handlepost ="+str(self.div))
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       self.session[portlet_info]  = info 
       redirecturl = self.getGetPath(action="post-redirect")
@@ -172,38 +169,38 @@ class Portlet(webapp.RequestHandler):
     addportal = self.portal != False and direct != True and addajax == False
 
     # If we have a proxyurl, it is to the controller level
-    if isinstance(self.proxyurl, str) :
-      newpath = self.proxyurl
+    if self.proxyurl != None:
+        newpath = self.proxyurl
     else:
-      newpath = "/"
-      # We cannot both be the whole portal screen and told to be in a div - pick div
-      if addportal:
-        newpath = "/portal/"
-
-      if controller != False:
-        newpath = newpath + controller + "/"
-      elif self.controller != False :
-        newpath = newpath + self.controller + "/"
+        newpath = "/"
+        # We cannot both be the whole portal screen and told to be in a div - pick div
+        if addportal:
+            newpath = "/portal/"
+  
+        if controller != False:
+            newpath = newpath + controller + "/"
+        elif self.controller != False :
+            newpath = newpath + self.controller + "/"
 
     if isinstance(context_id, str) :
-      newpath = newpath + context_id + "/"
+        newpath = newpath + context_id + "/"
     elif isinstance(self.context_id, str) :
-      newpath = newpath + self.context_id + "/"
+        newpath = newpath + self.context_id + "/"
 
     if addajax:
-      newpath = newpath + self.portlet_ajax_prefix + self.div + "/"
+        newpath = newpath + self.portlet_ajax_prefix + self.div + "/"
 
     if action != False :
-      newpath = newpath + action + "/"
+        newpath = newpath + action + "/"
     # Keep the old action if we have a resource
     elif resource != False and self.action != False : 
-      newpath = newpath + self.action + "/"
+        newpath = newpath + self.action + "/"
     # We need some action if they gave us a resource
     elif resource != False : 
-      newpath = newpath + "action/"
+        newpath = newpath + "action/"
  
     if resource != False :
-      newpath = newpath + resource + "/"
+        newpath = newpath + resource + "/"
 
     # logging.info("self.div=%s ignoreajax=%s addajax=%s addportal=%s newpath=%s" % ( self.div, ignoreajax, addajax, addportal, newpath) )
     return newpath
@@ -401,7 +398,7 @@ document.getElementById('%s').style.display="inline";
         state = 2
       elif state == 3 and ch == "}":
         epy = epy.strip()
-        logging.info("FOUND EPY"+ epy)
+        # logging.info("FOUND EPY"+ epy)
         if ( len(epy) > 2 ) :
           for (macro, text) in epy_macros.items():
              if epy == macro:
@@ -410,9 +407,9 @@ document.getElementById('%s').style.display="inline";
              if epy.startswith(macro):
                epy = epy.replace(macro, text)
                break
-          logging.info("DERIVED EPY"+ epy)
+          # logging.info("DERIVED EPY"+ epy)
           epy = str(eval(epy))
-	  logging.info("Evaluated EPY "+ epy)
+	  # logging.info("Evaluated EPY "+ epy)
         output = output + epy 
         epy = ""
         state = 0

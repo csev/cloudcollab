@@ -36,7 +36,7 @@ class Facebook_Context(BaseContext):
             } 
 
   def __init__(self, web, session = False, options = {}):
-    logging.info("Going for Facebook Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
+    # logging.info("Going for Facebook Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
     # logging.info(web.requestdebug(web))
     self.web = web
     self.request = web.request

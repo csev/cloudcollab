@@ -52,7 +52,6 @@ class Blackboard_Context(BaseContext):
 
   def handlebbproxy(self, web, session, options):
     # Check for sanity - silently return
-    logging.info("Checking for Blackboard... ");
     action = web.request.get('tcbaseurl')
     if ( len(action) < 1 ) : return
 

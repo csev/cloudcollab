@@ -39,6 +39,7 @@ def Get_Context(web, session = False, options = {}):
     # Facebook Looks for a particular signature so it is pretty safe
     # And we only do it if we have a canvas URL set
     canvas_url = memcache.get("facebook_canvas_url")
+    logging.info("Canvas_url = %s" % (canvas_url) )
     if canvas_url != None :
         context = Facebook_Context(web, False, options)
         if ( context.complete or context.launch != None ) : 
@@ -47,6 +48,7 @@ def Get_Context(web, session = False, options = {}):
             web.renderfragment = True
             # web.proxyurl = "http://apps.facebook.com/wisdom-of-crowds/"
             web.proxyurl = canvas_url
+            logging.info("web.proxyurl = %s" % (web.proxyurl) )
             return context
 
     # Intercept requests with lti_launch_key
