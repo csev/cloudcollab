@@ -5,13 +5,8 @@ import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.api import users
-from google.appengine.api import memcache
-from google.appengine.ext import db
 from util import sessions
 from context.context import Get_Context
-import facebook
-from core import oauth
-from core import oauth_store
 
 # Register all the tools - add new tools here
 tools = list()

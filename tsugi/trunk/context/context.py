@@ -1,25 +1,12 @@
 import logging
-import cgi
-import wsgiref.handlers
-import logging
-import hashlib
-import base64
-import uuid
-import urllib
-from datetime import datetime, timedelta
-from google.appengine.ext.webapp import template
-from google.appengine.ext import db
-from google.appengine.ext import webapp
-from google.appengine.api import users
+from google.appengine.api import memcache
 
-from contextmodel import *
 from basecontext import BaseContext
 from slticontext import SLTI_Context
 from blticontext import BLTI_Context
 from googlecontext import Google_Context
 from facebookcontext import Facebook_Context
 from bbcontext import Blackboard_Context
-from core.modelutil import *
 
 # We completely ignore session all the time to force the
 # use GET parameters all the time so folks can be different
@@ -27,6 +14,7 @@ from core.modelutil import *
 
 # TODO: Session needs to live in launch context!
 # TODO: Deal with performance impact of many re-launches without a session
+# TODO: Do this from memcache!
 
 def Get_Context(web, session = False, options = {}):
 
@@ -49,13 +37,17 @@ def Get_Context(web, session = False, options = {}):
         return context
 
     # Facebook Looks for a particular signature so it is pretty safe
-    context = Facebook_Context(web, False, options)
-    if ( context.complete or context.launch != None ) : 
-        logging.info("Facebook Context complete="+str(context.complete));
-        web.redirectafterpost = False
-        web.renderfragment = True
-        web.proxyurl = "http://apps.facebook.com/wisdom-of-crowds/"
-        return context
+    # And we only do it if we have a canvas URL set
+    canvas_url = memcache.get("facebook_canvas_url")
+    if canvas_url != None :
+        context = Facebook_Context(web, False, options)
+        if ( context.complete or context.launch != None ) : 
+            logging.info("Facebook Context complete="+str(context.complete));
+            web.redirectafterpost = False
+            web.renderfragment = True
+            # web.proxyurl = "http://apps.facebook.com/wisdom-of-crowds/"
+            web.proxyurl = canvas_url
+            return context
 
     # Intercept requests with lti_launch_key
     context = BaseContext(web, False)

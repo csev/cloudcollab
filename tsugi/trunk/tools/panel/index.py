@@ -34,22 +34,26 @@ class AdminHandler(learningportlet.LearningPortlet):
         # Both these keys are provided to you when you create a Facebook Application.
         api_key = self.request.get("facebook_api_key")
         api_secret = self.request.get("facebook_api_secret")
+        canvas_url = self.request.get("facebook_canvas_url")
         if len(api_key) > 0 and len(api_secret) > 0:
             memcache.add("facebook_api_key", api_key)
             memcache.replace("facebook_api_key", api_key)
             memcache.add("facebook_api_secret", api_secret)
             memcache.replace("facebook_api_secret", api_secret)
+            memcache.add("facebook_canvas_url", canvas_url)
+            memcache.replace("facebook_canvas_url", canvas_url)
             return "Facebook API Keys stored in memcache"
 
     def facebook_view(self, info):
         api_key = memcache.get("facebook_api_key")
         secret_key = memcache.get("facebook_api_secret")
+        canvas_url = memcache.get("facebook_canvas_url")
         if api_key :
             api_key = api_key[:2]
         if secret_key :
             secret_key = secret_key[:2]
   
-        str = "Key=%s secret=%s" % ( api_key, secret_key)
+        str = "Key=%s secret=%s %s" % ( api_key, secret_key, canvas_url)
         return self.doRender('facebook.htm' , { 'info': info, 'str' : str } )
 
     def purge_action(self): 
