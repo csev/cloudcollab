@@ -131,9 +131,9 @@ class BLTI_Context(BaseContext):
     else:
       course = LMS_Course.get_by_key_name("key:"+course_id)
 
-    # Create new course for an approved organization if configured
+    # Create new course if configured
     default_secret = options.get('default_course_secret', None)
-    if org and (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
+    if (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
       logging.warn("Creating course "+course_id+" in organization "+org_id+" with default secret")
       course = LMS_Course.get_or_insert("key:"+course_id, parent=org)
       if Model_Load(course, self.web.request.params, "context_") :
@@ -141,13 +141,13 @@ class BLTI_Context(BaseContext):
         course.secret = default_secret
         course.put()
 
-      self.debug("Linking OrgCourse="+course_id+" to org="+str(org.key()))
-      orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
-      orgcourse.course = course
-      orgcourse.put()
+      if org : 
+        self.debug("Linking OrgCourse="+course_id+" to org="+str(org.key()))
+        orgcourse = opt_get_or_insert(LMS_OrgCourse,"key:"+course_id, parent=org)
+        orgcourse.course = course
+        orgcourse.put()
     elif course :
-      # TODO: Teach Model Load to deal with Changed
-      secret = course.secret  # Save
+      secret = course.secret  
       if Model_Load(course, self.web.request.params, "context_") :
         course.secret = secret
         course.put()
@@ -281,23 +281,7 @@ class LTI_OAuthDataStore(oauth.OAuthDataStore):
             org_id = key[len('basiclti-lms:') :]
             logging.info("lookup_consumer org_id="+org_id)
             if org_id == "umich.edu" : return oauth.OAuthConsumer(key, "secret");
-	else :
-            course_id = key
-            logging.info("Loading course to check secret " + course_id)
-            course = LMS_Course.get_by_key_name("key:"+course_id)
-            if course :
-	        logging.info("Found course " + course_id)
-		return oauth.OAuthConsumer(course_id, course.secret)
-
-            default_secret = self.options.get("default_course_secret",False)
-            if default_secret and self.options.get('auto_create_courses', False) :
-                logging.warn("Creating course "+course_id+" with default secret")
-                course = LMS_Course.get_or_insert("key:"+course_id)
-                Model_Load(course, self.web.request.params, "context_")
-                course.course_id = course_id
-                course.secret = default_secret
-                course.put()
-		return oauth.OAuthConsumer(course_id, default_secret)
+	elif key == "12345" : return oauth.OAuthConsumer(key, "secret");
 
         logging.info("Did not find consumer "+key)
         return None
