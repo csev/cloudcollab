@@ -12,7 +12,7 @@ application allows you to play the "Free Rider" game as described by
 James Surowiecki in the book "The Wisdom of Crowds".""")
 
 class GameState():
-   def __init__(self, playercount=2):
+   def __init__(self, playercount=5):
      self.playercount = playercount
      self.players = list()
      self.chips = list()
