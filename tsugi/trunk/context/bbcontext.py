@@ -230,7 +230,7 @@ class Blackboard_Context(BaseContext):
     launch.memb = memb
     launch.org = org
     launch.user = user
-
+    launch.launch_type = "bbproxy"
     launch.course = course
     launch.put()
     self.debug("launch.key()="+str(launch.key()))
@@ -303,26 +303,6 @@ class Blackboard_Context(BaseContext):
 
     self.debug("Success="+str(success)+" Skew="+str(skew)+" Margin="+str(margin)+" Difference="+ str(diff))
     return success
-
-  def iframeResponse(self,url):
-    retval = '''<launchResponse>
-   <status>success</status>
-   <type>iFrame</type>
-   <launchUrl>LAUNCHURL</launchUrl>
-</launchResponse>
-'''
-    retval = retval.replace("LAUNCHURL",url)
-    return retval
-
-  def errorResponse(self, desc="The password digest was invalid"):
-    retval = '''<launchResponse>
-    <status>fail</status>
-    <code>BadPasswordDigest</code>
-    <description>DESC</description>
-</launchResponse>
-'''
-    retval = retval.replace("DESC",desc)
-    return retval
 
   # It sure would be nice to have an error url to redirect to 
   def launcherror(self, web, doHtml, doDirect, dig, desc) :
