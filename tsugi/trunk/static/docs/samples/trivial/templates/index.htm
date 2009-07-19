@@ -1,0 +1,10 @@
+<p>Welcome to the Guessing Game</p>
+{% if msg %}
+  <p>{{msg}}</p>
+{% endif %}
+<p>Guess Count: {{ guesses }}</p>
+{! form_tag() !}   
+<input type="text" name="guess" size="40">
+{! form_submit('Guess') !}   
+{! form_button('Reset Game Data', action='reset') !}   
+</form>
