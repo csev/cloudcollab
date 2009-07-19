@@ -1,0 +1,12 @@
+<h2>Blackboard Registration</h2>
+{% if info %}{{ info }} <br/> {% endif %}
+{% if str %}{{ str }} <br/> {% endif %}
+<p>This tool registers itself within BBLearn 9 as a proxy tool.</p>
+{! form_tag(action='register') !}
+The URL of your BBLearn Server: <input type="text" size="60" name="bblearn_url"><br/>
+BBLearn Server Key: <input type="text" size="60" name="bblearn_key"><br/>
+BBLearn Server Secret: <input type="text" size="60" name="bblearn_secret"><br/>
+{! form_submit !}
+</form>
+
+
