@@ -33,7 +33,7 @@ class BLTI_Context(BaseContext):
     'lis_person_name_given': 'givenname',
     'lis_person_name_family': 'familyname',
     'lis_person_name_full': 'fullname',
-    'lis_person_contact_emailprimary': 'email',
+    'lis_person_contact_email_primary': 'email',
     'lis_person_sourced_id': 'sourced_id'}
 
   org_mapping = {
