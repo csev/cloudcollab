@@ -113,7 +113,7 @@ class MainHandler(webapp.RequestHandler):
       if ( context.isInstructor() ) :
         rendervars['role'] = "instructor"
       else:
-        rendervars['role'] = "student"
+        rendervars['role'] = "learner"
       rendervars['dump'] = context.dump()
 
     rendervars['portalpath'] = context.XXgetGetPath(direct=True,controller="portal")
