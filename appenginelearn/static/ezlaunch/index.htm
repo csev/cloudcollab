@@ -1,0 +1,162 @@
+<body style="font-family: Arial, sans-serif;">
+<a href=http://www.appenginelearn.com>
+<img width=160 src="google-app-engine.png" align=right border=0>
+</a>
+<h1>EZ Launcher for Google App Engine</h1>
+<p>
+This EZ Launcher for Windows gives a simple user interface that allows 
+users to edit and test their Google App Engine applications.  Google originally
+provided a Launcher program as part of the App Engine SDK
+for Macintosh.  As of version 1.2.5 of the Google App Engine Windows SDK, 
+they now include a similar launcher in their distribution.
+</p>
+<p>
+The EZ Launcher is designed a somewhat differently than the Google Launcher:
+<ul>
+<li>The EZ Launcher is designed for beginning users.   It walks users through the 
+install process and is continuously checking for mistakes the user might make
+such as starting more than one server.</li>
+<li>The EZ Launcher is designed to work with one application at a time - most 
+users starting out have no real need for multiple applications running on 
+different ports.</li>
+<li>The EZ Launcher has a simple text editor built in.</li>
+</ul>
+So the idea behind EZlauncher is to be simple and lead users thought
+the process of developing their App Engine applications.</p>
+<h2>Installing the EZ Launcher</h2>
+<p>
+The EZ Launcher is currently in Alpha Test.  ALl the features work except for
+uploading the application to Google for production and monitoring your
+production applications.
+</p>
+<p>
+You can download and install the EZ Launcher from:
+<pre>
+<a href="http://appenginelaunch.codeplex.com/" target="_new">http://appenginelaunch.codeplex.com/</a>
+</pre>
+</p>
+</p>
+<h2>Using the EZ Launcher</h2>
+<p>
+When the EZ Launcher first comes up it checks to see if the necessary pre-requisites
+are installed:
+<ul>
+<li>Python 2.5 (recommended) - 
+<a href="http://www.python.org/download/releases/2.5.4/" target="_new">
+http://www.python.org/download/releases/2.5.4/</a></li>
+<li>The Google App Engine SDK - 
+<a href="http://code.google.com/appengine/downloads.html" target="_new">
+http://code.google.com/appengine/downloads.html</a></li>
+</ul>
+EZ Launcher also checks to see if there is a server alredy running on 
+port 8080 when it starts up and warns the user if this is detected.
+</p>
+<p>
+Here is a screenshot of EZ Launcher with a file open in the text editor:
+</p>
+<p style="text-align: center">
+<img src="ezlaunch-01.png" border="0">
+</p>
+<p>
+The features are as follows:
+<ul>
+<li><b>New App</b> - Allows you to select or create a folder for a new 
+Google App Engine application.  The program creates a <b>app.yaml</b> and 
+<b>index.py</b> file to get you started.</li>
+<li><b>Open App</b> - Allows you to select an existing folder with an
+App Engine Aplication.</li>
+<li><b>Run</b> - Starts a web server for the current application.  Also checks 
+and warns the user if they are trying to start a second copy of their server.</li>
+<li><b>Browse</b> - Launches a web browser pointed to their server running at 
+http://localhost:8080/</li>
+<li><b>Console</b> - Brings up the application console for your local 
+application.</li>
+<li><b>Publish</b> - Uploads your application to Google (not working in the 
+alpha version).</li>
+<li><b>Monitor</b> - Monitors your production application (not working in the
+alpha version).</li>
+<li><b>Open / New / Save / Save As</b> - 
+Allows you to edit files using the built-in simple text editor.  The editor
+knows about the project's directory.  The editor force-expands all tabs to be 
+four spaces and sets tab stops at four to keep things simple.  </li>
+</ul>
+Users do not need to use the built-in text editor and will likely soon
+graduate to something like TextWrangler or NotePad++ for syntax highlighting,
+multiple files, etc.  This editor is intended for beginers and to limit 
+the number of open screens for those developing simple applications.
+</p>
+<h2>Simple Usage Scenario</h2>
+<p>
+Here is a simple usage scenario for creating your first application using the 
+EZ Launcher.
+</p><p>
+First use <b>New</b> to create a new application - create a new folder and give 
+it a name such as <b>firstapp</b>:</p>
+<p style="text-align: center">
+<img src="01-ezlaunch-new.png" border="0">
+</p>
+<p>
+Then press <b>Run</b> to start your web server.  It should bring up a window as 
+follows:
+</p>
+<p style="text-align: center">
+<img src="01-ezlaunch-run.png" border="0">
+</p>
+<p>
+Then press <b>Browse</b> to test your web server - you should see a screen 
+that looks as follows:</p>
+<p style="text-align: center">
+<img src="02-ezlaunch-browse.png" border="0">
+</p>
+<p>
+Then press <b>Open</b> and open the <b>index</b> file in the text editor.  Make a
+change to add your name to the print statement and then save the file
+and press <b>Refresh</b> in your browser to see your changes:
+</p>
+<p style="text-align: center">
+<img src="04-ezlaunch-refresh.png" border="0">
+</p>
+<p>
+Congratulations - you have your first application - now you need
+a good
+<a href="http://oreilly.com/catalog/9780596800697/" target="_new">book</a>
+to help you learn more about developing applications for Google App Engine.
+</p>
+<h2>Comments and Questions</h2>
+<p>
+Since Google has launched their own launcher - I don't know how far I want 
+to take this launcher.  I do think that it is inherently better than 
+the Google launcher for beginners.   If people use this and like it and want to 
+continue to use it - I am happy to work on it and keel it working.
+It was not that much work - I wrote it in nine hours one Saturday morning - so 
+it will be easy to maintain.
+</p>
+<p>
+Another thought I had was to have a usability class in the UM School of Information
+improve its UI.  I do think that the workflow for this app is as easy as it possibly
+can be - but the buttons, layout, graphics, and even features could benefit from
+some analysis by experts.
+</p>
+<p>
+A fine form of feedback is via <a href="http://twitter.com/drchuck/" target="_new">Dr. Chuck on Twitter</a> - you can follow me - or just mention <b>@drchuck</b> in your 
+tweets about the product.  Of of course you can send me E-Mail.
+</p>
+<p>
+/Chuck
+</p>
+<p>
+The EZ Launcher for Google App Engine is provided for free by 
+<a href="http://www.appenginelearn.com/" target="_top">www.appenginelearn.com</a>.
+</p>
+
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-423997-9");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+
