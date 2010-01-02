@@ -81,7 +81,7 @@ class BLTI_Context(BaseContext):
     urlpath = web.request.path
 
     if len(oauth_key) <= 0 or len(user_id) <= 0 or len(course_id) <= 0 : 
-      self.launcherror(web, None, "Missing one of course_id, user_id, oauth_consumer_key")
+      self.launcherror(web, None, "Missing one of context_id, user_id, oauth_consumer_key")
       return
 
     self.debug("Running on " + web.request.application_url)
@@ -250,6 +250,16 @@ class BLTI_Context(BaseContext):
   # It sure would be nice to have an error url to redirect to 
   def launcherror(self, web, dig, desc) :
       self.complete = True
+      return_url = web.request.get("launch_presentation_return_url")
+      if len(return_url) > 1 :
+          desc = urllib.quote(desc) 
+          if return_url.find('?') > 1 : 
+              return_url = return_url + '&lti_msg=' + desc
+          else :
+              return_url = return_url + '?lti_msg=' + desc
+          web.redirect(return_url)
+          return
+
       web.response.out.write("<p>\nIncorrect authentication data presented by the Learning Management System.\n</p>\n")
       web.response.out.write("<p>\nError code:\n</p>\n")
       web.response.out.write("<p>\n"+desc+"\n</p>\n")
