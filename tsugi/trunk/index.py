@@ -18,10 +18,10 @@ Y.setcontroller("panel")
 tools.append( Y )
 
 # Register the lti_test
-X = __import__("tools.lti_test.index", globals(), locals(), [''])
-Y = X.register() 
-Y.setcontroller("lti_test")
-tools.append( Y )
+## X = __import__("tools.lti_test.index", globals(), locals(), [''])
+## Y = X.register() 
+## Y.setcontroller("lti_test")
+## tools.append( Y )
 
 # Loop through and register the modules
 temp = os.path.join(os.path.dirname(__file__),'mod')

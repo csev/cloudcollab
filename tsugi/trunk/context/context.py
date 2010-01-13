@@ -2,7 +2,6 @@ import logging
 from google.appengine.api import memcache
 
 from basecontext import BaseContext
-from slticontext import SLTI_Context
 from blticontext import BLTI_Context
 from googlecontext import Google_Context
 from facebookcontext import Facebook_Context
@@ -28,12 +27,6 @@ def Get_Context(web, session = False, options = {}):
     context = BLTI_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 
         logging.info("BasicLTI Context complete="+str(context.complete));
-        return context
-
-    # SLTI Looks for a particular signature so it is pretty safe
-    context = SLTI_Context(web, False, options)
-    if ( context.complete or context.launch != None ) : 
-        logging.info("SimpleLTI Context complete="+str(context.complete));
         return context
 
     # Facebook Looks for a particular signature so it is pretty safe
