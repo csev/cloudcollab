@@ -12,11 +12,20 @@ SESSION_EXPIRE_TIME = 7200 # sessions are valid for 7200 seconds (2 hours)
 
 class Session(object):
 
-    def __init__(self, request=None):
+    def __init__(self, handler=None):
+        if handler != None and hasattr(handler, "__save_session") :
+            self.session = handler.__save_session.session
+            self.sid = handler.__save_session.sid
+            self.key = handler.__save_session.key
+            return
         self.sid = None
         self.key = None
         self.session = None
-        self.request = request
+        self.request = None
+        self.response = None
+        if handler != None:
+            self.request = handler.request
+            self.response = handler.response
         self.foundcookie = False
         self.cookiename = COOKIE_NAME
         string_cookie = os.environ.get('HTTP_COOKIE', '')
@@ -48,11 +57,20 @@ class Session(object):
             self.session = dict()
 	    memcache.add(self.key, self.session, 3600)
 
-            self.cookie[COOKIE_NAME] = self.sid
-            self.cookie[COOKIE_NAME]['path'] = DEFAULT_COOKIE_PATH
-            self.cookie[COOKIE_NAME]['expires'] = SESSION_EXPIRE_TIME
-            # Send the Cookie header to the browser
-            print self.cookie
+            if self.response != None:
+                logging.info("DUDE USING A HEADER")
+                self.response.headers.add_header(
+                        'Set-Cookie', 
+                        '%s=%s; path=%s; expires=%s' % (COOKIE_NAME, self.sid, DEFAULT_COOKIE_PATH, SESSION_EXPIRE_TIME) )
+            else:
+                self.cookie[COOKIE_NAME] = self.sid
+                self.cookie[COOKIE_NAME]['path'] = DEFAULT_COOKIE_PATH
+                self.cookie[COOKIE_NAME]['expires'] = SESSION_EXPIRE_TIME
+                # Send the Cookie header to the browser
+                print self.cookie
+
+        if handler != None :
+            handler.__save_session = self
 
     # Convienent support get() method
     def get(self, keyname, default=None):

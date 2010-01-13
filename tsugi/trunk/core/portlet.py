@@ -65,7 +65,7 @@ class Portlet(webapp.RequestHandler):
 
   def setup(self):
     if self.requireSession() :
-      self.session = Session(self.request)
+      self.session = Session(self)
     else:
       self.session = None
 

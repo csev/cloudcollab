@@ -71,7 +71,7 @@ class LogoutHandler(webapp.RequestHandler):
   def get(self):
     # Logout if we came in via launch
     # TODO - wipe out the launch entry?
-    self.session = sessions.Session()
+    self.session = sessions.Session(self)
     self.session.delete_item('lti_launch_key')
     user = users.get_current_user()
     if user:
@@ -91,7 +91,7 @@ class MainHandler(webapp.RequestHandler):
 
   def service(self):
     # LTI Can use any session that has dictionary semantics
-    self.session = sessions.Session()
+    self.session = sessions.Session(self)
     # TODO: Fix this
     self.context_id = "12345"
     context = Get_Context(self, self.session)

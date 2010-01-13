@@ -25,7 +25,7 @@ class LearningPortlet(portlet.Portlet):
     self.context = False
     if self.establishContext() : 
       # Insist on a session
-      if self.session is None: self.session = Session()
+      if self.session is None: self.session = Session(self)
       self.context = Get_Context(self, self.session);
       if ( self.context.complete ) : return False
       # In case there is no context and the context filters
