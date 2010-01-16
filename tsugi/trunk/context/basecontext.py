@@ -160,11 +160,6 @@ class BaseContext():
       ret = ret + "No launch data\n"
       return ret
     ret = ret + "Complete = "+str(self.complete) + "\n";
-    ret = ret + Model_Dump(self.user)
-    ret = ret + Model_Dump(self.course)
-    ret = ret + Model_Dump(self.memb)
-    ret = ret + Model_Dump(self.org)
-    ret = ret + Model_Dump(self.launch)
 
     return ret
 
@@ -191,20 +186,26 @@ class BaseContext():
       if users.is_current_user_admin(): return True
       return False
 
-  def getUserShortName(self):
+  def getUserEmail(self):
       email = self.launch.get('lis_person_contact_email_primary')
+      if ( email and len(email) > 0 ) : return email;
+      # Sakai Hack
+      email = self.launch.get('lis_person_contact_emailprimary')
+      if ( email and len(email) > 0 ) : return email;
+      return None
+
+  def getUserShortName(self):
+      email = self.getUserEmail()
       givenname = self.launch.get('lis_person_name_given')
       familyname = self.launch.get('lis_person_name_family')
       fullname = self.launch.get('lis_person_name_full')
       if ( email and len(email) > 0 ) : return email;
       if ( givenname and len(givenname) > 0 ) : return givenname;
       if ( familyname and len(familyname) > 0 ) : return familyname;
-      if ( fullname and len(fullname) > 0 ) : return fullname;
-      return ""
+      return self.getUserName();
 
   def getUserName(self):
       print self.launch
-      email = self.launch.get('lis_person_contact_email_primary')
       givenname = self.launch.get('lis_person_name_given')
       familyname = self.launch.get('lis_person_name_family')
       fullname = self.launch.get('lis_person_name_full')
@@ -212,8 +213,9 @@ class BaseContext():
       if ( familyname and len(familyname) > 0 and givenname and len(givenname) > 0 ) : return givenname + familyname;
       if ( givenname and len(givenname) > 0 ) : return givenname;
       if ( familyname and len(familyname) > 0 ) : return familyname;
+      email = self.getUserEmail()
       if ( email and len(email) > 0 ) : return email;
-      return ""
+      return None
 
   def getCourseKey(self):
       key = self.launch.get('oauth_consumer_key')
@@ -228,7 +230,7 @@ class BaseContext():
       if ( title and len(title) > 0 ) : return title
       if ( desc and len(desc) > 0 ) : return desc
       if ( id and len(id) > 0 ) : return id
-      return ""
+      return None
 
   def getContextType(self):
       return self.launch.get('_launch_type')

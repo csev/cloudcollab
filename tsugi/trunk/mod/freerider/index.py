@@ -44,13 +44,13 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
                   'request': self.request}
 
     gm = self.getmodel()
-    if ( len(gm.players) < 4 ) :
+    if ( len(gm.players) < 2 ) :
       rendervars['joinbutton'] = self.form_button('Join', action='join')
 
     return self.doRender('index.htm', rendervars)
 
   def getmodel(self):
-    freekey = 'FreeRider-'+str(self.context.course.key())
+    freekey = 'FreeRider-'+str(self.context.getCourseKey())
     logging.info('Loading Free key='+freekey)
     freerider =  memcache.get(freekey)
     # If we changed the program ignore old things in the cache
@@ -60,7 +60,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
     return freerider
 
   def putmodel(self, freerider):
-    freekey = 'FreeRider-'+str(self.context.course.key())
+    freekey = 'FreeRider-'+str(self.context.getCourseKey())
     logging.info('Store Free key='+freekey)
     memcache.replace(freekey, freerider, 3600)
 
@@ -74,16 +74,18 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
   def action_join(self) :
     gm = self.getmodel()
 
-    if not self.context.user.email or len(self.context.user.email) < 1:
+    email = self.getpersonkey()
+
+    if email == None or len(email) < 1:
       return 'You must have an E-Mail to play'
     
-    if self.context.user.email in gm.players:
+    if email in gm.players:
       return 'You have already joined the game'
 
     if len(gm.players) >= gm.playercount: 
       return 'The game is closed - you can play next time'
 
-    gm.players.append(self.context.user.email)
+    gm.players.append(email)
     gm.chips.append(20)
     gm.last.append( list () )
 
@@ -99,11 +101,13 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
   def action_play(self) :
     gm = self.getmodel()
 
+    email = self.getpersonkey()
+
     if gm.turn < 1 or gm.turn > 4: 
       return 'The game is not running!'
-    if not context.user.email in gm.players:
+    if not email in gm.players:
       return 'You are not currently playing!'
-    if not context.user.email == gm.players[gm.current] :
+    if not email == gm.players[gm.current] :
       return 'It is not your turn!'
 
     contrib = self.request.get('chips')
@@ -134,15 +138,16 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
   def view_messages(self) :
     gm = self.getmodel()
+    email = self.getpersonkey()
 
     me = None
     for i in range(len(gm.players)):
-      if gm.players[i] == self.context.user.email : 
+      if gm.players[i] == email : 
          me = i
 
     r = '<pre>\n'
 
-    if gm.turn > 0 and gm.turn < 5 and self.context.user.email == gm.players[gm.current]:
+    if gm.turn > 0 and gm.turn < 5 and email == gm.players[gm.current]:
       r = r + '<font color="red">It is your turn</font>\n\n'
 
     if gm.turn < 1:
@@ -153,7 +158,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
       r = r + 'GAME ON! Current turn: '+str(gm.turn)+'\n';
 
     r = r + '\n'
-    if self.context.user.email in gm.players and not self.context.isInstructor() :
+    if email in gm.players and not self.context.isInstructor() :
       r = r + 'Your pot: '+str(gm.chips[me])+' Contribution History:'+str(gm.last[me])+'\n'
       r = r + 'Players: '+str(len(gm.players))+'\n'
     else:
@@ -167,3 +172,9 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
     r = r + '</pre>\n'
     return r
+
+  def getpersonkey(self) :
+    email = self.context.getUserEmail()
+    if ( email == None ) : email = getUserShortName()
+    return email
+
