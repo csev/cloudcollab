@@ -2,14 +2,11 @@ import logging
 import cgi
 import wsgiref.handlers
 from datetime import datetime, timedelta
-from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
-from contextmodel import *
 from basecontext import BaseContext
 import facebook
-from core.modelutil import *
 
 class Facebook_Context(BaseContext):
   dStr = ""
@@ -17,25 +14,8 @@ class Facebook_Context(BaseContext):
   complete = False
   sessioncookie = False # Indicates if Cookies are working
   launch = None
-  user = None
-  course = None
-  memb = None
-  org = None
 
-  # Option values
-  Liberal = { 'nonce_time': 1000000, 
-              'allow_digest_reuse': True,
-              'digest_expire': timedelta(minutes=20), 
-              'digest_cleanup_count' : 100,
-              'launch_expire': timedelta(hours=1),
-              'launch_cleanup_count': 100,
-              'auto_create_orgs' : True,
-              'default_org_secret' : "secret",
-              'auto_create_courses' : True,
-              'default_course_secret' : "secret"
-            } 
-
-  def __init__(self, web, session = False, options = {}):
+  def __init__(self, web, lanuch = False, options = {}):
     # logging.info("Going for Facebook Context "+web.request.application_url+" path="+web.request.path+" url="+web.request.url);
     # logging.info(web.requestdebug(web))
     self.web = web
@@ -43,6 +23,9 @@ class Facebook_Context(BaseContext):
     self.launch = None
     self.complete = False
     self.sessioncookie = False
+    if launch:
+        self.launch = launch
+        return
 
     # Look for a signature
     if len(web.request.get("fb_sig_api_key")) < 1 or len(web.request.get("fb_sig_app_id")) < 1: return
@@ -92,89 +75,30 @@ class Facebook_Context(BaseContext):
 
     logging.info("Facebook course_id="+str(course_id)+" org_id="+org_id);
 
-    # Lets check to see if we have an organizational id and organizational secret
-    # and check to see if we are really hearing from the organization
-    org = LMS_Org.get_by_key_name("key:"+org_id)
-    if not org :
-      logging.info("Inserting Facebook Organization")
-      org = opt_get_or_insert(LMS_Org,"key:"+org_id)
-      org.name = "Facebook Accounts"
-      org.title = "Facebook Accounts"
-      org.url = "http://www.facebook.com/"
-      org.put()
-
-    self.org = org
-
-    # TODO: someday we will have a way to pick courses from a list
-    # Special hack for FACEBOOK when you first add the application
     if course_id is False : 
       logging.info("Hacking Facebook bootstrap!")
       web.course_id = "12345"
       course_id = "12345"
 
-    # Retrieve the standalone course - No creation until we know which
-    # Facebook Users are admins or have site.new
-    course = LMS_Course.get_by_key_name("key:"+course_id)
-    default_secret = options.get('default_course_secret', None)
-    if (not course) and options.get('auto_create_courses', False) and (default_secret != None) :
-      logging.warn("Creating course "+course_id+" with default secret (Facebook)")
-      course = LMS_Course.get_or_insert("key:"+course_id)
-      course.course_id = course_id
-      course.secret = default_secret
-      course.put()
-
-    if not course:
-       self.launcherror(web, None, "Course does not yet exist so you cannot join it: "+course_id);
-       return
-
-    # Retrieve or make the user and link to either then organization or the course
-    user = None
     user_id = self.facebookapi.uid
     user_name = facebook_user['name'] 
     logging.info("Facebook userid = "+user_id)
     logging.info("Facebook name="+user_name)
-    if ( len(user_id) > 0 ) :
-      user = opt_get_or_insert(LMS_User,"facebook:"+user_id)
-      changed = False
-      if user.fullname != user_name :
-        changed = True
-        user.fullname = user_name
 
-      if changed : user.put()
+    launch = { '_launch_type': 'facebook',
+               'context_id': course_id,
+               'context_label': 'FB201',
+               'lis_person_name_full': user_name,
+               'roles': 'Instructor',
+               'oauth_consumer_key': 'facebook.edu',
+               'tool_consumer_instance_description': 'University of Facebook',
+               'user_id':  user_id}
 
-    memb = None
-    if ( not (user and course ) ) :
-       self.launcherror(web, None, "Must have a valid user for a complete launch")
-       return
-
-    memb = opt_get_or_insert(LMS_Membership,"key:"+user_id, parent=course)
-    roleval = 1
-    if memb.role != roleval :
-      memb.role = roleval
-      memb.put()
-
-    # Clean up launches 
-    nowtime = datetime.utcnow()
-    before = nowtime - options.get('launch_expire', timedelta(days=2))
-    self.debug("Delete launches since "+before.isoformat())
-
-    q = db.GqlQuery("SELECT * FROM LMS_Launch WHERE created < :1", before)
-    results = q.fetch(options.get('launch_cleanup_count', 100))
-    db.delete(results)
-
-    # TODO: Think about efficiency here
-    launch = opt_get_or_insert(LMS_Launch,"facebook:"+user_id, parent=course)
-    launch.memb = memb
-    launch.org = org
-    launch.user = user
-    launch.course = course
-    launch.launch_type = "facebook"
-    launch.put()
-    self.debug("launch.key()="+str(launch.key()))
- 
     # We have made it to the point where we have handled this request
     self.launch = launch
-    self.setvars()
+    self.launchkey = '1234-facebook-567'
+    memcache.set(self.launchprefix + self.launchkey, self.launch, 3600)
+    logging.info("Creating Facebook Launch = "+ self.launchprefix + self.launchkey)
 
   # It sure would be nice to have an error url to redirect to 
   def launcherror(self, web, dig, desc) :

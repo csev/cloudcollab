@@ -4,9 +4,6 @@ from google.appengine.ext import db
 from google.appengine.api import users
 from google.appengine.api import memcache
 
-from contextmodel import *
-from core.modelutil import *
-
 class BaseContext():
   '''Extendable class with the common capabilities.'''
   dStr = ''
