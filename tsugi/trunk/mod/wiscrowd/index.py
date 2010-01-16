@@ -28,7 +28,7 @@ class WisHandler(learningportlet.LearningPortlet):
        return "Data reset"
 
     name = self.request.get("name")
-    if len(name) < 1 : name = self.context.getUserShortName()
+    if len(name) < 1 : name = self.context.getUserName()
 
     guess = self.request.get("guess")
 
