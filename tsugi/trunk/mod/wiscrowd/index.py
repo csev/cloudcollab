@@ -16,7 +16,7 @@ It is basesd on the book by James Surowiecki called "The Wisdom of Crowds""")
 class WisHandler(learningportlet.LearningPortlet):
 
   def doaction(self):
-    wiskey = "WisCrowd-"+str(self.context.course.key())
+    wiskey = "WisCrowd-"+str(self.context.getCourseKey())
     data = self.getmodel(wiskey)
     logging.info("WisHandler.doaction Loading Wis Key="+wiskey)
 
@@ -59,7 +59,7 @@ class WisHandler(learningportlet.LearningPortlet):
     return msg
 
   def getview(self, info):
-    wiskey = "WisCrowd-"+str(self.context.course.key())
+    wiskey = "WisCrowd-"+str(self.context.getCourseKey())
     logging.info("WisHandler.getview Loading Wis Key="+wiskey)
 
     data = self.getmodel(wiskey)

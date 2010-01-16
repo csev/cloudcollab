@@ -40,13 +40,13 @@ class LearningPortlet(portlet.Portlet):
   def getUrlParms(self) :
     retval = portlet.Portlet.getUrlParms(self)
     if self.context != False and self.context.launch and not self.context.sessioncookie :
-      retval['lti_launch_key'] = self.context.launch.key()
+      retval['lti_launch_key'] = self.context.launchkey
     return retval
 
   def getFormFields(self) :
     ret = portlet.Portlet.getFormFields(self)
     if self.context != False and self.context.launch and not self.context.sessioncookie :
-      return ret + '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.context.launch.key()
+      return ret + '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.context.launchkey
     else :
       return ret
 
