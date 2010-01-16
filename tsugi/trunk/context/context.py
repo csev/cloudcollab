@@ -15,8 +15,24 @@ from bbcontext import Blackboard_Context
 # TODO: Deal with performance impact of many re-launches without a session
 # TODO: Do this from memcache!
 
-def Get_Context(web, session = False, options = {}):
+def Get_Context(web, options = {}):
 
+    # Check to see if we are in the middle of a launch
+    key = web.request.get('lti_launch_key')
+    if ( len(key) > 0 ) : 
+        memkey = 'lti_launch_key:' + key;
+        launch = memcache.get(memkey)
+        if launch and launch.get('_launch_type') == 'basiclti' : 
+            context = BLTI_Context(web, launch, options)
+            context.launchkey = key
+            logging.info("BasicLTI Context restored="+key);
+            return context
+        elif launch and launch.get('_launch_type') == 'google' : 
+            context = Google_Context(web, launch, options)
+            context.launchkey = key
+            logging.info("Google Context restored="+key);
+            return context
+    
     # BLTI Looks for a particular signature so it is pretty safe
     context = Blackboard_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 
@@ -50,7 +66,7 @@ def Get_Context(web, session = False, options = {}):
         return context
 
     if ( context.launch != None ) : 
-        logging.info("Base context, type="+str(context.launch.launch_type)+" launch.course_id="+context.launch.course.course_id+" wci="+str(web.context_id))
+        logging.info("Base context, type="+str(context.getContextType())+" launch.course_id="+context.getCourseKey()+" wci="+str(web.context_id))
         if web.context_id == False : 
             # logging.info("NO path context id")
             return context
@@ -65,5 +81,5 @@ def Get_Context(web, session = False, options = {}):
         return context
 
     # Dangerous
-    context = BaseContext(web, session)
+    context = BaseContext(web, False)
     return context

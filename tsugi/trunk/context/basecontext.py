@@ -2,6 +2,7 @@ import logging
 import urllib
 from google.appengine.ext import db
 from google.appengine.api import users
+from google.appengine.api import memcache
 
 from contextmodel import *
 from core.modelutil import *
@@ -10,11 +11,9 @@ class BaseContext():
   '''Extendable class with the common capabilities.'''
   dStr = ''
   launch = None
+  launchkey = None
+  launchprefix = 'lti_launch_key:'
   sessioncookie = True
-  user = None
-  course = None
-  memb = None
-  org = None
   request = None
   complete = False
 
@@ -29,7 +28,7 @@ class BaseContext():
        self.sessioncookie = self.session.foundcookie
     if not self.session is False:
        if not self.launch is None:
-	  self.session["lti_launch_key"] = str(self.launch.key())
+	  self.session["lti_launch_key"] = str(self.launchkey)
     self.handlesetup(web, session)
 
   def setvars(self):
@@ -69,35 +68,29 @@ class BaseContext():
 
     # On a normal request there are no parammeters - we just use session
     if ( key ) :
-      # Need try/except in case Key() is unhappy with the string
-      try:
-        launch = LMS_Launch.get(db.Key(key))
-      except:
-        launch = None
-
-      if launch:
-        if session != False: session['lti_launch_key'] = key
-        # logging.info("Placing in session: %s" % key)
-      else:
-        logging.info("Session not found in store "+key)
-        if session != False and sesskey : del(session['lti_launch_key'])
-
-      self.launch = launch
-      self.setvars()
-      return
+        logging.info("getting a launch="+self.launchprefix + key)
+        launch = memcache.get(self.launchprefix + key)
+        if launch:
+            self.launch = launch
+            self.launchkey = key
+            # logging.info("Placing in session: %s" % key)
+            if session != False: session['lti_launch_key'] = key
+            return
+        else:
+            logging.info("Session not found in store "+key)
+            if session != False and sesskey : del(session['lti_launch_key'])
 
     self.launch = None
-    self.setvars()
 
   def XXgetUrlParms(self) :
     if self.launch and not self.sessioncookie :
-      return { 'lti_launch_key': self.launch.key() }
+      return { 'lti_launch_key': self.launchkey }
     else : 
       return { }
 
   def XXgetFormFields(self) : 
     if self.launch and not self.sessioncookie :
-      return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launch.key()
+      return '<input type="hidden" name="lti_launch_key" value="%s">\n' % self.launchkey
     else : 
       return ' '
 
@@ -189,40 +182,56 @@ class BaseContext():
          reqstr = reqstr + key+':'+str(len(value))+' (bytes long)\n'
     return reqstr
 
-  # Some utility mehtods
+  # Some utility methods
   def isInstructor(self) :
-    if self.launch and self.memb :
-      return (self.memb.role == 2)
-    else : 
-      return False
+    roles = self.launch.get('roles')
+    roles = roles.lower()
+    if roles.find("instructor") >= 0 : return(True)
+    if roles.find("administrator") >=0  : return(True)
+    return False
 
   def isAdmin(self):
       if users.is_current_user_admin(): return True
       return False
 
   def getUserShortName(self):
-      if ( not ( self.launch and self.user ) ) : return "Anonymous"
-      if ( self.user.email and len(self.user.email) > 0) : return self.user.email
-      if ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
-      if ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
-      if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
+      email = self.launch.get('lis_person_contact_email_primary')
+      givenname = self.launch.get('lis_person_name_given')
+      familyname = self.launch.get('lis_person_name_family')
+      fullname = self.launch.get('lis_person_name_full')
+      if ( len(email) > 0 ) : return email;
+      if ( len(givenname) > 0 ) : return givenname;
+      if ( len(familyname) > 0 ) : return familyname;
+      if ( len(fullname) > 0 ) : return fullname;
       return ""
 
   def getUserName(self):
-      if ( not ( self.launch and self.user ) ) : return "Anonymous"
-      if ( self.user.fullname and len(self.user.fullname) > 0) : return self.user.fullname
-      retval = ""
-      if ( self.user.givenname and self.user.familyname and len(self.user.givenname) > 0 and len(self.user.familyname) > 0) : 
-          return self.user.givenname + " " + self.user.familyname
-      elif ( self.user.givenname and len(self.user.givenname) > 0) : return self.user.givenname
-      elif ( self.user.familyname and len(self.user.familyname) > 0) : return self.user.familyname
-      if ( self.user.email and len(self.user.email) > 0) : return self.user.email
-      return ""
- 
-  def getCourseName(self):
-      if ( not ( self.launch and self.course ) ) : return "None"
-      if ( self.course.name ) : return self.course.name
-      if ( self.course.title ) : return self.course.title
-      if ( self.course.code ) : return self.course.code
+      print self.launch
+      email = self.launch.get('lis_person_contact_email_primary')
+      givenname = self.launch.get('lis_person_name_given')
+      familyname = self.launch.get('lis_person_name_family')
+      fullname = self.launch.get('lis_person_name_full')
+      if ( len(fullname) > 0 ) : return fullname;
+      if ( len(familyname) > 0 and len(givenname) > 0 ) : return givenname + familyname;
+      if ( len(givenname) > 0 ) : return givenname;
+      if ( len(familyname) > 0 ) : return familyname;
+      if ( len(email) > 0 ) : return email;
       return ""
 
+  def getCourseKey(self):
+      key = self.launch.get('oauth_consumer_key')
+      id = self.launch.get('context_id')
+      if ( len(id) > 0 and len(key) > 0 ) : return key + ':' + id
+      return None
+ 
+  def getCourseName(self):
+      label = self.launch.get('context_label')
+      desc = self.launch.get('context_desc')
+      id = self.launch.get('context_id')
+      if ( len(label) > 0 ) : return label
+      if ( len(desc) > 0 ) : return desc
+      if ( len(id) > 0 ) : return id
+      return ""
+
+  def getContextType(self):
+      return self.launch.get('_launch_type')
