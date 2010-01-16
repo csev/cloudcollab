@@ -199,10 +199,10 @@ class BaseContext():
       givenname = self.launch.get('lis_person_name_given')
       familyname = self.launch.get('lis_person_name_family')
       fullname = self.launch.get('lis_person_name_full')
-      if ( len(email) > 0 ) : return email;
-      if ( len(givenname) > 0 ) : return givenname;
-      if ( len(familyname) > 0 ) : return familyname;
-      if ( len(fullname) > 0 ) : return fullname;
+      if ( email and len(email) > 0 ) : return email;
+      if ( givenname and len(givenname) > 0 ) : return givenname;
+      if ( familyname and len(familyname) > 0 ) : return familyname;
+      if ( fullname and len(fullname) > 0 ) : return fullname;
       return ""
 
   def getUserName(self):
@@ -211,26 +211,26 @@ class BaseContext():
       givenname = self.launch.get('lis_person_name_given')
       familyname = self.launch.get('lis_person_name_family')
       fullname = self.launch.get('lis_person_name_full')
-      if ( len(fullname) > 0 ) : return fullname;
-      if ( len(familyname) > 0 and len(givenname) > 0 ) : return givenname + familyname;
-      if ( len(givenname) > 0 ) : return givenname;
-      if ( len(familyname) > 0 ) : return familyname;
-      if ( len(email) > 0 ) : return email;
+      if ( fullname and len(fullname) > 0 ) : return fullname;
+      if ( familyname and len(familyname) > 0 and givenname and len(givenname) > 0 ) : return givenname + familyname;
+      if ( givenname and len(givenname) > 0 ) : return givenname;
+      if ( familyname and len(familyname) > 0 ) : return familyname;
+      if ( email and len(email) > 0 ) : return email;
       return ""
 
   def getCourseKey(self):
       key = self.launch.get('oauth_consumer_key')
       id = self.launch.get('context_id')
-      if ( len(id) > 0 and len(key) > 0 ) : return key + ':' + id
+      if ( id and key and len(id) > 0 and len(key) > 0 ) : return key + ':' + id
       return None
  
   def getCourseName(self):
-      label = self.launch.get('context_label')
+      title = self.launch.get('context_title')
       desc = self.launch.get('context_desc')
       id = self.launch.get('context_id')
-      if ( len(label) > 0 ) : return label
-      if ( len(desc) > 0 ) : return desc
-      if ( len(id) > 0 ) : return id
+      if ( title and len(title) > 0 ) : return title
+      if ( desc and len(desc) > 0 ) : return desc
+      if ( id and len(id) > 0 ) : return id
       return ""
 
   def getContextType(self):
