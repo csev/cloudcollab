@@ -217,18 +217,24 @@ class BaseContext():
       if ( email and len(email) > 0 ) : return email;
       return None
 
+  def getUserKey(self):
+      key = self.launch.get('oauth_consumer_key')
+      id = self.launch.get('user_id')
+      if ( id and key and len(id) > 0 and len(key) > 0 ) : return key + ':' + id
+      return None
+
   def getCourseKey(self):
       key = self.launch.get('oauth_consumer_key')
       id = self.launch.get('context_id')
       if ( id and key and len(id) > 0 and len(key) > 0 ) : return key + ':' + id
       return None
- 
+
   def getCourseName(self):
+      label = self.launch.get('context_label')
       title = self.launch.get('context_title')
-      desc = self.launch.get('context_desc')
       id = self.launch.get('context_id')
+      if ( label and len(label) > 0 ) : return label
       if ( title and len(title) > 0 ) : return title
-      if ( desc and len(desc) > 0 ) : return desc
       if ( id and len(id) > 0 ) : return id
       return None
 
