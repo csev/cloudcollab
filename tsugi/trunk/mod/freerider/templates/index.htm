@@ -6,19 +6,26 @@ from {{ context.getCourseName }}</p>
 {% if notice %}
   <p>{{ notice }}</p>
 {% endif %}
-{% if context.isInstructor %}
-  {! form_button('Reset', action='reset') !}
-{% endif %}
-{% if joinbutton %}
- {{ joinbutton }}
-{% endif %}
 {% if msg %}
 <p>{{ msg }}</p>
 {% endif %}
 {! form_tag(action='play') !}
+{% ifequal player 'true' %}
 <p>Chips To Put in The Pot: <input type="text" name="chips"/></p>
+{% endifequal %}
+{! form_button('Check', action='view') !}
+{% if context.isInstructor %}
+  {! form_button('Reset', action='reset') !}
+{% endif %}
+{% ifequal player 'true' %}
 {! form_submit('Play') !}
+{% else %}
+{% if joinbutton %}
+ {{ joinbutton }}
+{% endif %}
+{% endifequal %}
 </form>
+{% ifequal showstatus 'true' %}
 <div id="messagescontent">
           Loading...
 </div>
@@ -31,10 +38,15 @@ $.ajax({
     $("#messagescontent").html(html);
   }
  }); 
- setTimeout('updateMsg()', 4000); 
+ setTimeout('updateMsg()', 10000); 
 }
 updateMsg();
 </script>
+{% else %}
+<p>
+{{ status }}
+</p>
+{% endifequal %}
 <p>In this game, there are four turns.  In each turn you can give any amount of your
 tokens.  At the end of each round, the pot is multiplied by 1.6 and divided 
 amongst the players.</p>

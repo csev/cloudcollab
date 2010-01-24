@@ -12,8 +12,9 @@ application allows you to play the "Free Rider" game as described by
 James Surowiecki in the book "The Wisdom of Crowds".""")
 
 class GameState():
-   def __init__(self, playercount=2):
+   def __init__(self, playercount=4):
      self.playercount = playercount
+     self.turns = 4
      self.players = list()
      self.chips = list()
      self.last = list()
@@ -44,8 +45,27 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
                   'request': self.request}
 
     gm = self.getmodel()
-    if ( len(gm.players) < 2 ) :
+    email = self.getpersonkey()
+    if email in gm.players :
+      rendervars['player'] = 'true'
+
+    if email in gm.players or self.context.isInstructor() :
+      rendervars['showstatus'] = 'true'
+
+    if ( len(gm.players) < gm.playercount ) :
       rendervars['joinbutton'] = self.form_button('Join', action='join')
+
+    if gm.turn < 1 :
+      rendervars['status'] = 'The game has not started'
+    elif gm.turn > gm.turns :
+      rendervars['status'] = 'The game has finished'
+    elif not email in gm.players:
+      rendervars['status'] = 'You are not playing in the current game'
+    elif email == gm.players[gm.current] :
+      rendervars['status'] = 'It is your turn'
+    else:
+      rendervars['status'] = 'It is not your turn'
+
 
     return self.doRender('index.htm', rendervars)
 
@@ -83,7 +103,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
       return 'You have already joined the game'
 
     if len(gm.players) >= gm.playercount: 
-      return 'The game is closed - you can play next time'
+      return 'The game is closed - better luck next time'
 
     gm.players.append(email)
     gm.chips.append(20)
@@ -103,7 +123,7 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
 
     email = self.getpersonkey()
 
-    if gm.turn < 1 or gm.turn > 4: 
+    if gm.turn < 1 or gm.turn > gm.turns : 
       return 'The game is not running!'
     if not email in gm.players:
       return 'You are not currently playing!'
