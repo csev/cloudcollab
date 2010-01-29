@@ -148,6 +148,11 @@ class Portlet(webapp.RequestHandler):
   def ajax_url(self, params={}, action=False, resource=False, controller=False, context_id=False):
     return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True, context_id=context_id)
 
+  # TODO: Do we want to allow a different action, etc?  Hmmm.
+  # Typical use is just to change the resource
+  def resource_url(self, params={}, action=False, resource=False, controller=False, context_id=False):
+    return self.getGetPath(action=action, params=params, resource=resource, direct=True, controller=controller, ignoreajax=True, context_id=context_id)
+
   def getGetPath(self, action=False, resource=False, params = {}, direct=False, controller=False, ignoreajax=False, context_id=False):
     newpath = self.getPath(action, resource, direct, controller, ignoreajax, context_id)
     p = self.getUrlParms()
@@ -357,6 +362,24 @@ document.getElementById('%s').style.display="inline";
            'templates/' + tname)
     if not os.path.isfile(temp):
       raise NameError("Warning could not find template %s" % temp)
+
+    # Check to see if we are supposed to be rendering 
+    # A non-html file
+    binary = False
+    if temp.endswith(".jpg") or temp.endswith(".jpeg") :
+        self.response.headers['Content-Type'] = 'image/jpeg'
+        binary = True
+    elif temp.endswith(".gif") :
+        self.response.headers['Content-Type'] = 'image/gif'
+        binary = True
+    elif temp.endswith(".png") :
+        self.response.headers['Content-Type'] = 'image/png'
+        binary = True
+
+    if binary:
+        outstr = open(temp, "rb").read()
+        self.response.out.write(outstr)
+        return True
   
     # Make a copy of the dictionary and add the path and session
     newval = dict(values)
@@ -374,6 +397,7 @@ document.getElementById('%s').style.display="inline";
        "form_submit" : "self.form_submit" ,
        "form_button" : "self.form_button",
        "link_to" : "self.link_to",
+       "resource_url" : "self.resource_url",
        "ajax_url" : "self.ajax_url" }
     state = 0
     output = ""
