@@ -71,7 +71,7 @@ class ExpertHandler(learningportlet.LearningPortlet):
             group = int(mod.data[0])
             advice = '180 pounds.'
             if ( group == 1 ) : advice = '185 pounds'
-            rendervars = {'group' : '1', 'advice': advice}
+            rendervars = {'group' : group, 'advice': advice}
             if ( len(mod.data[2]) > 0 ) : return self.view_index('You already have two guesses.  Any further guesses will be ignored.')
             return self.doRender('guess.htm', rendervars)
 
