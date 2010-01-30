@@ -1,0 +1,14 @@
+<h1>Data
+{{ context.getCourseName }}
+</h1>
+{% if msg %}
+<p>
+<font color="green">{{ msg }}</font>
+{% else %}
+<pre>
+group,guess1,guess2,name,time
+{% for result in results %}
+{{ result.data.0 }},{{ result.data.1 }},{{ result.data.2 }},{{ result.user_name }},{{ result.updated }}
+{% endfor %}
+</pre>
+{% endif %}

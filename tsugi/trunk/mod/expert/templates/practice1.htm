@@ -1,0 +1,43 @@
+<script type="text/javascript">
+{% block data %}
+var delay = Math.sqrt(19*5*(12+7)*(35/7)*2*2);
+var curtest = 1;
+{% endblock %}
+var thisres = "{! resource_url(resource='static/practiceNNN.png') !}".replace("NNN", curtest+"");
+</script>
+<p>
+Guess His Weight in Pounds (Practice)
+<p>
+<img id="theimg"/>
+<p>
+<input type="text" id="guess" size="20" />
+<input type="button" onclick="reveal(delay);return false;" value="Guess" />
+<script type="text/javascript">
+document.getElementById("theimg").setAttribute("src",thisres);
+function reveal(actual){
+	var myTextField = document.getElementById('guess');
+	if(myTextField.value != "") {
+                guess = parseInt( myTextField.value ) ;
+                if ( ! ( guess > 0 ) ) {
+		        alert("Please enter a number.");
+			return;
+                } 
+        } else {
+		alert("Please enter a number.");
+                return;
+        }
+	var myTextField = document.getElementById('guess');
+        if ( guess == actual ) {
+        	result = "Nice work - you are right!";
+        } else if ( guess < actual ) {
+		result = "This person's actual weight is "+actual+" pounds. You guess of "+guess+" pounds is too low.";
+        } else {
+		result = "This person's actual weight is "+actual+" pounds. You guess of "+guess+" pounds is too high.";
+	}
+	alert(result);
+        // window.location = nexturl;
+}
+</script>
+{% block next %}
+{! form_button('Next Picture', resource='practice2.htm') !}
+{% endblock %}

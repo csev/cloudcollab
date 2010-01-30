@@ -1,0 +1,38 @@
+<b>
+<h1>Welcome to the Weight Guessing Contest</h1>
+{% if msg %}
+<p>
+<font color="green">{{ msg }}</font>
+{% endif %}
+<p>Hello: {{ context.getUserName }}
+{% if context.isInstructor %}
+(Instructor)
+{% endif %}
+{% if context.getCourseName %}
+from {{ context.getCourseName }}
+{% endif %}
+{% if context.launch.launch_type %}
+via {{ context.launch.launch_type }}
+{% endif %}
+</p>
+{% if context.isInstructor %}
+<a href="{! resource_url(action='data') !}" target="_new">View Data</a>
+{% endif %}
+<p>
+Please read these instructions carefully.
+<p>
+This experiment consists of 2 rounds of a weight estimation task. 
+In each round, you will see a picture of a person and will be asked to guess the weight of the person in the picture. 
+<p>
+Before the two rounds where your guesses count, 
+you will have the opportunity to play five practice rounds in which you will see a 
+set of pictures, be asked to guess the weights of the people in the picture and then 
+be told the true weights of the people in the pictures. In this way, you can get 
+a sense of the task you will be facing during the experiment.
+<p>
+You will have a chance to win real money (Erin will pay you in class!!) based on 
+how accurate your estimates are.  But first you will get a chance to practice.  
+The practice guesses will not count for your reward.
+<p>
+{! link_to('Start', action='view', resource='practice.htm') !}
+</b>
