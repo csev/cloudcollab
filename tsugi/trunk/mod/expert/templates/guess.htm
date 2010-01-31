@@ -8,15 +8,15 @@ var thisres = "{! resource_url(action='view', resource='static/guessNNN.png') !}
 Guess His Weight in Pounds (For the Money)
 {% if advice %}
 <p>
-<b>The randomly selected student guessed: {{ advice }}
+<b>The randomly selected student guessed: {{ advice }}</b>
 {% endif %}
-<p>
-<img id="theimg"/>
 <p>
 {! form_tag(action='doguess') !}
 <input type="text" name="guess" size="20" />
 {! form_submit('Guess') !}
 </form>
+<p>
+<img id="theimg"/>
 <script type="text/javascript">
 document.getElementById("theimg").setAttribute("src",thisres);
 </script>

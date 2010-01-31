@@ -4,6 +4,7 @@
 <p>
 <font color="green">{{ msg }}</font>
 {% endif %}
+{% if context %}
 <p>Hello: {{ context.getUserName }}
 {% if context.isInstructor %}
 (Instructor)
@@ -15,8 +16,6 @@ from {{ context.getCourseName }}
 via {{ context.launch.launch_type }}
 {% endif %}
 </p>
-{% if context.isInstructor %}
-<a href="{! resource_url(action='data') !}" target="_new">View Data</a>
 {% endif %}
 <p>
 Please read these instructions carefully.
@@ -36,3 +35,14 @@ The practice guesses will not count for your reward.
 <p>
 {! link_to('Start', action='view', resource='practice.htm') !}
 </b>
+<p>
+<hr>
+{% if context.isInstructor %}
+<a href="{! resource_url(action='data') !}" target="_new">View Data</a>
+<p>
+{! link_to('Reset Data for This Course', action='reset') !}
+{% endif %}
+{% if context.isAdmin %}
+<br/>
+{! link_to('Reset Data for All Courses', action='resetall') !}
+{% endif %}

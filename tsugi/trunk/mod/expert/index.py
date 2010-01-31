@@ -81,6 +81,7 @@ class ExpertHandler(learningportlet.LearningPortlet):
             return self.doRender('second.htm')
 
         if self.action == 'data':
+            if not self.context.isInstructor() : self.doRender('index.htm', 'Must be an instructor to view data.')
             que = db.Query(ExpertData)
             que = que.filter('course_key', self.context.getCourseKey())
             results = que.fetch(limit=1000)
@@ -91,6 +92,20 @@ class ExpertHandler(learningportlet.LearningPortlet):
                 rendervar = {'msg': 'No data has been collected yet.'} 
 
             return self.doRender('data.htm', rendervar)
+
+        if self.action == 'reset':
+            if not self.context.isInstructor() : self.view_index('Must be an instructor to reset data.')
+            q = db.GqlQuery("SELECT __key__ FROM ExpertData WHERE course_key = :1", self.context.getCourseKey())
+            results = q.fetch(1000)
+            db.delete(results)
+            return self.view_index('Deleted %d records.' % len(results))
+
+        if self.action == 'resetall':
+            if not self.context.isAdmin() : self.view_index('Must be an administrator to reset all data.')
+            q = db.GqlQuery("SELECT __key__ FROM ExpertData") 
+            results = q.fetch(1000)
+            db.delete(results)
+            return self.view_index('Deleted %d records.' % len(results))
 
         return self.view_index(info)
 
