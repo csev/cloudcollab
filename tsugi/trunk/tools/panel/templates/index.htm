@@ -11,10 +11,10 @@ function menu_goto( menuform )
 <form action="dummyvalue">
 <select name="newurl" onchange="menu_goto(this.form)">
 <option value="">----- Select A Panel -----</option>
-<option value="{! url_for(action='facebook') !}"
+<option value="{! link_url(action='facebook') !}"
 {% ifequal action 'facebook' %}selected="selected"{% endifequal %}
 >FaceBook Setup</option>
-<option value="{! url_for(action='purge') !}"
+<option value="{! link_url(action='purge') !}"
 {% ifequal action 'purge' %}selected="selected"{% endifequal %}
 >Purge Tables</option>
 </select>

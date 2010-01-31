@@ -4,10 +4,12 @@ import os
 import pickle
 import inspect
 import random
+import mimetypes
 import wsgiref.handlers
 from google.appengine.ext.webapp import template
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.api import memcache
 from util.sessions import Session
 
 # TODO: Add some debugging
@@ -92,22 +94,6 @@ class Portlet(webapp.RequestHandler):
        output = newoutput
     self.response.out.write(output)
 
-  def handleget(self):
-    if not self.setup(): return
-    portlet_info = "_portlet_info"  
-    if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
-    logging.info("handleget action=%s" % self.action)
-    if self.action == "post-redirect":
-      info = self.session.get(portlet_info, None)
-    else:  
-      info = self.doaction()
-      info = pickle.dumps( info ) 
-      info = pickle.loads( info )
-
-    self.session.delete_item(portlet_info)
-    output = self.getview(info)
-    return output
-
   # TODO: Eventually check content type...  Probably if this 
   # is not HTML, we just return the output - hmmm.
   # Or do we let the self.doaction tell us not to redirect
@@ -115,13 +101,18 @@ class Portlet(webapp.RequestHandler):
 
   def handlepost(self):
     if not self.setup(): return
-    portlet_info = "_portlet_info"  
-    if isinstance(self.context_id, str) : portlet_info = portlet_info+self.context_id
     info = self.doaction()
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
-      self.session[portlet_info]  = info 
-      redirecturl = self.getGetPath(action="post-redirect")
-      logging.info("Redirect after POST %s" % redirecturl)
+      if info == None :
+          redirecturl = self.getGetPath(action=self.action)
+      elif isinstance(info, str) and (len(info) + len(self.request.path)) < 1000 :
+          redirecturl = self.getGetPath(action=self.action, params={'_post_info': info})
+      else:
+          cachekey = 'post-redirect:'+self.context.launchkey
+          memcache.set(cachekey, info, 300)
+          logging.info("POST INFO IN "+cachekey+" is "+repr(info))
+          redirecturl = self.getGetPath(action=self.action, params={'_post_redirect': 'yes'})
+      logging.info("Redirect after POST %s %s" % (self.context.launchkey, redirecturl) )
       self.redirect(redirecturl)
       return None
     else:
@@ -131,11 +122,33 @@ class Portlet(webapp.RequestHandler):
       # Request at this point
       output = self.getview(info)
 
-    self.session.delete_item(portlet_info)
     return output
+
+  def handleget(self):
+      if not self.setup(): return
+      logging.info("handleget action=%s %s" % (self.action, self.context.launchkey))
+      info = None
+      if len(self.request.get('_post_info')) > 0 :
+          info = self.request.get('_post_info')
+          logging.info("INFO From parameter is "+repr(info) )
+      elif self.request.get('_post_redirect') == 'yes':
+          cachekey = 'post-redirect:'+self.context.launchkey
+          info = memcache.get(cachekey)
+          logging.info("INFO From "+cachekey+" is "+repr(info) )
+          if info != None :
+              memcache.delete(cachekey)
+              logging.info("post-redirect data deleted=%s" % self.context.launchkey)
+      else:  
+          info = self.doaction()
+          info = pickle.dumps( info ) 
+          info = pickle.loads( info )
+
+      output = self.getview(info)
+      return output
 
   def doaction(self):
     logging.info("Your portlet is missing a doaction() method")
+    return None
 
   def getview(self, info):
     logging.info("Your portlet is missing a getview() method")
@@ -290,8 +303,11 @@ class Portlet(webapp.RequestHandler):
       ret = ret + key + '="' + value + '"'
     return ret
     
-  def url_for(self, params={}, attributes={}, action=False, resource=False, controller=False):
-    return self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
+  def link_url(self, params={}, attributes={}, action=False, resource=False, controller=False):
+    fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
+    if self.div == False or self.javascript_allowed == False:
+        logging.warn('This url may not work for ajax:' + fullurl)
+    return fullurl
 
   def link_to(self, text, params={}, attributes={}, action=False, resource=False, controller=False):
     fullurl = self.getGetPath(action=action, params=params, resource=resource, controller=controller, ignoreajax=True)
@@ -365,15 +381,13 @@ document.getElementById('%s').style.display="inline";
 
     # Check to see if we are supposed to be rendering 
     # A non-html file
+    ctype, encoding = mimetypes.guess_type(temp)
     binary = False
-    if temp.endswith(".jpg") or temp.endswith(".jpeg") :
-        self.response.headers['Content-Type'] = 'image/jpeg'
-        binary = True
-    elif temp.endswith(".gif") :
-        self.response.headers['Content-Type'] = 'image/gif'
-        binary = True
-    elif temp.endswith(".png") :
-        self.response.headers['Content-Type'] = 'image/png'
+    if ctype != None and not ctype.startswith('text/') :
+        if encoding != None :
+            self.response.headers['Content-Type'] = ctype + '; ' + encoding
+        else :
+            self.response.headers['Content-Type'] = ctype
         binary = True
 
     if binary:
@@ -397,6 +411,7 @@ document.getElementById('%s').style.display="inline";
        "form_submit" : "self.form_submit" ,
        "form_button" : "self.form_button",
        "link_to" : "self.link_to",
+       "link_url" : "self.link_url",
        "resource_url" : "self.resource_url",
        "ajax_url" : "self.ajax_url" }
     state = 0

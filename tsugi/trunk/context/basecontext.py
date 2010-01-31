@@ -28,19 +28,6 @@ class BaseContext():
 	  self.session["lti_launch_key"] = str(self.launchkey)
     self.handlesetup(web, session)
 
-  def setvars(self):
-    self.user = None
-    self.course = None
-    self.memb = None
-    self.org = None
-    if self.launch : 
-      if self.launch.user : self.user = self.launch.user
-      if self.launch.course_user : self.user = self.launch.course_user
-      if self.launch.course : self.course = self.launch.course
-      if self.launch.memb : self.memb = self.launch.memb
-      if self.launch.course_org : self.org = self.launch.course_org
-      if self.launch.org : self.org = self.launch.org
-
   # If we are going to forward back to ourselves, this handles
   # The clever bits about establishing the key from the URL 
   # or session - It is not used in this base class because
