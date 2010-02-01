@@ -11,7 +11,7 @@ def register():
 
 class AdminHandler(learningportlet.LearningPortlet):
 
-    def doaction(self):
+    def update(self):
         logging.info("doaction="+str(self.action))
         if not self.context.isAdmin() : return "Must be admin to use this tool"
         if self.action is False : return
@@ -19,7 +19,7 @@ class AdminHandler(learningportlet.LearningPortlet):
         if self.action == "purge" : return self.purge_action()
         return "Action not found " + str(self.action)
     
-    def getview(self, info):
+    def render(self, info):
         logging.info("getview="+str(self.action))
         if not self.context.isAdmin() : return "Must be admin to use this tool"
         output = ""

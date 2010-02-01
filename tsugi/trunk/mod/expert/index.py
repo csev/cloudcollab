@@ -24,9 +24,16 @@ It is basesd on the book by Robert B. Cialdini called "Influence: Science and Pr
 
 class ExpertHandler(learningportlet.LearningPortlet):
 
-    def doaction(self):
+    def update(self):
         msg = self.check_required()
         if msg != None : return msg
+
+        if self.action == 'getadvice' : 
+            mod = self.get_model()
+            if ( len(mod.data) < 4 ) : mod.data.append("")
+            mod.data[3] = '1';
+            mod.put()
+            self.action = 'advice'
 
         # Is this first or second round?
         if self.action == 'doguess' : 
@@ -36,9 +43,11 @@ class ExpertHandler(learningportlet.LearningPortlet):
             if ( len(mod.data[1]) == 0 ) :
                 mod.data[1] = self.request.get('guess')
                 mod.put()
+                self.action = 'second'
             elif ( len(mod.data[2]) == 0 ) :
                 mod.data[2] = self.request.get('guess')
                 mod.put()
+                self.action = 'thanks'
             else : 
                 return "You only get two guesses"
             
@@ -46,7 +55,7 @@ class ExpertHandler(learningportlet.LearningPortlet):
 
         return None
 
-    def getview(self, info):
+    def render(self, info):
 
         msg = self.check_required()
         if msg != None : return msg
@@ -59,7 +68,7 @@ class ExpertHandler(learningportlet.LearningPortlet):
             if ( len(mod.data[1]) > 0 ) : return self.doRender('thanks.htm')
             return self.doRender('ready.htm')
 
-        if self.action == 'start' : 
+        if self.action == 'guess' : 
             mod = self.get_model()
             group = int(mod.data[0])
             rendervars = {'group' : group}
@@ -75,10 +84,13 @@ class ExpertHandler(learningportlet.LearningPortlet):
             if ( len(mod.data[2]) > 0 ) : return self.view_index('You already have two guesses.  Any further guesses will be ignored.')
             return self.doRender('guess.htm', rendervars)
 
-        if self.action == 'doguess' : 
+        if self.action == 'second' : 
             mod = self.get_model()
             if ( len(mod.data[2]) > 0 ) : return self.doRender('thanks.htm')
             return self.doRender('second.htm')
+
+        if self.action == 'thanks' : 
+            return self.doRender('thanks.htm')
 
         if self.action == 'data':
             if not self.context.isInstructor() : self.doRender('index.htm', 'Must be an instructor to view data.')
@@ -120,13 +132,15 @@ class ExpertHandler(learningportlet.LearningPortlet):
         que = que.filter('user_key', self.context.getUserKey())
         results = que.fetch(limit=1)
         if len(results) > 0 :
-            return results[0]
+            ret = results[0]
+            if ( len(ret.data) < 4 ) : ret.data.append("")
+            return ret
 
         group = str(random.randint(1,2))
         newexpert = ExpertData(course_key=self.context.getCourseKey(),
             user_key=self.context.getUserKey(),
             user_name=self.context.getUserName(),
-            data=[group, "", ""])
+            data=[group, "", "", "0"])
         newexpert.put()
 
         que = db.Query(ExpertData)

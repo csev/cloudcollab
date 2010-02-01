@@ -1,15 +1,14 @@
 <center>
 <b>
 <p>
-You now have the option of getting advice from another (randomly selected) participant who saw the same picture as you in the previous round.  
+You now have the option of getting advice from another (randomly selected) participant who saw 
+the same picture as you in the previous round.  
 <p>
-If you choose to take the advice, you will be given a chance to guess weight of the same picture again with the advice.
+Only one of your guesses will be used to determine whether you win the prize or not.  But 
+this will be random and you will not know which of the two guesses will be used.  For 
+this reason, it is in your best interest to treat both guesses as if it were the one that counted.
 <p>
-If you choose to make a second guess, only one of your guesses will be used to determine whether you win the prize or not.  But this will be random and you will not know which of the two guesses will be used.  For this reason, it is in your best interest to treat each guess as if it were the one that counted.
-<p>
-If you take the advice - you must make a second guess.
-<p>
-{! link_to('Take Advice', action='advice') !} | 
-{! link_to('Do Not Take Advice', action='view', resource='thanks.htm') !}
+{! link_to('Guess Again with Advice', action='getadvice') !} | 
+{! link_to('Guess Again with No Advice', action='guess') !}
 </b>
 </center>

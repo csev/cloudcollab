@@ -6,9 +6,9 @@
 <font color="green">{{ msg }}</font>
 {% else %}
 <pre>
-group,guess1,guess2,name,time
+group,guess1,guess2,advice,name,time
 {% for result in results %}
-{{ result.data.0 }},{{ result.data.1 }},{{ result.data.2 }},{{ result.user_name }},{{ result.updated }}
+{{ result.data.0 }},{{ result.data.1 }},{{ result.data.2 }},{{ result.data.3 }},{{ result.user_name }},{{ result.updated }}
 {% endfor %}
 </pre>
 {% endif %}

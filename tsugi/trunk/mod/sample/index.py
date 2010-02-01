@@ -14,11 +14,11 @@ class SampleHandler(learningportlet.LearningPortlet):
   def establishContext(self):
     return True
 
-  def doaction(self):
+  def update(self):
     return ( { 'hello': 'world', 'doaction' : self.action, 'thing': self.request.get('thing')  } )
 
   # Don't assume POST data will be here - only info
-  def getview(self, info):
+  def render(self, info):
     pathinfo = 'controller=%s doview.action=%s resource=%s<br/>\n' % (self.controller, self.action, self.resource)
     rendervars = { 'info' : info, 'user': self.context.getUserName(), 
                    'pathinfo': pathinfo, 

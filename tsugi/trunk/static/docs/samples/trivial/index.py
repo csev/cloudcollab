@@ -9,7 +9,7 @@ def register():
 
 class TrivialHandler(learningportlet.LearningPortlet):
 
-  def doaction(self):
+  def update(self):
     logging.info("doAction action=%s" % self.action)
     if self.action == 'reset':
       self.session.delete_item('guesses')
@@ -30,7 +30,7 @@ class TrivialHandler(learningportlet.LearningPortlet):
     else:
        return 'Your guess %s is too high' % iguess
 
-  def getview(self, info):
+  def render(self, info):
     rendervars = dict()
 
     if isinstance(info, str) : 

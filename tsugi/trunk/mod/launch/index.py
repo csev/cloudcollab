@@ -21,7 +21,7 @@ def register():
 
 class LaunchHandler(learningportlet.LearningPortlet):
 
-  def doaction(self):
+  def update(self):
     info = dict()
     info['url'] = self.request.get('url')
     info['secret'] = self.request.get('secret')
@@ -30,7 +30,7 @@ class LaunchHandler(learningportlet.LearningPortlet):
     info['newwindow'] = self.request.get('newwindow')
     return info
 
-  def getview(self, info):
+  def render(self, info):
     rendervars = { 'context' : self.context }
     if info is None:
       return self.doRender('index.htm', {} )

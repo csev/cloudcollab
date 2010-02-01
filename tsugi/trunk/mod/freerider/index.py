@@ -25,7 +25,7 @@ class GameState():
 class FreeRiderHandler(learningportlet.LearningPortlet):
 
   # Called for form posts
-  def doaction(self):
+  def update(self):
     logging.info('doaction Action=%s'%self.action)
     if self.action == 'play' : return self.action_play()
     if self.action == 'join' : return self.action_join()
@@ -34,8 +34,8 @@ class FreeRiderHandler(learningportlet.LearningPortlet):
     logging.info('Unknown doaction=%s' % self.action)
     return None
 
-  def getview(self, info):
-    logging.info('getview Action=%s'%self.action)
+  def render(self, info):
+    logging.info('render Action=%s'%self.action)
 
     if self.action == 'messages': 
        return self.view_messages()

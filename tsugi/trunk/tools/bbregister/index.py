@@ -13,14 +13,14 @@ def register():
 
 class BBRegisterHandler(learningportlet.LearningPortlet):
 
-    def doaction(self):
+    def update(self):
         logging.info("doaction="+str(self.action))
         if not self.context.isAdmin() : return "Must be admin to use this tool"
         if self.action is False : return
         if self.action == "register" : return self.register_action()
         return "Action not found " + str(self.action)
     
-    def getview(self, info):
+    def render(self, info):
         logging.info("getview="+str(self.action))
         if not self.context.isAdmin() : return "Must be admin to use this tool"
         output = self.doRender('index.htm', {'info' : info})

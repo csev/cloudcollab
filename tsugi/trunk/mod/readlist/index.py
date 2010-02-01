@@ -14,7 +14,7 @@ def register():
 
 class ReadListHandler(learningportlet.LearningPortlet):
 
-  def doaction(self):
+  def update(self):
 
     reading = Reading.get_or_insert("a", parent=self.context.course)
     if reading.blob == None : 
@@ -52,7 +52,7 @@ class ReadListHandler(learningportlet.LearningPortlet):
 
     return msg
 
-  def getview(self, info):
+  def render(self, info):
     reading = Reading.get_or_insert("a", parent=self.context.course)
     if reading.blob == None : 
       reading.blob = pickle.dumps( dict() ) 

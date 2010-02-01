@@ -96,15 +96,16 @@ class Portlet(webapp.RequestHandler):
 
   # TODO: Eventually check content type...  Probably if this 
   # is not HTML, we just return the output - hmmm.
-  # Or do we let the self.doaction tell us not to redirect
+  # Or do we let the self.update tell us not to redirect
   # somehow - not a bad idea
 
   def handlepost(self):
     if not self.setup(): return
-    info = self.doaction()
+    info = self.update()
     if (not isinstance(self.div, str) ) and self.redirectafterpost is True:
       if info == None :
-          redirecturl = self.getGetPath(action=self.action)
+          # Need to suppress second call to update
+          redirecturl = self.getGetPath(action=self.action, params={'_post_redirect': 'none'})
       elif isinstance(info, str) and (len(info) + len(self.request.path)) < 1000 :
           redirecturl = self.getGetPath(action=self.action, params={'_post_info': info})
       else:
@@ -120,7 +121,7 @@ class Portlet(webapp.RequestHandler):
       info = pickle.loads( info )
       # Would be nice to remove the POST data from the 
       # Request at this point
-      output = self.getview(info)
+      output = self.render(info)
 
     return output
 
@@ -131,6 +132,8 @@ class Portlet(webapp.RequestHandler):
       if len(self.request.get('_post_info')) > 0 :
           info = self.request.get('_post_info')
           logging.info("INFO From parameter is "+repr(info) )
+      elif self.request.get('_post_redirect') == 'none':
+          pass # info is already None
       elif self.request.get('_post_redirect') == 'yes':
           cachekey = 'post-redirect:'+self.context.launchkey
           info = memcache.get(cachekey)
@@ -139,20 +142,20 @@ class Portlet(webapp.RequestHandler):
               memcache.delete(cachekey)
               logging.info("post-redirect data deleted=%s" % self.context.launchkey)
       else:  
-          info = self.doaction()
+          info = self.update()
           info = pickle.dumps( info ) 
           info = pickle.loads( info )
 
-      output = self.getview(info)
+      output = self.render(info)
       return output
 
-  def doaction(self):
-    logging.info("Your portlet is missing a doaction() method")
+  def update(self):
+    logging.info("Your portlet is missing a update() method")
     return None
 
-  def getview(self, info):
-    logging.info("Your portlet is missing a getview() method")
-    return "This portlet is missing a getview() method."
+  def render(self, info):
+    logging.info("Your portlet is missing a render() method")
+    return "This portlet is missing a render() method."
 
   # For now return the parameters all the time - even for the post
   def getPostPath(self, action=False, resource=False, direct=False, controller=False, ignoreajax=False, context_id=False):
