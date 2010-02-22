@@ -19,7 +19,7 @@ class ExpertData(db.Model):
 def register():
    return ToolRegistration(ExpertHandler, "Expert Game", """This 
 application runs an experiment that measures how people use and
-think about experti advice.
+think about expert advice.
 It is basesd on the book by Robert B. Cialdini called "Influence: Science and Practice""")
 
 class ExpertHandler(learningportlet.LearningPortlet):

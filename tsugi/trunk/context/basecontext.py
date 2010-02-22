@@ -164,9 +164,10 @@ class BaseContext():
   # Some utility methods
   def isInstructor(self) :
     roles = self.launch.get('roles')
+    if roles == None or len(roles) < 1 : return False
     roles = roles.lower()
-    if roles.find("instructor") >= 0 : return(True)
-    if roles.find("administrator") >=0  : return(True)
+    if roles.find("instructor") >= 0 : return True 
+    if roles.find("administrator") >=0  : return True 
     return False
 
   def isAdmin(self):

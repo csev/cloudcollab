@@ -88,9 +88,9 @@ class BLTI_Context(BaseContext):
       if len(return_url) > 1 :
           desc = urllib.quote(desc) 
           if return_url.find('?') > 1 : 
-              return_url = return_url + '&lti_msg=' + desc
+              return_url = return_url + '&lti_errormsg=' + desc
           else :
-              return_url = return_url + '?lti_msg=' + desc
+              return_url = return_url + '?lti_errormsg=' + desc
           web.redirect(return_url)
           return
 
