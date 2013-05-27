@@ -77,7 +77,7 @@ class LTI_Context(BaseContext):
     # Copy the parameters as the launch data
     self.launchkey = str(uuid.uuid4())
     self.launch = dict(self.request.params)
-    self.launch['_launch_type'] = 'basiclti'
+    self.launch['_launch_type'] = 'lti'
     memcache.set(self.launchprefix + self.launchkey, self.launch, 3600)
     logging.info("Creating LTI Launch = "+ self.launchprefix + self.launchkey)
 
@@ -113,8 +113,29 @@ class LTI_Context(BaseContext):
         dig.debug = self.dStr
         dig.put()
 
+  def getPOXRequest() :
+      return '''<?xml version = "1.0" encoding = "UTF-8"?>
+<imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
+  <imsx_POXHeader>
+    <imsx_POXRequestHeaderInfo>
+      <imsx_version>V1.0</imsx_version>
+      <imsx_messageIdentifier>MESSAGE</imsx_messageIdentifier>
+    </imsx_POXRequestHeaderInfo>
+  </imsx_POXHeader>
+  <imsx_POXBody>
+    <OPERATION>
+      <resultRecord>
+        <sourcedGUID>
+          <sourcedId>SOURCEDID</sourcedId>
+        </sourcedGUID>
+      </resultRecord>
+    </OPERATION>
+  </imsx_POXBody>
+</imsx_POXEnvelopeRequest>'''
+
+
   def getContextType() :
-      return 'basiclti'
+      return 'lti'
 
 class LTI_OAuthDataStore(oauth.OAuthDataStore):
 
@@ -123,8 +144,8 @@ class LTI_OAuthDataStore(oauth.OAuthDataStore):
         self.options = options
 
     def lookup_consumer(self, key):
-        if key.startswith('basiclti-lms:') :
-            org_id = key[len('basiclti-lms:') :]
+        if key.startswith('lti-lms:') :
+            org_id = key[len('lti-lms:') :]
             logging.info("lookup_consumer org_id="+org_id)
             if org_id == "umich.edu" : return oauth.OAuthConsumer(key, "secret");
 	elif key == "12345" : return oauth.OAuthConsumer(key, "secret");

@@ -22,7 +22,7 @@ def Get_Context(web, options = {}):
     if ( len(key) > 0 ) : 
         memkey = 'lti_launch_key:' + key;
         launch = memcache.get(memkey)
-        if launch and launch.get('_launch_type') == 'basiclti' : 
+        if launch and launch.get('_launch_type') == 'lti' : 
             context = LTI_Context(web, launch, options)
             context.launchkey = key
             logging.info("LTI Context restored="+key);
