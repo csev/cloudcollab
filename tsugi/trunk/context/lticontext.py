@@ -15,7 +15,7 @@ from google.appengine.api import memcache
 from basecontext import BaseContext
 from core import oauth
 
-class BLTI_Context(BaseContext):
+class LTI_Context(BaseContext):
   dStr = ""
   request = None
   complete = False
@@ -41,7 +41,7 @@ class BLTI_Context(BaseContext):
 
     course_id = web.request.get("context_id")
     if isinstance(web.context_id, str) :
-      logging.info("BasicLTI taking course_id from context_id");
+      logging.info("LTI taking course_id from context_id");
       course_id = web.context_id
 
     user_id = web.request.get("user_id")
@@ -79,7 +79,7 @@ class BLTI_Context(BaseContext):
     self.launch = dict(self.request.params)
     self.launch['_launch_type'] = 'basiclti'
     memcache.set(self.launchprefix + self.launchkey, self.launch, 3600)
-    logging.info("Creating BasicLTI Launch = "+ self.launchprefix + self.launchkey)
+    logging.info("Creating LTI Launch = "+ self.launchprefix + self.launchkey)
 
   # It sure would be nice to have an error url to redirect to 
   def launcherror(self, web, dig, desc) :

@@ -2,7 +2,7 @@ import logging
 from google.appengine.api import memcache
 
 from basecontext import BaseContext
-from blticontext import BLTI_Context
+from lticontext import LTI_Context
 from googlecontext import Google_Context
 from facebookcontext import Facebook_Context
 from bbcontext import Blackboard_Context
@@ -23,9 +23,9 @@ def Get_Context(web, options = {}):
         memkey = 'lti_launch_key:' + key;
         launch = memcache.get(memkey)
         if launch and launch.get('_launch_type') == 'basiclti' : 
-            context = BLTI_Context(web, launch, options)
+            context = LTI_Context(web, launch, options)
             context.launchkey = key
-            logging.info("BasicLTI Context restored="+key);
+            logging.info("LTI Context restored="+key);
             return context
         elif launch and launch.get('_launch_type') == 'google' : 
             context = Google_Context(web, launch, options)
@@ -33,16 +33,16 @@ def Get_Context(web, options = {}):
             logging.info("Google Context restored="+key);
             return context
     
-    # BLTI Looks for a particular signature so it is pretty safe
+    # LTI Looks for a particular signature so it is pretty safe
     context = Blackboard_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 
         logging.info("Blackboard  Context complete="+str(context.complete));
         return context
 
-    # BLTI Looks for a particular signature so it is pretty safe
-    context = BLTI_Context(web, False, options)
+    # LTI Looks for a particular signature so it is pretty safe
+    context = LTI_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 
-        logging.info("BasicLTI Context complete="+str(context.complete));
+        logging.info("LTI Context complete="+str(context.complete));
         return context
 
     # Facebook Looks for a particular signature so it is pretty safe
