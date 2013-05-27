@@ -20,7 +20,9 @@ from util.sessions import Session
   
 class Portlet(webapp.RequestHandler):
 
-  def __init__(self) :
+  def __init__(self, request, response) :
+    self.request = request
+    self.response = response
     self.context_id = False
     self.div = False
     self.renderfragment = False

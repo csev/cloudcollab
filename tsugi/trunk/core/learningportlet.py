@@ -11,8 +11,8 @@ from util.sessions import Session
 
 class LearningPortlet(portlet.Portlet):
 
-  def __init__(self):
-    portlet.Portlet.__init__(self)
+  def __init__(self,request,response):
+    portlet.Portlet.__init__(self,request,response)
     self.context = False
 
   def establishContext(self):

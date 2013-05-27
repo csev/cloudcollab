@@ -6,7 +6,7 @@
 <hr>
 <!-- Above the div -->
 <div id="fred">
-{{ fragment }}
+{{ fragment|safe }}
 </div>
 <!-- Below the div -->
 <hr>
@@ -29,7 +29,7 @@
 <p style="color: gray; font-size: small;">
 The "fragment-only" option shows the tool without any portal navigation.  This is how it
 will look when it is embedded into another LMS.  You can embed this tool into any LMS
-which suports Simple or Basic LTI by using the fragment url with the proper password.  The fragment
+which suports LTI 1.0 by using the fragment url with the proper password.  The fragment
 url handles both the LTI web service protocol interactions as well as 
 the actual tool fragment and interaction when the tool is running in the browser.
 </p>
@@ -58,27 +58,23 @@ available as convienence methods on the LTI object.
 {% else %}
 <p>
 Welcome to the demo of the CloudCollab application which uses the Tsugi framework for building 
-applications using IMS Learning Tools Interoperability (Simple LTI and Basic LTI).  Tsugi applications
+applications using IMS Learning Tools Interoperability Tsugi applications
 can also be launched and accept identity from Facebook.
 </p>
 <p>
 You can download the guide to <a href="/static/docs/Tsugi-Portlet.doc">developing a Tsugi portlet</a>.
 </p>
-<!--  Keep this in case we want to hack up an BLTI test - mebbe not
 <p>
-If you want to simulate a Simple LTI Launch click <a href="/lti_test">here</a>.
--->
-<p>
-If you want to simulate a Basic LTI Launch, go to 
-<a href="http://developers.imsglobal.org/BLTI/lms.php" target="_new">
-http://developers.imsglobal.org/BLTI/lms.php
+If you want to simulate a LTI 1.0 Launch, go to 
+<a href="http://www.dr-chuck.com/sakai-api-test/lms.php" target="_new">
+http://www.dr-chuck.com/sakai-api-test/lms.php
 </a>
 Enter the URL of this service, with a key of "12345" and a secret of "secret" and then
-press "Submit" and "Launch Endpoint with Basic LTI Data". 
+press "Submit" and "Launch Endpoint with LTI Data". 
 You should come back to this site, but logged in.
 <p>
-The IMS Learning Tools Interoperability and Basic LTI are being developed by the
-<a href="http://www.imsglobal.org/" target="_new">www.imsglobal.org</a>.  If you are interested
+The IMS Learning Tools Interoperability is being developed by the
+<a href="http://developers.imsglobal.org/" target="_new">developers.imsglobal.org</a>.  If you are interested
 in standards and interoperability for teaching and learning technology you should become
 involved in IMS.
 </p>

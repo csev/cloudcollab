@@ -7,6 +7,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 from util import sessions
 from context.context import Get_Context
+from mod import *
 
 # Register all the tools - add new tools here
 tools = list()
@@ -51,7 +52,7 @@ def doRender(self, tname = "index.htm", values = { }):
   newval = dict(values)
   newval['path'] = self.request.path
 
-  outstr = template.render(temp, newval)
+  outstr = str(template.render(temp, newval))
   self.response.out.write(outstr)
   return True
 
@@ -155,7 +156,7 @@ class MainHandler(webapp.RequestHandler):
          if fragment == None : return
          rendervars['fragment'] = fragment
          temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-         outstr = template.render(temp, rendervars)
+         outstr = str(template.render(temp, rendervars))
          self.response.out.write(outstr)
          return
 
@@ -179,7 +180,7 @@ class MainHandler(webapp.RequestHandler):
     # If this is not one of our registered tools,
     # send out the main page
     temp = os.path.join(os.path.dirname(__file__), 'templates/index.htm')
-    outstr = template.render(temp, rendervars)
+    outstr = str(template.render(temp, rendervars))
     self.response.out.write(outstr)
 
   def requestdebug(self):
