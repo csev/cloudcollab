@@ -21,8 +21,11 @@ from util.sessions import Session
 class Portlet(webapp.RequestHandler):
 
   def __init__(self, request, response) :
-    self.request = request
-    self.response = response
+    
+    # http://stackoverflow.com/questions/8488482/attributeerror-nonetype-object-has-no-attribute-route-and-webapp2
+    self.tdict = {}
+    self.initialize(request, response)
+
     self.context_id = False
     self.div = False
     self.renderfragment = False
@@ -94,7 +97,7 @@ class Portlet(webapp.RequestHandler):
           rendervars['title'] = self.portlet_title
        newoutput = self.doRender('index.htm', rendervars)
        output = newoutput
-    self.response.out.write(output)
+    self.response.out.write(str(output))
 
   # TODO: Eventually check content type...  Probably if this 
   # is not HTML, we just return the output - hmmm.

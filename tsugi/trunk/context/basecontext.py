@@ -142,7 +142,7 @@ class BaseContext():
     return dStr
 
   def dump(self):
-    ret = "Dump of LTI Object\n";
+    ret = ''
     if ( not self.launch ):
       ret = ret + "No launch data\n"
       return ret

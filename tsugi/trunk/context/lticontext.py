@@ -6,6 +6,7 @@ import hashlib
 import base64
 import uuid
 import urllib
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from google.appengine.ext import webapp
 from google.appengine.api import users
@@ -113,7 +114,25 @@ class LTI_Context(BaseContext):
         dig.debug = self.dStr
         dig.put()
 
-  def getPOXRequest() :
+  def dump(self):
+    ret = "LTI Context dump:\n" + BaseContext.dump(self)
+    ret = ret + "UserName = " + self.getUserName()+"\n"
+    return ret
+
+  def sendgrade(self,grade):
+    logging.info("url = "+self.launch["lis_outcome_service_url"])
+    tree = ET.fromstring(self.getPOXRequest())
+    logging.info(repr(tree))
+    # tree.register_namespace("ims", "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0")
+    msg = tree.find('{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_POXHeader/' +
+                    '{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_POXRequestHeaderInfo/' +
+                    '{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_messageIdentifier' )
+    logging.info(repr(msg.text))
+    msg = tree.find( '{http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0}imsx_messageIdentifier' )
+    logging.info(repr(msg))
+    return True
+
+  def getPOXRequest(self) :
       return '''<?xml version = "1.0" encoding = "UTF-8"?>
 <imsx_POXEnvelopeRequest xmlns = "http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0">
   <imsx_POXHeader>

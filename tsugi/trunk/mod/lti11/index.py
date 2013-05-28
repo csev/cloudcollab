@@ -27,6 +27,7 @@ class LTI11Handler(learningportlet.LearningPortlet):
                    'formcancel' : self.form_button('Cancel', attributes={'class' : 'selected' }, action='act-cancel' ),
     		   'formsubmit' : self.form_submit('GO') }
 
-    # logging.info(self.context.dump())
+    logging.info(self.context.dump())
+    self.context.sendgrade(1.0)
 
     return self.doRender('index.htm', rendervars)

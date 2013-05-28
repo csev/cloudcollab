@@ -21,6 +21,7 @@ def Get_Context(web, options = {}):
     key = web.request.get('lti_launch_key')
     if ( len(key) > 0 ) : 
         memkey = 'lti_launch_key:' + key;
+        logging.info("Loading from memcache "+memkey)
         launch = memcache.get(memkey)
         if launch and launch.get('_launch_type') == 'lti' : 
             context = LTI_Context(web, launch, options)
@@ -32,7 +33,17 @@ def Get_Context(web, options = {}):
             context.launchkey = key
             logging.info("Google Context restored="+key);
             return context
+
+    context = Extract_Context(web, options)
+    if ( context.complete ) : return context
+    if ( context.launch == None ) : return context
+    memkey = 'lti_launch_key:' + context.launchkey;
+    logging.info("Storing in memcache "+memkey)
+    memcache.set(memkey, context.launch, 3600)
+    return context
     
+def Extract_Context(web, options={}):
+
     # LTI Looks for a particular signature so it is pretty safe
     context = Blackboard_Context(web, False, options)
     if ( context.complete or context.launch != None ) : 

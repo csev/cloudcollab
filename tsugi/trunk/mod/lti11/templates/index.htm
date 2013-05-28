@@ -2,10 +2,10 @@ Hi
 Sample Output<br/>
 User: {{ user }}<br/>
 Info {{ info }} <br/>
-Path Info {{ pathinfo }} <br/>
-{{ anchortag }}   <!-- Like <a href= -->
-{{ formtag }}   <!-- Like <form> -->
+Path Info {{ pathinfo|safe }} <br/>
+{{ anchortag|safe }}   <!-- Like <a href= -->
+{{ formtag|safe }}   <!-- Like <form> -->
 <input type="text" name="thing" size="40">
-{{ formcancel }}   <!-- Like an href to escape form - looks like a button -->
-{{ formsubmit }}   <!-- Submit button -->
+{{ formcancel|safe }}   <!-- Like an href to escape form - looks like a button -->
+{{ formsubmit|safe }}   <!-- Submit button -->
 </form>
